@@ -43,6 +43,10 @@ register(
     entry_point='gym_pybullet_drones.envs.single_agent_rl:TuneAviary',
 )
 
+register(
+    id='maze-aviary-v0',
+    entry_point='gym_pybullet_drones.envs.single_agent_rl:NavigateMazeAviary',
+)
 
 
 
