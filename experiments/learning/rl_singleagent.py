@@ -28,7 +28,7 @@ import numpy as np
 import gym
 import torch
 from stable_baselines3.common.env_checker import check_env
-from stable_baselines3.common.cmd_util import (
+from stable_baselines3.common.env_util import (
     make_vec_env,
 )  # Module cmd_util will be renamed to env_util https://github.com/DLR-RM/stable-baselines3/pull/197
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecTransposeImage
@@ -295,6 +295,8 @@ if __name__ == "__main__":
             eval_env = make_vec_env(FlyThruGateAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0)
         if env_name == "tune-aviary-v0":
             eval_env = make_vec_env(TuneAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0)
+        if env_name == "maze-aviary-v0":
+            eval_env = make_vec_env(NavigateMazeAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0)
         eval_env = VecTransposeImage(eval_env)
 
     #### Train the model #######################################
@@ -325,4 +327,6 @@ if __name__ == "__main__":
     #### Print training progression ############################
     with np.load(filename + "/evaluations.npz") as data:
         for j in range(data["timesteps"].shape[0]):
+            print(data["timesteps"])
+            print(data["results"][j])
             print(str(data["timesteps"][j]) + "," + str(data["results"][j][0][0]))

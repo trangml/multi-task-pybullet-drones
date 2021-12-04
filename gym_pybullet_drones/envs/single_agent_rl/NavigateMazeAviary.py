@@ -102,7 +102,7 @@ class NavigateMazeAviary(BaseSingleAgentAviary):
         state = self._getDroneStateVector(0)
         target_dest = [-1.3, 1, 1, 0]
         # IF we reach the end of the map, then reward is 1000
-        if np.allclose(np.asarray(state), np.asarray(target_dest), atol=0.1):
+        if np.allclose(np.asarray(state[0:4]), np.asarray(target_dest), atol=0.1):
             return 1000
         else:
             return -1
@@ -125,7 +125,7 @@ class NavigateMazeAviary(BaseSingleAgentAviary):
         if self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
             return True
         # IF we reach the end of the map, then we are done
-        elif np.allclose(np.asarray(state), np.asarray(target_dest), atol=0.1):
+        elif np.allclose(np.asarray(state[0:4]), np.asarray(target_dest), atol=0.1):
             return True
         else:
             return False
