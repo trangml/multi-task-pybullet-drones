@@ -54,6 +54,7 @@ from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
 from gym_pybullet_drones.envs.single_agent_rl.HoverAviary import HoverAviary
 from gym_pybullet_drones.envs.single_agent_rl.FlyThruGateAviary import FlyThruGateAviary
 from gym_pybullet_drones.envs.single_agent_rl.NavigateMazeAviary import NavigateMazeAviary
+from gym_pybullet_drones.envs.single_agent_rl.NavigateObstaclesAviary import NavigateObstaclesAviary
 from gym_pybullet_drones.envs.single_agent_rl.TuneAviary import TuneAviary
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
     ActionType,
@@ -73,15 +74,15 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--env",
-        default="obstacle",
+        default="obstacles",
         type=str,
-        choices=["maze", "hover", "obstacle"],
+        choices=["maze", "hover", "obstacles"],
         help="Task (default: hover)",
         metavar="",
     )
     parser.add_argument(
         "--algo",
-        default="sac",
+        default="ppo",
         type=str,
         choices=["a2c", "ppo", "sac", "td3", "ddpg"],
         help="RL agent (default: ppo)",
@@ -145,9 +146,9 @@ if __name__ == "__main__":
         train_env = make_vec_env(
             NavigateMazeAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0
         )
-    if env_name == "obstacle-aviary-v0":
+    if env_name == "obstacles-aviary-v0":
         train_env = make_vec_env(
-            NavigateObstacleAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0
+            NavigateObstaclesAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0
         )
     print("[INFO] Action space:", train_env.action_space)
     print("[INFO] Observation space:", train_env.observation_space)
@@ -302,6 +303,7 @@ if __name__ == "__main__":
     #### Print training progression ############################
     with np.load(filename + "/evaluations.npz") as data:
         for j in range(data["timesteps"].shape[0]):
-            print(data["timesteps"])
-            print(data["results"][j])
-            print(str(data["timesteps"][j]) + "," + str(data["results"][j][0][0]))
+            try:
+                print(str(data["timesteps"][j]) + "," + str(data["results"][j][0]))
+            except:
+                print("oops")

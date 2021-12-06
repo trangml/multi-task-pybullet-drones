@@ -3,10 +3,16 @@ import numpy as np
 import pandas as pd
 import random
 import matplotlib
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
 from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
 from gym_pybullet_drones.envs.single_agent_rl.HoverAviary import HoverAviary
 from gym_pybullet_drones.envs.single_agent_rl.FlyThruGateAviary import FlyThruGateAviary
 from gym_pybullet_drones.envs.single_agent_rl.TuneAviary import TuneAviary
+from gym_pybullet_drones.envs.single_agent_rl.NavigateMazeAviary import NavigateMazeAviary
+from gym_pybullet_drones.envs.single_agent_rl.NavigateObstaclesAviary import NavigateObstaclesAviary
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
     ActionType,
     ObservationType,
@@ -20,11 +26,26 @@ import matplotlib.pyplot as plt
 np.random.seed(42)
 np.set_printoptions(formatter={"float": lambda x: "{0:0.3f}".format(x)})
 
+class policy_estimator():
+    def __init__(self, env):
+        self.n_inputs = env.observation_space.shape[0]
+        self.n_outputs = env.action_space.n
+
+        # Define network
+        self.network = nn.Sequential(
+            nn.Linear(self.n_inputs, 16),
+            nn.ReLU(),
+            nn.Linear(16, self.n_outputs),
+            nn.Softmax(dim=-1))
+
+    def predict(self, state):
+        action_probs = self.network(torch.FloatTensor(state))
+        return action_probs
 
 def main():
-    env = gym.make("takeoff-aviary-v0")
+    env = gym.make("obstacles-aviary-v0")
     # env.GUI = True
-    env = TakeoffAviary(gui=True, record=False)
+    env = NavigateObstaclesAviary(gui=True, record=False)
     # num_actions = env.action_space.n
     num_obs = env.observation_space
 

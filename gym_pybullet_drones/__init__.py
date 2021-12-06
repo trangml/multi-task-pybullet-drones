@@ -47,7 +47,7 @@ register(
 )
 
 register(
-    id="obstacle-aviary-v0",
+    id="obstacles-aviary-v0",
     entry_point="gym_pybullet_drones.envs.single_agent_rl:NavigateObstaclesAviary",
 )
 

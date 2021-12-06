@@ -63,7 +63,7 @@ if __name__ == "__main__":
     parser.add_argument('--algo',       default='ppo',        type=str,             choices=['a2c', 'ppo', 'sac', 'td3', 'ddpg'],        help='RL agent (default: ppo)', metavar='')
     parser.add_argument('--obs',        default='kin',        type=ObservationType,                                                      help='Observation space (default: kin)', metavar='')
     parser.add_argument('--act',        default='one_d_rpm',  type=ActionType,                                                           help='Action space (default: one_d_rpm)', metavar='')
-    parser.add_argument('--cpu',        default='1',          type=int,                                                                  help='Number of training environments (default: 1)', metavar='')        
+    parser.add_argument('--cpu',        default='1',          type=int,                                                                  help='Number of training environments (default: 1)', metavar='')
     ARGS = parser.parse_args()
 
     #### Save directory ########################################
@@ -71,10 +71,10 @@ if __name__ == "__main__":
     if not os.path.exists(filename):
         os.makedirs(filename+'/')
 
-    #### Print out current git commit hash #####################
-    git_commit = subprocess.check_output(["git", "describe", "--tags"]).strip()
-    with open(filename+'/git_commit.txt', 'w+') as f:
-        f.write(str(git_commit))
+    # #### Print out current git commit hash #####################
+    # git_commit = subprocess.check_output(["git", "describe", "--tags"]).strip()
+    # with open(filename+'/git_commit.txt', 'w+') as f:
+    #     f.write(str(git_commit))
 
     #### Warning ###############################################
     if ARGS.env == 'tune' and ARGS.act != ActionType.TUN:
@@ -82,13 +82,13 @@ if __name__ == "__main__":
     if ARGS.act == ActionType.ONE_D_RPM or ARGS.act == ActionType.ONE_D_DYN or ARGS.act == ActionType.ONE_D_PID:
         print("\n\n\n[WARNING] Simplified 1D problem for debugging purposes\n\n\n")
     #### Errors ################################################
-        if not ARGS.env in ['takeoff', 'hover']: 
+        if not ARGS.env in ['takeoff', 'hover']:
             print("[ERROR] 1D action space is only compatible with Takeoff and HoverAviary")
             exit()
     if ARGS.act == ActionType.TUN and ARGS.env != 'tune' :
         print("[ERROR] ActionType.TUN is only compatible with TuneAviary")
         exit()
-    if ARGS.algo in ['sac', 'td3', 'ddpg'] and ARGS.cpu!=1: 
+    if ARGS.algo in ['sac', 'td3', 'ddpg'] and ARGS.cpu!=1:
         print("[ERROR] The selected algorithm does not support multiple environments")
         exit()
 
@@ -97,7 +97,7 @@ if __name__ == "__main__":
 
     env_name = ARGS.env+"-aviary-v0"
     sa_env_kwargs = dict(aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act)
-    # train_env = gym.make(env_name, aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act) # single environment instead of a vectorized one    
+    # train_env = gym.make(env_name, aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act) # single environment instead of a vectorized one
     if env_name == "takeoff-aviary-v0":
         train_env = make_vec_env(TakeoffAviary,
                                  env_kwargs=sa_env_kwargs,
@@ -125,7 +125,7 @@ if __name__ == "__main__":
     print("[INFO] Action space:", train_env.action_space)
     print("[INFO] Observation space:", train_env.observation_space)
     # check_env(train_env, warn=True, skip_render_check=True)
-    
+
     #### On-policy algorithms ##################################
     onpolicy_kwargs = dict(activation_fn=torch.nn.ReLU,
                            net_arch=[512, 512, dict(vf=[256, 128], pi=[256, 128])]
@@ -197,32 +197,32 @@ if __name__ == "__main__":
                                                                 )
 
     #### Create eveluation environment #########################
-    if ARGS.obs == ObservationType.KIN: 
+    if ARGS.obs == ObservationType.KIN:
         eval_env = gym.make(env_name,
                             aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
                             obs=ARGS.obs,
                             act=ARGS.act
                             )
     elif ARGS.obs == ObservationType.RGB:
-        if env_name == "takeoff-aviary-v0": 
+        if env_name == "takeoff-aviary-v0":
             eval_env = make_vec_env(TakeoffAviary,
                                     env_kwargs=sa_env_kwargs,
                                     n_envs=1,
                                     seed=0
                                     )
-        if env_name == "hover-aviary-v0": 
+        if env_name == "hover-aviary-v0":
             eval_env = make_vec_env(HoverAviary,
                                     env_kwargs=sa_env_kwargs,
                                     n_envs=1,
                                     seed=0
                                     )
-        if env_name == "flythrugate-aviary-v0": 
+        if env_name == "flythrugate-aviary-v0":
             eval_env = make_vec_env(FlyThruGateAviary,
                                     env_kwargs=sa_env_kwargs,
                                     n_envs=1,
                                     seed=0
                                     )
-        if env_name == "tune-aviary-v0": 
+        if env_name == "tune-aviary-v0":
             eval_env = make_vec_env(TuneAviary,
                                     env_kwargs=sa_env_kwargs,
                                     n_envs=1,

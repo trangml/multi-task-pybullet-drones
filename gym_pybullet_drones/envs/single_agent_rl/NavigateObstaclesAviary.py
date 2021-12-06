@@ -104,10 +104,22 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
 
         """
         state = self._getDroneStateVector(0)
-        target_dest = [0, 0, 0]
+        target_dest = [3.5, 3.5, 0.5]
         dist = np.linalg.norm(np.asarray(state[0:3]) - np.asarray(target_dest))
+        max_dist = 5
+        if dist < 0.1:
+            return 100
+        if dist < 2:
+            return 0.5
+        elif dist > max_dist:
+            return -10
+        elif state[0] > 4 or state[1] > 4 or state[2] > 1:
+            return -10
+        elif state[0] < -0.1 or state[1] < -0.1 or state[2] < 0.1:
+            return -10
+        dist = dist / max_dist
         # reward is inverse of distance to target
-        return 1 / dist
+        return -dist
 
     ################################################################################
 
@@ -121,11 +133,20 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
 
         """
         state = self._getDroneStateVector(0)
-        target_dest = [-1.3, 1, 1, 0]
-        if self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
+
+        target_dest = [3.5, 3.5, 0.5]
+        dist = np.linalg.norm(np.asarray(state[0:3]) - np.asarray(target_dest))
+        max_dist = 5
+        if dist < 0.1:
+            print("got close")
             return True
-        # IF we reach the end of the map, then we are done
-        elif np.allclose(np.asarray(state), np.asarray(target_dest), atol=0.1):
+        elif dist > max_dist:
+            return True
+        elif state[0] > 4 or state[1] > 4 or state[2] > 1:
+            return True
+        elif state[0] < -0.1 or state[1] < -0.1 or state[2] < 0.1:
+            return True
+        elif self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
             return True
         else:
             return False
