@@ -73,15 +73,15 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--env",
-        default="maze",
+        default="obstacle",
         type=str,
-        choices=["takeoff", "hover", "flythrugate", "tune"],
+        choices=["maze", "hover", "obstacle"],
         help="Task (default: hover)",
         metavar="",
     )
     parser.add_argument(
         "--algo",
-        default="ppo",
+        default="sac",
         type=str,
         choices=["a2c", "ppo", "sac", "td3", "ddpg"],
         help="RL agent (default: ppo)",
@@ -98,7 +98,7 @@ if __name__ == "__main__":
         "--act",
         default="rpm",
         type=ActionType,
-        help="Action space (default: one_d_rpm)",
+        help="Action space (default: rpm)",
         metavar="",
     )
     parser.add_argument(
@@ -127,27 +127,6 @@ if __name__ == "__main__":
     if not os.path.exists(filename):
         os.makedirs(filename + "/")
 
-    #### Print out current git commit hash #####################
-    git_commit = subprocess.check_output(["git", "describe", "--tags"]).strip()
-    with open(filename + "/git_commit.txt", "w+") as f:
-        f.write(str(git_commit))
-
-    #### Warning ###############################################
-    if ARGS.env == "tune" and ARGS.act != ActionType.TUN:
-        print("\n\n\n[WARNING] TuneAviary is intended for use with ActionType.TUN\n\n\n")
-    if (
-        ARGS.act == ActionType.ONE_D_RPM
-        or ARGS.act == ActionType.ONE_D_DYN
-        or ARGS.act == ActionType.ONE_D_PID
-    ):
-        print("\n\n\n[WARNING] Simplified 1D problem for debugging purposes\n\n\n")
-        #### Errors ################################################
-        if not ARGS.env in ["takeoff", "hover"]:
-            print("[ERROR] 1D action space is only compatible with Takeoff and HoverAviary")
-            exit()
-    if ARGS.act == ActionType.TUN and ARGS.env != "tune":
-        print("[ERROR] ActionType.TUN is only compatible with TuneAviary")
-        exit()
     if ARGS.algo in ["sac", "td3", "ddpg"] and ARGS.cpu != 1:
         print("[ERROR] The selected algorithm does not support multiple environments")
         exit()
@@ -160,19 +139,15 @@ if __name__ == "__main__":
         aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act
     )
     # train_env = gym.make(env_name, aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act) # single environment instead of a vectorized one
-    if env_name == "takeoff-aviary-v0":
-        train_env = make_vec_env(TakeoffAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0)
     if env_name == "hover-aviary-v0":
         train_env = make_vec_env(HoverAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0)
-    if env_name == "flythrugate-aviary-v0":
-        train_env = make_vec_env(
-            FlyThruGateAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0
-        )
-    if env_name == "tune-aviary-v0":
-        train_env = make_vec_env(TuneAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0)
     if env_name == "maze-aviary-v0":
         train_env = make_vec_env(
             NavigateMazeAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0
+        )
+    if env_name == "obstacle-aviary-v0":
+        train_env = make_vec_env(
+            NavigateObstacleAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0
         )
     print("[INFO] Action space:", train_env.action_space)
     print("[INFO] Observation space:", train_env.observation_space)
@@ -315,7 +290,7 @@ if __name__ == "__main__":
         render=False,
     )
     model.learn(
-        total_timesteps=35000,  # int(1e12),
+        total_timesteps=50000,  # int(1e12),
         callback=eval_callback,
         log_interval=100,
     )
