@@ -110,30 +110,6 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
             The reward.
 
         """
-        # state = self._getDroneStateVector(0)
-        # target_dest = [3.5, 3.5, 0.125]
-        # dist = np.linalg.norm(np.asarray(state[0:3]) - np.asarray(target_dest))
-        # max_dist = 5
-        # if dist < 0.1:
-        #     return 240
-        # if dist < 0.5:
-        #     return 2 / dist
-        # # Penalize if out of bounds
-        # elif dist > max_dist:
-        #     return -240
-        # elif state[0] > 4 or state[1] > 4 or state[2] > 1:
-        #     return -240
-        # elif state[0] < -0.1 or state[1] < -0.1 or state[2] < 0.1:
-        #     return -240
-        # # # penalize if not landed by the end of the episode
-        # elif self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
-        #     return -dist * 20
-        # # dist = dist / max_dist
-        # # reward is inverse of distance to target
-        # # return -dist
-        # # return 0
-        # # return (1 - dist / max_dist)
-        # return 1 / (dist)
         state = self._getDroneStateVector(0)
         target_dest = [3.5, 3.5, 0.125]
         dist = np.linalg.norm(np.asarray(state[0:3]) - np.asarray(target_dest))
@@ -150,11 +126,6 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
         # # penalize if not landed by the end of the episode
         elif self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
             return -dist * 50
-        # dist = dist / max_dist
-        # reward is inverse of distance to target
-        # return -dist
-        # return 0
-        # return (1 - dist / max_dist)
         return 1 / (dist)
 
     ################################################################################
