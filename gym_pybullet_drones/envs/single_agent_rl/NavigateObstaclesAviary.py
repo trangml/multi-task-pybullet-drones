@@ -91,6 +91,13 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
                     useFixedBase=True,
                     globalScaling=10,
                 )
+        landing_zone = p.loadURDF(
+            "cube.urdf",
+            [3.5, 3.5, 0],
+            physicsClientId=self.CLIENT,
+            useFixedBase=True,
+            globalScaling=0.2,
+        )
 
     ################################################################################
 
@@ -103,23 +110,52 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
             The reward.
 
         """
+        # state = self._getDroneStateVector(0)
+        # target_dest = [3.5, 3.5, 0.125]
+        # dist = np.linalg.norm(np.asarray(state[0:3]) - np.asarray(target_dest))
+        # max_dist = 5
+        # if dist < 0.1:
+        #     return 240
+        # if dist < 0.5:
+        #     return 2 / dist
+        # # Penalize if out of bounds
+        # elif dist > max_dist:
+        #     return -240
+        # elif state[0] > 4 or state[1] > 4 or state[2] > 1:
+        #     return -240
+        # elif state[0] < -0.1 or state[1] < -0.1 or state[2] < 0.1:
+        #     return -240
+        # # # penalize if not landed by the end of the episode
+        # elif self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
+        #     return -dist * 20
+        # # dist = dist / max_dist
+        # # reward is inverse of distance to target
+        # # return -dist
+        # # return 0
+        # # return (1 - dist / max_dist)
+        # return 1 / (dist)
         state = self._getDroneStateVector(0)
-        target_dest = [3.5, 3.5, 0.5]
+        target_dest = [3.5, 3.5, 0.125]
         dist = np.linalg.norm(np.asarray(state[0:3]) - np.asarray(target_dest))
         max_dist = 5
         if dist < 0.1:
-            return 100
-        if dist < 2:
-            return 0.5
+            return 240
+        # Penalize if out of bounds
         elif dist > max_dist:
-            return -10
+            return -200
         elif state[0] > 4 or state[1] > 4 or state[2] > 1:
-            return -10
+            return -200
         elif state[0] < -0.1 or state[1] < -0.1 or state[2] < 0.1:
-            return -10
-        dist = dist / max_dist
+            return -200
+        # # penalize if not landed by the end of the episode
+        elif self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
+            return -dist * 50
+        # dist = dist / max_dist
         # reward is inverse of distance to target
-        return -dist
+        # return -dist
+        # return 0
+        # return (1 - dist / max_dist)
+        return 1 / (dist)
 
     ################################################################################
 
@@ -134,11 +170,10 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
         """
         state = self._getDroneStateVector(0)
 
-        target_dest = [3.5, 3.5, 0.5]
+        target_dest = [3.5, 3.5, 0.125]
         dist = np.linalg.norm(np.asarray(state[0:3]) - np.asarray(target_dest))
         max_dist = 5
         if dist < 0.1:
-            print("got close")
             return True
         elif dist > max_dist:
             return True

@@ -27,28 +27,22 @@ import subprocess
 import numpy as np
 import gym
 import torch
+import pandas as pd
+import random
+import matplotlib
+
+matplotlib.rcParams["text.usetex"] = True
+import matplotlib.pyplot as plt
+
+np.set_printoptions(formatter={"float": lambda x: "{0:0.3f}".format(x)})
+
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.env_util import (
     make_vec_env,
 )  # Module cmd_util will be renamed to env_util https://github.com/DLR-RM/stable-baselines3/pull/197
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecTransposeImage
 from stable_baselines3.common.utils import set_random_seed
-from stable_baselines3 import A2C
-from stable_baselines3 import PPO
-from stable_baselines3 import SAC
-from stable_baselines3 import TD3
-from stable_baselines3 import DDPG
-from stable_baselines3.common.policies import ActorCriticPolicy as a2cppoMlpPolicy
-from stable_baselines3.common.policies import ActorCriticCnnPolicy as a2cppoCnnPolicy
-from stable_baselines3.sac.policies import SACPolicy as sacMlpPolicy
-from stable_baselines3.sac import CnnPolicy as sacCnnPolicy
-from stable_baselines3.td3 import MlpPolicy as td3ddpgMlpPolicy
-from stable_baselines3.td3 import CnnPolicy as td3ddpgCnnPolicy
-from stable_baselines3.common.callbacks import (
-    CheckpointCallback,
-    EvalCallback,
-    StopTrainingOnRewardThreshold,
-)
+from gym_pybullet_drones.sac.sac import Pytorch_SAC
 
 from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
 from gym_pybullet_drones.envs.single_agent_rl.HoverAviary import HoverAviary
@@ -82,10 +76,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--algo",
-        default="ppo",
+        default="sac",
         type=str,
-        choices=["a2c", "ppo", "sac", "td3", "ddpg"],
-        help="RL agent (default: ppo)",
+        choices=["sac", "sacher"],
+        help="RL agent (default: sac)",
         metavar="",
     )
     parser.add_argument(
@@ -158,103 +152,17 @@ if __name__ == "__main__":
     onpolicy_kwargs = dict(
         activation_fn=torch.nn.ReLU, net_arch=[512, 512, dict(vf=[256, 128], pi=[256, 128])]
     )  # or None
-    if ARGS.algo == "a2c":
-        model = (
-            A2C(
-                a2cppoMlpPolicy,
-                train_env,
-                policy_kwargs=onpolicy_kwargs,
-                tensorboard_log=filename + "/tb/",
-                verbose=1,
-            )
-            if ARGS.obs == ObservationType.KIN
-            else A2C(
-                a2cppoCnnPolicy,
-                train_env,
-                policy_kwargs=onpolicy_kwargs,
-                tensorboard_log=filename + "/tb/",
-                verbose=1,
-            )
-        )
-    if ARGS.algo == "ppo":
-        model = (
-            PPO(
-                a2cppoMlpPolicy,
-                train_env,
-                policy_kwargs=onpolicy_kwargs,
-                tensorboard_log=filename + "/tb/",
-                verbose=1,
-            )
-            if ARGS.obs == ObservationType.KIN
-            else PPO(
-                a2cppoCnnPolicy,
-                train_env,
-                policy_kwargs=onpolicy_kwargs,
-                tensorboard_log=filename + "/tb/",
-                verbose=1,
-            )
-        )
-
     #### Off-policy algorithms #################################
     offpolicy_kwargs = dict(
         activation_fn=torch.nn.ReLU, net_arch=[512, 512, 256, 128]
     )  # or None # or dict(net_arch=dict(qf=[256, 128, 64, 32], pi=[256, 128, 64, 32]))
     if ARGS.algo == "sac":
-        model = (
-            SAC(
-                sacMlpPolicy,
-                train_env,
-                policy_kwargs=offpolicy_kwargs,
-                tensorboard_log=filename + "/tb/",
-                verbose=1,
-            )
-            if ARGS.obs == ObservationType.KIN
-            else SAC(
-                sacCnnPolicy,
-                train_env,
-                policy_kwargs=offpolicy_kwargs,
-                tensorboard_log=filename + "/tb/",
-                verbose=1,
-            )
+        model = Pytorch_SAC(
+            train_env,
+            num_inputs=12,
+            action_space=train_env.action_space,
         )
-    if ARGS.algo == "td3":
-        model = (
-            TD3(
-                td3ddpgMlpPolicy,
-                train_env,
-                policy_kwargs=offpolicy_kwargs,
-                tensorboard_log=filename + "/tb/",
-                verbose=1,
-            )
-            if ARGS.obs == ObservationType.KIN
-            else TD3(
-                td3ddpgCnnPolicy,
-                train_env,
-                policy_kwargs=offpolicy_kwargs,
-                tensorboard_log=filename + "/tb/",
-                verbose=1,
-            )
-        )
-    if ARGS.algo == "ddpg":
-        model = (
-            DDPG(
-                td3ddpgMlpPolicy,
-                train_env,
-                policy_kwargs=offpolicy_kwargs,
-                tensorboard_log=filename + "/tb/",
-                verbose=1,
-            )
-            if ARGS.obs == ObservationType.KIN
-            else DDPG(
-                td3ddpgCnnPolicy,
-                train_env,
-                policy_kwargs=offpolicy_kwargs,
-                tensorboard_log=filename + "/tb/",
-                verbose=1,
-            )
-        )
-
-    #### Create eveluation environment #########################
+    #### Create evaluation environment #########################
     if ARGS.obs == ObservationType.KIN:
         eval_env = gym.make(
             env_name,
@@ -276,34 +184,35 @@ if __name__ == "__main__":
         eval_env = VecTransposeImage(eval_env)
 
     #### Train the model #######################################
-    # checkpoint_callback = CheckpointCallback(save_freq=1000, save_path=filename+'-logs/', name_prefix='rl_model')
-    callback_on_best = StopTrainingOnRewardThreshold(
-        reward_threshold=EPISODE_REWARD_THRESHOLD, verbose=1
-    )
-    eval_callback = EvalCallback(
-        eval_env,
-        callback_on_new_best=callback_on_best,
-        verbose=1,
-        best_model_save_path=filename + "/",
-        log_path=filename + "/",
-        eval_freq=int(2000 / ARGS.cpu),
-        deterministic=True,
-        render=False,
-    )
-    model.learn(
-        total_timesteps=35000,  # int(1e12),
-        callback=eval_callback,
+    # # checkpoint_callback = CheckpointCallback(save_freq=1000, save_path=filename+'-logs/', name_prefix='rl_model')
+    # callback_on_best = StopTrainingOnRewardThreshold(
+    #     reward_threshold=EPISODE_REWARD_THRESHOLD, verbose=1
+    # )
+    # eval_callback = EvalCallback(
+    #     eval_env,
+    #     callback_on_new_best=callback_on_best,
+    #     verbose=1,
+    #     best_model_save_path=filename + "/",
+    #     log_path=filename + "/",
+    #     eval_freq=int(2000 / ARGS.cpu),
+    #     deterministic=True,
+    #     render=False,
+    # )
+    total_episodes = 10000
+    total_rewards = model.learn(
+        total_episodes=total_episodes,  # int(1e12),
         log_interval=100,
     )
+    x_axis = np.arange(0, len(total_rewards))
+    # Now we plot things
+    fig, ax = plt.subplots()
+    ax.plot(x_axis, total_rewards, label="Rewards")
+    ax.set_xlabel("Episodes (100)")
+    ax.set_ylabel("Reward")
+    ax.set_title(r"SAC on Obstacle Avoidance")
+    ax.legend(loc="best")
+    plt.show()
 
     #### Save the model ########################################
-    model.save(filename + "/success_model.zip")
-    print(filename)
-
-    #### Print training progression ############################
-    with np.load(filename + "/evaluations.npz") as data:
-        for j in range(data["timesteps"].shape[0]):
-            try:
-                print(str(data["timesteps"][j]) + "," + str(data["results"][j][0]))
-            except:
-                print("oops")
+    model.save(filename + "/saved_model")
+    print("Saved model")
