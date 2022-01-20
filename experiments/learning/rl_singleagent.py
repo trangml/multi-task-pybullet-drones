@@ -46,6 +46,7 @@ from stable_baselines3.td3 import MlpPolicy as td3ddpgMlpPolicy
 from stable_baselines3.td3 import CnnPolicy as td3ddpgCnnPolicy
 from stable_baselines3.common.callbacks import (
     CheckpointCallback,
+    CallbackList,
     EvalCallback,
     StopTrainingOnRewardThreshold,
 )
@@ -53,8 +54,15 @@ from stable_baselines3.common.callbacks import (
 from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
 from gym_pybullet_drones.envs.single_agent_rl.HoverAviary import HoverAviary
 from gym_pybullet_drones.envs.single_agent_rl.FlyThruGateAviary import FlyThruGateAviary
-from gym_pybullet_drones.envs.single_agent_rl.NavigateMazeAviary import NavigateMazeAviary
-from gym_pybullet_drones.envs.single_agent_rl.NavigateObstaclesAviary import NavigateObstaclesAviary
+from gym_pybullet_drones.envs.single_agent_rl.NavigateMazeAviary import (
+    NavigateMazeAviary,
+)
+from gym_pybullet_drones.envs.single_agent_rl.NavigateObstaclesAviary import (
+    NavigateObstaclesAviary,
+)
+from gym_pybullet_drones.envs.single_agent_rl.NavigateLandAviary import (
+    NavigateLandAviary,
+)
 from gym_pybullet_drones.envs.single_agent_rl.TuneAviary import TuneAviary
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
     ActionType,
@@ -74,9 +82,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--env",
-        default="obstacles",
+        default="land",
         type=str,
-        choices=["maze", "hover", "obstacles"],
+        choices=["maze", "hover", "obstacles", "land"],
         help="Task (default: hover)",
         metavar="",
     )
@@ -141,7 +149,9 @@ if __name__ == "__main__":
     )
     # train_env = gym.make(env_name, aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act) # single environment instead of a vectorized one
     if env_name == "hover-aviary-v0":
-        train_env = make_vec_env(HoverAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0)
+        train_env = make_vec_env(
+            HoverAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0
+        )
     if env_name == "maze-aviary-v0":
         train_env = make_vec_env(
             NavigateMazeAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0
@@ -150,13 +160,18 @@ if __name__ == "__main__":
         train_env = make_vec_env(
             NavigateObstaclesAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0
         )
+    if env_name == "land-aviary-v0":
+        train_env = make_vec_env(
+            NavigateLandAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0
+        )
     print("[INFO] Action space:", train_env.action_space)
     print("[INFO] Observation space:", train_env.observation_space)
     # check_env(train_env, warn=True, skip_render_check=True)
 
     #### On-policy algorithms ##################################
     onpolicy_kwargs = dict(
-        activation_fn=torch.nn.ReLU, net_arch=[512, 512, dict(vf=[256, 128], pi=[256, 128])]
+        activation_fn=torch.nn.ReLU,
+        net_arch=[512, 512, dict(vf=[256, 128], pi=[256, 128])],
     )  # or None
     if ARGS.algo == "a2c":
         model = (
@@ -264,25 +279,39 @@ if __name__ == "__main__":
         )
     elif ARGS.obs == ObservationType.RGB:
         if env_name == "takeoff-aviary-v0":
-            eval_env = make_vec_env(TakeoffAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0)
+            eval_env = make_vec_env(
+                TakeoffAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
+            )
         if env_name == "hover-aviary-v0":
-            eval_env = make_vec_env(HoverAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0)
+            eval_env = make_vec_env(
+                HoverAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
+            )
         if env_name == "flythrugate-aviary-v0":
-            eval_env = make_vec_env(FlyThruGateAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0)
+            eval_env = make_vec_env(
+                FlyThruGateAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
+            )
         if env_name == "tune-aviary-v0":
-            eval_env = make_vec_env(TuneAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0)
+            eval_env = make_vec_env(
+                TuneAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
+            )
         if env_name == "maze-aviary-v0":
-            eval_env = make_vec_env(NavigateMazeAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0)
+            eval_env = make_vec_env(
+                NavigateMazeAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
+            )
+        if env_name == "obstacle-aviary-v0":
+            eval_env = make_vec_env(
+                NavigateObstacleAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
+            )
         eval_env = VecTransposeImage(eval_env)
 
     #### Train the model #######################################
-    # checkpoint_callback = CheckpointCallback(save_freq=1000, save_path=filename+'-logs/', name_prefix='rl_model')
+    checkpoint_callback = CheckpointCallback(save_freq=10000, save_path=filename+'-logs/', name_prefix='rl_model')
     callback_on_best = StopTrainingOnRewardThreshold(
         reward_threshold=EPISODE_REWARD_THRESHOLD, verbose=1
     )
     eval_callback = EvalCallback(
         eval_env,
-        callback_on_new_best=callback_on_best,
+        #callback_on_new_best=callback_on_best,
         verbose=1,
         best_model_save_path=filename + "/",
         log_path=filename + "/",
@@ -290,10 +319,12 @@ if __name__ == "__main__":
         deterministic=True,
         render=False,
     )
+    combo_callback = CallbackList([checkpoint_callback, eval_callback])
     model.learn(
-        total_timesteps=35000,  # int(1e12),
-        callback=eval_callback,
-        log_interval=100,
+        total_timesteps=int(1e9),
+        callback=combo_callback,
+        #callback=checkpoint_callback,
+        log_interval=500,
     )
 
     #### Save the model ########################################

@@ -3,6 +3,9 @@ TODOs.md
 examples/debug.py
 examples/test.py
 
+# vscode
+.vscode/
+
 # NumPy saves and videos
 files/logs/*.npy
 files/videos/*.mp4

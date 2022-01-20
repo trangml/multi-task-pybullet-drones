@@ -11,7 +11,7 @@ from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
 )
 
 
-class NavigateObstaclesAviary(BaseSingleAgentAviary):
+class NavigateLandAviary(BaseSingleAgentAviary):
     """Single agent RL problem: navigate through a obstacles."""
 
     ################################################################################
@@ -79,18 +79,6 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
 
         """
         super()._addObstacles()
-        boxStartOrientation = p.getQuaternionFromEuler([0, 1.57057, 0])
-        for i in range(1, 4):
-            for j in range(1, 4):
-                boxStartPos = [i, j, 0.5]
-                p.loadURDF(
-                    "block.urdf",
-                    boxStartPos,
-                    boxStartOrientation,
-                    physicsClientId=self.CLIENT,
-                    useFixedBase=True,
-                    globalScaling=10,
-                )
         landing_zone = p.loadURDF(
             "cube.urdf",
             [3.5, 3.5, 0],
@@ -111,15 +99,21 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
 
         """
         state = self._getDroneStateVector(0)
-        target_dest = [3.5, 3.5, 0.125]
-        dist = np.linalg.norm(np.asarray(state[0:3]) - np.asarray(target_dest))
+        position = state[0:3]
+        velocity = state[10:13]
+        target_position = [3.5, 3.5, 0.125]
+        target_velocity = [0, 0, 0]
+        pos_dist = np.linalg.norm(np.asarray(position) - np.asarray(target_position))
+        vel_dist = np.linalg.norm(np.asarray(velocity) - np.asarray(target_velocity))
         max_dist = 5
-        if dist < 0.1:
+
+        if pos_dist < 0.1 and vel_dist < 0.1:
             return 2240
-        elif dist < 1:
-            return 1
+        elif pos_dist < 1:
+            inv_vel_dist = 1 / vel_dist
+            return 1 + inv_vel_dist
         # Penalize if out of bounds
-        elif dist > max_dist:
+        elif pos_dist > max_dist:
             return -240
         elif state[0] > 4 or state[1] > 4 or state[2] > 1:
             return -240
@@ -129,7 +123,7 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
         elif self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
             return -240
 
-        return 1 / dist
+        return 1/pos_dist
 
     ################################################################################
 
@@ -143,13 +137,18 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
 
         """
         state = self._getDroneStateVector(0)
-
-        target_dest = [3.5, 3.5, 0.125]
-        dist = np.linalg.norm(np.asarray(state[0:3]) - np.asarray(target_dest))
+        position = state[0:3]
+        velocity = state[10:13]
+        target_position = [3.5, 3.5, 0.125]
+        target_velocity = [0, 0, 0]
         max_dist = 5
-        if dist < 0.1:
+        pos_dist = np.linalg.norm(np.asarray(position) - np.asarray(target_position))
+        vel_dist = np.linalg.norm(np.asarray(velocity) - np.asarray(target_velocity))
+        max_dist = 5
+
+        if pos_dist < 0.1 and vel_dist < 0.1:
             return True
-        elif dist > max_dist:
+        elif pos_dist > max_dist:
             return True
         elif state[0] > 4 or state[1] > 4 or state[2] > 1:
             return True

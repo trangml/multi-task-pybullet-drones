@@ -678,6 +678,8 @@ class BaseAviary(gym.Env):
             to understand its format.
 
         """
+        # 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,     11,     12, 13, 14, 15, 16, 17, 18, 19
+        # x, y, z, q, q, q, q, r, p, y, x_vel, y_vel, z_vel,
         state = np.hstack(
             [
                 self.pos[nth_drone, :],
