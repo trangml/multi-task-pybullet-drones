@@ -107,11 +107,15 @@ class NavigateLandAviary(BaseSingleAgentAviary):
         vel_dist = np.linalg.norm(np.asarray(velocity) - np.asarray(target_velocity))
         max_dist = 5
 
-        if pos_dist < 0.1 and vel_dist < 0.1:
+        if pos_dist < 0.2 and vel_dist < 0.1:
             return 2240
         elif pos_dist < 1:
-            inv_vel_dist = 1 / vel_dist
-            return 1 + inv_vel_dist
+            if vel_dist < 1:
+                inv_vel_dist = 2 - vel_dist
+            else:
+                inv_vel_dist = 1 / vel_dist
+
+            return 2-inv_vel_dist + 0.5 * inv_vel_dist
         # Penalize if out of bounds
         elif pos_dist > max_dist:
             return -240
@@ -146,7 +150,7 @@ class NavigateLandAviary(BaseSingleAgentAviary):
         vel_dist = np.linalg.norm(np.asarray(velocity) - np.asarray(target_velocity))
         max_dist = 5
 
-        if pos_dist < 0.1 and vel_dist < 0.1:
+        if pos_dist < 0.2 and vel_dist < 0.1:
             return True
         elif pos_dist > max_dist:
             return True
