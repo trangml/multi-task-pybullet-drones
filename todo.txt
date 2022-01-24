@@ -1,0 +1,10 @@
+write up add photos, add figures that show progress in the training,
+get figure of accumulated reward over time
+
+what do i plan to do in the next few days, what do i test out?
+
+Spring break, there is a drone test. After spring break theres a chance i can work with them maybe
+
+He is trying to create a proposal based on what he is doing to track the pathogens spreading through the air, to support research in agriculture.
+Track how they spread through the air. track algae bloom using drones. 
+
