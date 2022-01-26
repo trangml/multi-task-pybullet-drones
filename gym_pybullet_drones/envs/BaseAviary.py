@@ -34,9 +34,7 @@ class Physics(Enum):
     PYB_GND = "pyb_gnd"  # PyBullet physics update with ground effect
     PYB_DRAG = "pyb_drag"  # PyBullet physics update with drag
     PYB_DW = "pyb_dw"  # PyBullet physics update with downwash
-    PYB_GND_DRAG_DW = (
-        "pyb_gnd_drag_dw"  # PyBullet physics update with ground effect, drag, and downwash
-    )
+    PYB_GND_DRAG_DW = "pyb_gnd_drag_dw"  # PyBullet physics update with ground effect, drag, and downwash
 
 
 ################################################################################
@@ -173,7 +171,9 @@ class BaseAviary(gym.Env):
         #### Compute constants #####################################
         self.GRAVITY = self.G * self.M
         self.HOVER_RPM = np.sqrt(self.GRAVITY / (4 * self.KF))
-        self.MAX_RPM = np.sqrt((self.THRUST2WEIGHT_RATIO * self.GRAVITY) / (4 * self.KF))
+        self.MAX_RPM = np.sqrt(
+            (self.THRUST2WEIGHT_RATIO * self.GRAVITY) / (4 * self.KF)
+        )
         self.MAX_THRUST = 4 * self.KF * self.MAX_RPM ** 2
         if self.DRONE_MODEL == DroneModel.CF2X:
             self.MAX_XY_TORQUE = (2 * self.L * self.KF * self.MAX_RPM ** 2) / np.sqrt(2)
@@ -183,7 +183,10 @@ class BaseAviary(gym.Env):
         self.GND_EFF_H_CLIP = (
             0.25
             * self.PROP_RADIUS
-            * np.sqrt((15 * self.MAX_RPM ** 2 * self.KF * self.GND_EFF_COEFF) / self.MAX_THRUST)
+            * np.sqrt(
+                (15 * self.MAX_RPM ** 2 * self.KF * self.GND_EFF_COEFF)
+                / self.MAX_THRUST
+            )
         )
         #### Create attributes for vision tasks ####################
         self.VISION_ATTR = vision_attributes
@@ -191,7 +194,9 @@ class BaseAviary(gym.Env):
             self.IMG_RES = np.array([64, 48])
             self.IMG_FRAME_PER_SEC = 24
             self.IMG_CAPTURE_FREQ = int(self.SIM_FREQ / self.IMG_FRAME_PER_SEC)
-            self.rgb = np.zeros(((self.NUM_DRONES, self.IMG_RES[1], self.IMG_RES[0], 4)))
+            self.rgb = np.zeros(
+                ((self.NUM_DRONES, self.IMG_RES[1], self.IMG_RES[0], 4))
+            )
             self.dep = np.ones(((self.NUM_DRONES, self.IMG_RES[1], self.IMG_RES[0])))
             self.seg = np.zeros(((self.NUM_DRONES, self.IMG_RES[1], self.IMG_RES[0])))
             if self.IMG_CAPTURE_FREQ % self.AGGR_PHY_STEPS != 0:
@@ -216,16 +221,33 @@ class BaseAviary(gym.Env):
                 self.A = np.array(
                     [
                         [1, 1, 1, 1],
-                        [1 / np.sqrt(2), 1 / np.sqrt(2), -1 / np.sqrt(2), -1 / np.sqrt(2)],
-                        [-1 / np.sqrt(2), 1 / np.sqrt(2), 1 / np.sqrt(2), -1 / np.sqrt(2)],
+                        [
+                            1 / np.sqrt(2),
+                            1 / np.sqrt(2),
+                            -1 / np.sqrt(2),
+                            -1 / np.sqrt(2),
+                        ],
+                        [
+                            -1 / np.sqrt(2),
+                            1 / np.sqrt(2),
+                            1 / np.sqrt(2),
+                            -1 / np.sqrt(2),
+                        ],
                         [-1, 1, -1, 1],
                     ]
                 )
             elif self.DRONE_MODEL in [DroneModel.CF2P, DroneModel.HB]:
-                self.A = np.array([[1, 1, 1, 1], [0, 1, 0, -1], [-1, 0, 1, 0], [-1, 1, -1, 1]])
+                self.A = np.array(
+                    [[1, 1, 1, 1], [0, 1, 0, -1], [-1, 0, 1, 0], [-1, 1, -1, 1]]
+                )
             self.INV_A = np.linalg.inv(self.A)
             self.B_COEFF = np.array(
-                [1 / self.KF, 1 / (self.KF * self.L), 1 / (self.KF * self.L), 1 / self.KM]
+                [
+                    1 / self.KF,
+                    1 / (self.KF * self.L),
+                    1 / (self.KF * self.L),
+                    1 / self.KM,
+                ]
             )
         #### Connect to PyBullet ###################################
         if self.GUI:
@@ -283,7 +305,10 @@ class BaseAviary(gym.Env):
                     physicsClientId=self.CLIENT,
                 )
                 self.CAM_PRO = p.computeProjectionMatrixFOV(
-                    fov=60.0, aspect=self.VID_WIDTH / self.VID_HEIGHT, nearVal=0.1, farVal=1000.0
+                    fov=60.0,
+                    aspect=self.VID_WIDTH / self.VID_HEIGHT,
+                    nearVal=0.1,
+                    farVal=1000.0,
                 )
         #### Set initial poses #####################################
         if initial_xyzs is None:
@@ -338,6 +363,7 @@ class BaseAviary(gym.Env):
         p.resetSimulation(physicsClientId=self.CLIENT)
         #### Housekeeping ##########################################
         self._housekeeping()
+        self._clean_rl_variables()
         #### Update and store the drones kinematic information #####
         self._updateAndStoreKinematicInformation()
         #### Start video recording #################################
@@ -425,7 +451,9 @@ class BaseAviary(gym.Env):
         #### Save, preprocess, and clip the action to the max. RPM #
         else:
             self._saveLastAction(action)
-            clipped_action = np.reshape(self._preprocessAction(action), (self.NUM_DRONES, 4))
+            clipped_action = np.reshape(
+                self._preprocessAction(action), (self.NUM_DRONES, 4)
+            )
         #### Repeat for as many as the aggregate physics steps #####
         for _ in range(self.AGGR_PHY_STEPS):
             #### Update and store the drones kinematic info for certain
@@ -555,6 +583,9 @@ class BaseAviary(gym.Env):
         return self.DRONE_IDS
 
     ################################################################################
+    def _clean_rl_variables(self):
+        self.completeEpisode = False
+        self.min_dist = 100
 
     def _housekeeping(self):
         """Housekeeping function.
@@ -588,13 +619,17 @@ class BaseAviary(gym.Env):
         p.setGravity(0, 0, -self.G, physicsClientId=self.CLIENT)
         p.setRealTimeSimulation(0, physicsClientId=self.CLIENT)
         p.setTimeStep(self.TIMESTEP, physicsClientId=self.CLIENT)
-        p.setAdditionalSearchPath(pybullet_data.getDataPath(), physicsClientId=self.CLIENT)
+        p.setAdditionalSearchPath(
+            pybullet_data.getDataPath(), physicsClientId=self.CLIENT
+        )
         #### Load ground plane, drone and obstacles models #########
         self.PLANE_ID = p.loadURDF("plane.urdf", physicsClientId=self.CLIENT)
         self.DRONE_IDS = np.array(
             [
                 p.loadURDF(
-                    os.path.dirname(os.path.abspath(__file__)) + "/../assets/" + self.URDF,
+                    os.path.dirname(os.path.abspath(__file__))
+                    + "/../assets/"
+                    + self.URDF,
                     self.INIT_XYZS[i, :],
                     p.getQuaternionFromEuler(self.INIT_RPYS[i, :]),
                     flags=p.URDF_USE_INERTIA_FROM_FILE,
@@ -722,9 +757,13 @@ class BaseAviary(gym.Env):
                 "[ERROR] in BaseAviary._getDroneImages(), remember to set self.IMG_RES to np.array([width, height])"
             )
             exit()
-        rot_mat = np.array(p.getMatrixFromQuaternion(self.quat[nth_drone, :])).reshape(3, 3)
+        rot_mat = np.array(p.getMatrixFromQuaternion(self.quat[nth_drone, :])).reshape(
+            3, 3
+        )
         #### Set target point, camera view and projection matrices #
-        target = np.dot(rot_mat, np.array([1000, 0, 0])) + np.array(self.pos[nth_drone, :])
+        target = np.dot(rot_mat, np.array([1000, 0, 0])) + np.array(
+            self.pos[nth_drone, :]
+        )
         DRONE_CAM_VIEW = p.computeViewMatrix(
             cameraEyePosition=self.pos[nth_drone, :] + np.array([0, 0, self.L]),
             cameraTargetPosition=target,
@@ -755,7 +794,9 @@ class BaseAviary(gym.Env):
 
     ################################################################################
 
-    def _exportImage(self, img_type: ImageType, img_input, path: str, frame_num: int = 0):
+    def _exportImage(
+        self, img_type: ImageType, img_input, path: str, frame_num: int = 0
+    ):
         """Returns camera captures from the n-th drone POV.
 
         Parameters
@@ -777,11 +818,15 @@ class BaseAviary(gym.Env):
             )
         elif img_type == ImageType.DEP:
             temp = (
-                (img_input - np.min(img_input)) * 255 / (np.max(img_input) - np.min(img_input))
+                (img_input - np.min(img_input))
+                * 255
+                / (np.max(img_input) - np.min(img_input))
             ).astype("uint8")
         elif img_type == ImageType.SEG:
             temp = (
-                (img_input - np.min(img_input)) * 255 / (np.max(img_input) - np.min(img_input))
+                (img_input - np.min(img_input))
+                * 255
+                / (np.max(img_input) - np.min(img_input))
             ).astype("uint8")
         elif img_type == ImageType.BW:
             temp = (np.sum(img_input[:, :, 0:2], axis=2) / 3).astype("uint8")
@@ -875,7 +920,12 @@ class BaseAviary(gym.Env):
         )
         #### Simple, per-propeller ground effects ##################
         prop_heights = np.array(
-            [link_states[0, 0][2], link_states[1, 0][2], link_states[2, 0][2], link_states[3, 0][2]]
+            [
+                link_states[0, 0][2],
+                link_states[1, 0][2],
+                link_states[2, 0][2],
+                link_states[3, 0][2],
+            ]
         )
         prop_heights = np.clip(prop_heights, self.GND_EFF_H_CLIP, np.inf)
         gnd_effects = (
@@ -916,7 +966,9 @@ class BaseAviary(gym.Env):
 
         """
         #### Rotation matrix of the base ###########################
-        base_rot = np.array(p.getMatrixFromQuaternion(self.quat[nth_drone, :])).reshape(3, 3)
+        base_rot = np.array(p.getMatrixFromQuaternion(self.quat[nth_drone, :])).reshape(
+            3, 3
+        )
         #### Simple draft model applied to the base/center of mass #
         drag_factors = -1 * self.DRAG_COEFF * np.sum(np.array(2 * np.pi * rpm / 60))
         drag = np.dot(base_rot, drag_factors * np.array(self.vel[nth_drone, :]))
@@ -990,8 +1042,12 @@ class BaseAviary(gym.Env):
         z_torques = np.array(rpm ** 2) * self.KM
         z_torque = -z_torques[0] + z_torques[1] - z_torques[2] + z_torques[3]
         if self.DRONE_MODEL == DroneModel.CF2X:
-            x_torque = (forces[0] + forces[1] - forces[2] - forces[3]) * (self.L / np.sqrt(2))
-            y_torque = (-forces[0] + forces[1] + forces[2] - forces[3]) * (self.L / np.sqrt(2))
+            x_torque = (forces[0] + forces[1] - forces[2] - forces[3]) * (
+                self.L / np.sqrt(2)
+            )
+            y_torque = (-forces[0] + forces[1] + forces[2] - forces[3]) * (
+                self.L / np.sqrt(2)
+            )
         elif self.DRONE_MODEL == DroneModel.CF2P or self.DRONE_MODEL == DroneModel.HB:
             x_torque = (forces[1] - forces[3]) * self.L
             y_torque = (-forces[0] + forces[2]) * self.L
@@ -1167,7 +1223,9 @@ class BaseAviary(gym.Env):
         KM = float(URDF_TREE[0].attrib["km"])
         COLLISION_H = float(URDF_TREE[1][2][1][0].attrib["length"])
         COLLISION_R = float(URDF_TREE[1][2][1][0].attrib["radius"])
-        COLLISION_SHAPE_OFFSETS = [float(s) for s in URDF_TREE[1][2][0].attrib["xyz"].split(" ")]
+        COLLISION_SHAPE_OFFSETS = [
+            float(s) for s in URDF_TREE[1][2][0].attrib["xyz"].split(" ")
+        ]
         COLLISION_Z_OFFSET = COLLISION_SHAPE_OFFSETS[2]
         MAX_SPEED_KMH = float(URDF_TREE[0].attrib["max_speed_kmh"])
         GND_EFF_COEFF = float(URDF_TREE[0].attrib["gnd_eff_coeff"])

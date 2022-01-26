@@ -85,6 +85,9 @@ class BaseSingleAgentAviary(BaseAviary):
         self.OBS_TYPE = obs
         self.ACT_TYPE = act
         self.EPISODE_LEN_SEC = 5
+
+        self.completeEpisode = False
+        self.min_dist = 100
         #### Create integrated controllers #########################
         if act in [ActionType.PID, ActionType.VEL, ActionType.TUN, ActionType.ONE_D_PID]:
             os.environ['KMP_DUPLICATE_LIB_OK']='True'
