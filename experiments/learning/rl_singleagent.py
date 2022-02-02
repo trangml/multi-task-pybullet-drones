@@ -71,7 +71,7 @@ from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
 
 import shared_constants
 
-EPISODE_REWARD_THRESHOLD = -0  # Upperbound: rewards are always negative, but non-zero
+EPISODE_REWARD_THRESHOLD = 2000  # Upperbound: rewards are always negative, but non-zero
 """float: Reward threshold to halt the script."""
 
 if __name__ == "__main__":
@@ -117,7 +117,18 @@ if __name__ == "__main__":
         help="Number of training environments (default: 1)",
         metavar="",
     )
+    parser.add_argument(
+        "--saved_model",
+        default="none",
+        type=str,
+        help="Model path to resume training from (default: none)",
+        metavar="",
+    )
     ARGS = parser.parse_args()
+
+    # if ARGS.saved_model != "none":
+    #     assert os.path.isfile(ARGS.saved_model)
+    #     filename=ARGS.saved_model
 
     #### Save directory ########################################
     filename = (
@@ -268,8 +279,12 @@ if __name__ == "__main__":
                 verbose=1,
             )
         )
+    ### Load the saved model if specified #################
+    if ARGS.saved_model != "none":
+        model.load(ARGS.saved_model)
+        print("[INFO] Loaded model from", ARGS.saved_model)
 
-    #### Create eveluation environment #########################
+    #### Create evaluation environment #########################
     if ARGS.obs == ObservationType.KIN:
         eval_env = gym.make(
             env_name,
@@ -305,13 +320,15 @@ if __name__ == "__main__":
         eval_env = VecTransposeImage(eval_env)
 
     #### Train the model #######################################
-    checkpoint_callback = CheckpointCallback(save_freq=10000, save_path=filename+'-logs/', name_prefix='rl_model')
+    checkpoint_callback = CheckpointCallback(
+        save_freq=10000, save_path=filename + "-logs/", name_prefix="rl_model"
+    )
     callback_on_best = StopTrainingOnRewardThreshold(
         reward_threshold=EPISODE_REWARD_THRESHOLD, verbose=1
     )
     eval_callback = EvalCallback(
         eval_env,
-        #callback_on_new_best=callback_on_best,
+        callback_on_new_best=callback_on_best,
         verbose=1,
         best_model_save_path=filename + "/",
         log_path=filename + "/",
@@ -322,9 +339,10 @@ if __name__ == "__main__":
     combo_callback = CallbackList([checkpoint_callback, eval_callback])
     model.learn(
         total_timesteps=int(1e9),
-        callback=combo_callback,
-        #callback=checkpoint_callback,
-        log_interval=500,
+        # callback=combo_callback,
+        callback=eval_callback,
+        # callback=checkpoint_callback,
+        log_interval=1000,
     )
 
     #### Save the model ########################################

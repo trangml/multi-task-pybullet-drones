@@ -121,7 +121,7 @@ if __name__ == "__main__":
         action, _states = model.predict(obs, deterministic=True)  # OPTIONAL 'deterministic=False'
         obs, reward, done, info = test_env.step(action)
         test_env.render()
-        time.sleep(0.05)
+        time.sleep(0.08)
         if OBS == ObservationType.KIN:
             logger.log(
                 drone=0,
@@ -130,8 +130,8 @@ if __name__ == "__main__":
                 control=np.zeros(12),
             )
         sync(np.floor(i * test_env.AGGR_PHY_STEPS), start, test_env.TIMESTEP)
-        # if done:
-        #     obs = test_env.reset()  # OPTIONAL EPISODE HALT
+        if done:
+            obs = test_env.reset()  # OPTIONAL EPISODE HALT
         # if done:
         #     break  # OPTIONAL EPISODE Break
     test_env.close()

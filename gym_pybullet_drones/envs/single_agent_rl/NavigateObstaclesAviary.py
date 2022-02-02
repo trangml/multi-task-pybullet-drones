@@ -100,7 +100,6 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
         )
 
     ################################################################################
-
     def _computeReward(self):
         """Computes the current reward value.
 
@@ -111,25 +110,53 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
 
         """
         state = self._getDroneStateVector(0)
-        target_dest = [3.5, 3.5, 0.125]
-        dist = np.linalg.norm(np.asarray(state[0:3]) - np.asarray(target_dest))
+        position = state[0:3]
+        velocity = state[10:13]
+        target_position = [3.5, 3.5, 0.125]
+        target_velocity = [0, 0, 0]
+        pos_dist = np.linalg.norm(np.asarray(position) - np.asarray(target_position))
+        vel_dist = np.linalg.norm(np.asarray(velocity) - np.asarray(target_velocity))
         max_dist = 5
-        if dist < 0.1:
-            return 2240
-        elif dist < 1:
-            return 1
+
+        if pos_dist < 0.1 and vel_dist < 0.1:
+            self.landing_frames += 1
+            self.completeEpisode = True
+            print(self.min_dist)
+            if self.landing_frames >= 10:
+                return 2240
+            else:
+                return 80
+        elif pos_dist < 1:
+            self.min_dist = min(self.min_dist, pos_dist)
+            if vel_dist < 1:
+                inv_vel_dist = 2 - vel_dist
+            else:
+                inv_vel_dist = 1 / vel_dist
+
+            velocity_adj = -0.01 * pos_dist - 0.001 * vel_dist
+            # return velocity_adj
+
+            return 2 - inv_vel_dist + 0.85 * inv_vel_dist
         # Penalize if out of bounds
-        elif dist > max_dist:
+        elif pos_dist > max_dist:
+            self.completeEpisode = True
             return -240
+            return -240 + self.step_counter / self.SIM_FREQ
         elif state[0] > 4 or state[1] > 4 or state[2] > 1:
+            self.completeEpisode = True
             return -240
+            return -240 + self.step_counter / self.SIM_FREQ
         elif state[0] < -0.1 or state[1] < -0.1 or state[2] < 0.1:
+            self.completeEpisode = True
             return -240
+            return -240 + self.step_counter / self.SIM_FREQ
         # # penalize if not landed by the end of the episode
         elif self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
+            self.completeEpisode = True
             return -240
+            return -240 + self.step_counter / self.SIM_FREQ
 
-        return 1 / dist
+        return 1 / pos_dist
 
     ################################################################################
 
@@ -143,13 +170,18 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
 
         """
         state = self._getDroneStateVector(0)
-
-        target_dest = [3.5, 3.5, 0.125]
-        dist = np.linalg.norm(np.asarray(state[0:3]) - np.asarray(target_dest))
+        position = state[0:3]
+        velocity = state[10:13]
+        target_position = [3.5, 3.5, 0.125]
+        target_velocity = [0, 0, 0]
         max_dist = 5
-        if dist < 0.1:
+        pos_dist = np.linalg.norm(np.asarray(position) - np.asarray(target_position))
+        vel_dist = np.linalg.norm(np.asarray(velocity) - np.asarray(target_velocity))
+        max_dist = 5
+
+        if pos_dist < 0.1 and vel_dist < 0.1 and self.landing_frames > 10:
             return True
-        elif dist > max_dist:
+        elif pos_dist > max_dist:
             return True
         elif state[0] > 4 or state[1] > 4 or state[2] > 1:
             return True

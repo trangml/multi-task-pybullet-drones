@@ -586,6 +586,7 @@ class BaseAviary(gym.Env):
     def _clean_rl_variables(self):
         self.completeEpisode = False
         self.min_dist = 100
+        self.landing_frames = 0
 
     def _housekeeping(self):
         """Housekeeping function.
