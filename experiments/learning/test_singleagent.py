@@ -80,7 +80,9 @@ if __name__ == "__main__":
 
     #### Parameters to recreate the environment ################
     env_name = ARGS.exp.split("-")[1] + "-aviary-v0"
-    OBS = ObservationType.KIN if ARGS.exp.split("-")[3] == "kin" else ObservationType.RGB
+    OBS = (
+        ObservationType.KIN if ARGS.exp.split("-")[3] == "kin" else ObservationType.RGB
+    )
     if ARGS.exp.split("-")[4] == "rpm":
         ACT = ActionType.RPM
     elif ARGS.exp.split("-")[4] == "dyn":
@@ -114,19 +116,25 @@ if __name__ == "__main__":
         obs=OBS,
         act=ACT,
     )
-    logger = Logger(logging_freq_hz=int(test_env.SIM_FREQ / test_env.AGGR_PHY_STEPS), num_drones=1)
+    logger = Logger(
+        logging_freq_hz=int(test_env.SIM_FREQ / test_env.AGGR_PHY_STEPS), num_drones=1
+    )
     obs = test_env.reset()
     start = time.time()
     for i in range(6 * int(test_env.SIM_FREQ / test_env.AGGR_PHY_STEPS)):  # Up to 6''
-        action, _states = model.predict(obs, deterministic=True)  # OPTIONAL 'deterministic=False'
+        action, _states = model.predict(
+            obs, deterministic=True
+        )  # OPTIONAL 'deterministic=False'
         obs, reward, done, info = test_env.step(action)
         test_env.render()
-        time.sleep(0.08)
+        time.sleep(0.05)
         if OBS == ObservationType.KIN:
             logger.log(
                 drone=0,
                 timestamp=i / test_env.SIM_FREQ,
-                state=np.hstack([obs[0:3], np.zeros(4), obs[3:15], np.resize(action, (4))]),
+                state=np.hstack(
+                    [obs[0:3], np.zeros(4), obs[3:15], np.resize(action, (4))]
+                ),
                 control=np.zeros(12),
             )
         sync(np.floor(i * test_env.AGGR_PHY_STEPS), start, test_env.TIMESTEP)

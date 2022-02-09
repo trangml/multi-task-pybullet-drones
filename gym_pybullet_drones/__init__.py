@@ -56,6 +56,10 @@ register(
     entry_point="gym_pybullet_drones.envs.single_agent_rl:NavigateLandAviary",
 )
 
+register(
+    id="land-vision-aviary-v0",
+    entry_point="gym_pybullet_drones.envs.single_agent_rl:LandVisionAviary",
+)
 
 register(
     id="flock-aviary-v0",
