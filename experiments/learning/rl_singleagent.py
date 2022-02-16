@@ -27,6 +27,7 @@ import subprocess
 import numpy as np
 import gym
 import torch
+import yaml
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.env_util import (
     make_vec_env,
@@ -49,6 +50,7 @@ from stable_baselines3.common.callbacks import (
     CallbackList,
     EvalCallback,
     StopTrainingOnRewardThreshold,
+    StopTrainingOnMaxEpisodes,
 )
 
 from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
@@ -75,6 +77,8 @@ import shared_constants
 
 EPISODE_REWARD_THRESHOLD = 2000  # Upperbound: rewards are always negative, but non-zero
 """float: Reward threshold to halt the script."""
+
+MAX_EPISODES = 10000  # Upperbound: number of episodes
 
 if __name__ == "__main__":
 
@@ -127,6 +131,13 @@ if __name__ == "__main__":
         help="Model path to resume training from (default: none)",
         metavar="",
     )
+    parser.add_argument(
+        "--landing-zone",
+        default="3.5, 3.5, 0.0625",
+        type=str,
+        help="Landing Zone XYZ location, comma separated (default: 3.5, 3.5, 0.0625)",
+        metavar="",
+    )
     ARGS = parser.parse_args()
 
     # if ARGS.saved_model != "none":
@@ -154,13 +165,21 @@ if __name__ == "__main__":
         print("[ERROR] The selected algorithm does not support multiple environments")
         exit()
 
+    with open(filename + "/args.yaml", "w") as f:
+        yaml.dump(vars(ARGS), f)
     #### Uncomment to debug slurm scripts ######################
     # exit()
 
     env_name = ARGS.env + "-aviary-v0"
     sa_env_kwargs = dict(
-        aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act
+        aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
+        obs=ARGS.obs,
+        act=ARGS.act,
     )
+    if env_name == "land-aviary-v0" or env_name == "obstacles-aviary-v0":
+        sa_env_kwargs["landing_zone_xyz"] = np.fromstring(
+            ARGS.landing_zone, dtype=float, sep=","
+        )
     # train_env = gym.make(env_name, aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act) # single environment instead of a vectorized one
     if env_name == "hover-aviary-v0":
         train_env = make_vec_env(
@@ -368,9 +387,10 @@ if __name__ == "__main__":
         deterministic=True,
         render=False,
     )
+    max_episode_callback = StopTrainingOnMaxEpisodes(max_episodes=MAX_EPISODES)
     combo_callback = CallbackList([checkpoint_callback, eval_callback])
     model.learn(
-        total_timesteps=int(1e9),
+        total_timesteps=int(1.5e6),
         # callback=combo_callback,
         callback=eval_callback,
         # callback=checkpoint_callback,

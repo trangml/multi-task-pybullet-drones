@@ -17,6 +17,7 @@ import re
 import numpy as np
 import gym
 import torch
+import yaml
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3 import A2C
 from stable_baselines3 import PPO
@@ -54,6 +55,13 @@ if __name__ == "__main__":
         "--exp",
         type=str,
         help="The experiment folder written as ./results/save-<env>-<algo>-<obs>-<act>-<time_date>",
+        metavar="",
+    )
+    parser.add_argument(
+        "--landing-zone",
+        default="3.5, 3.5, 0.0625",
+        type=str,
+        help="Landing Zone XYZ location, comma separated (default: 3.5, 3.5, 0.0625)",
         metavar="",
     )
     ARGS = parser.parse_args()
@@ -101,21 +109,48 @@ if __name__ == "__main__":
         ACT = ActionType.ONE_D_PID
 
     #### Evaluate the model ####################################
-    eval_env = gym.make(
-        env_name, aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=OBS, act=ACT
-    )
+    print(ARGS.landing_zone)
+    landing_zone_xyz = np.fromstring(ARGS.landing_zone, dtype=float, sep=",")
+    print(landing_zone_xyz)
+    if env_name == "land-aviary-v0" or env_name == "obstacles-aviary-v0":
+        eval_env = gym.make(
+            env_name,
+            aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
+            obs=OBS,
+            act=ACT,
+            landing_zone_xyz=landing_zone_xyz,
+        )
+    else:
+        eval_env = gym.make(
+            env_name,
+            aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
+            obs=OBS,
+            act=ACT,
+        )
     mean_reward, std_reward = evaluate_policy(model, eval_env, n_eval_episodes=10)
     print("\n\n\nMean reward ", mean_reward, " +- ", std_reward, "\n\n")
 
     #### Show, record a video, and log the model's performance #
-    test_env = gym.make(
-        env_name,
-        gui=True,
-        record=False,
-        aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
-        obs=OBS,
-        act=ACT,
-    )
+    if env_name == "land-aviary-v0" or env_name == "obstacles-aviary-v0":
+        test_env = gym.make(
+            env_name,
+            gui=True,
+            record=False,
+            aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
+            obs=OBS,
+            act=ACT,
+            landing_zone_xyz=landing_zone_xyz,
+        )
+    else:
+        test_env = gym.make(
+            env_name,
+            gui=True,
+            record=False,
+            aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
+            obs=OBS,
+            act=ACT,
+        )
+
     logger = Logger(
         logging_freq_hz=int(test_env.SIM_FREQ / test_env.AGGR_PHY_STEPS), num_drones=1
     )
