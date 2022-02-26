@@ -45,7 +45,7 @@ class DenseReward:
         state = self.aviary._getDroneStateVector(drone_id)
         return np.array(state)
 
-    def calculateReward():
+    def calculateReward(self):
         return self._calculateReward() * self.scale
 
 
@@ -54,7 +54,6 @@ class BoundsReward(DenseReward):
 
     def __init__(self, aviary, scale, bounds, useTimeScaling=False):
         super().__init__(aviary, scale)
-        self.landing_zone = landing_zone
         # Defined as [[x_high, y_high, z_high], [x_low, y_low, z_low]]
         self.bounds = bounds
         self.XYZ_IDX = [0, 1, 2]
@@ -66,8 +65,8 @@ class BoundsReward(DenseReward):
 
         for dim_idx in self.XYZ_IDX:
             if (
-                state[dim_idx] > self.bounds[0, dim_idx]
-                or state[dim_idx] < self.bounds[1, dim_idx]
+                state[dim_idx] > self.bounds[0][dim_idx]
+                or state[dim_idx] < self.bounds[1][dim_idx]
             ):
                 self.aviary.completeEpisode = True
                 if self.useTimeScaling:
@@ -79,20 +78,21 @@ class BoundsReward(DenseReward):
                         )
                     )
                 return NEGATIVE_REWARD
+        return 0
 
 
 class LandingReward(DenseReward):
     """Calculate the landing reward."""
 
-    def __init__(self, aviary, scale, landing_zone: LandingZone):
+    def __init__(self, aviary, scale, landing_zone_xyz):
         super().__init__(aviary, scale)
-        self.landing_zone = landing_zone
+        self.landing_zone_xyz = landing_zone_xyz
 
     def _calculateReward(self):
         state = self._getDroneStateVector(0)
         position = state[0:3]
         velocity = state[10:13]
-        target_position = self.landing_zone.xyz
+        target_position = self.landing_zone_xyz
         target_velocity = np.asarray([0, 0, 0])
         pos_dist = np.linalg.norm(position - target_position)
         vel_dist = np.linalg.norm(velocity - target_velocity)
