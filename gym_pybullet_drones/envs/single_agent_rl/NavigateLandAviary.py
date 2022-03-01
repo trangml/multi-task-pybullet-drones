@@ -10,6 +10,13 @@ from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
     BaseSingleAgentAviary,
 )
 
+from gym_pybullet_drones.envs.single_agent_rl.obstacles.LandingZone import LandingZone
+from gym_pybullet_drones.envs.single_agent_rl.rewards.DenseRewards import (
+    DenseReward,
+    BoundsReward,
+    LandingReward,
+)
+
 
 class NavigateLandAviary(BaseSingleAgentAviary):
     """Single agent RL problem: navigate through a obstacles."""
@@ -28,6 +35,8 @@ class NavigateLandAviary(BaseSingleAgentAviary):
         record=False,
         obs: ObservationType = ObservationType.KIN,
         act: ActionType = ActionType.RPM,
+        landing_zone_xyz=np.asarray([3.5, 3.5, 0.0625]),
+        landing_zone_wlh=np.asarray([0.25, 0.25, 0.125]),
     ):
         """Initialization of a single agent RL environment.
 
@@ -57,6 +66,13 @@ class NavigateLandAviary(BaseSingleAgentAviary):
             The type of action space (1 or 3D; RPMS, thurst and torques, or waypoint with PID control)
 
         """
+        self.landing_zone_xyz = landing_zone_xyz
+        self.landing_zone_wlh = landing_zone_wlh
+        self.obstacles = []
+        self.rewardComponents = []
+        self.bounds = [[5, 5, 1], [-1, -1, 0.1]]
+        self.rewardComponents.append(BoundsReward(self, 240, self.bounds))
+        self.rewardComponents.append(LandingReward(self, 1, self.landing_zone_xyz))
         super().__init__(
             drone_model=drone_model,
             initial_xyzs=initial_xyzs,
@@ -69,6 +85,9 @@ class NavigateLandAviary(BaseSingleAgentAviary):
             obs=obs,
             act=act,
         )
+        self.obstacles.append(
+            LandingZone(self.landing_zone_xyz, self.landing_zone_wlh, self.CLIENT)
+        )
 
     ################################################################################
 
@@ -79,13 +98,8 @@ class NavigateLandAviary(BaseSingleAgentAviary):
 
         """
         super()._addObstacles()
-        landing_zone = p.loadURDF(
-            "cube.urdf",
-            [3.5, 3.5, 0],
-            physicsClientId=self.CLIENT,
-            useFixedBase=True,
-            globalScaling=0.2,
-        )
+        for obstacle in self.obstacles:
+            obstacle._addObstacles()
 
     ################################################################################
 
@@ -98,54 +112,10 @@ class NavigateLandAviary(BaseSingleAgentAviary):
             The reward.
 
         """
-        state = self._getDroneStateVector(0)
-        position = state[0:3]
-        velocity = state[10:13]
-        target_position = [3.5, 3.5, 0.125]
-        target_velocity = [0, 0, 0]
-        pos_dist = np.linalg.norm(np.asarray(position) - np.asarray(target_position))
-        vel_dist = np.linalg.norm(np.asarray(velocity) - np.asarray(target_velocity))
-        max_dist = 5
-
-        if pos_dist < 0.1 and vel_dist < 0.1:
-            self.landing_frames += 1
-            self.completeEpisode = True
-            print(self.min_dist)
-            if self.landing_frames >= 10:
-                return 2240
-            else:
-                return 80
-        elif pos_dist < 1:
-            self.min_dist = min(self.min_dist, pos_dist)
-            if vel_dist < 1:
-                inv_vel_dist = 2 - vel_dist
-            else:
-                inv_vel_dist = 1 / vel_dist
-
-            velocity_adj = -0.01 * pos_dist - 0.001 * vel_dist
-            # return velocity_adj
-
-            return 2 - inv_vel_dist + 0.85 * inv_vel_dist
-        # Penalize if out of bounds
-        elif pos_dist > max_dist:
-            self.completeEpisode = True
-            return -240
-            return -240 + self.step_counter / self.SIM_FREQ
-        elif state[0] > 4 or state[1] > 4 or state[2] > 1:
-            self.completeEpisode = True
-            return -240
-            return -240 + self.step_counter / self.SIM_FREQ
-        elif state[0] < -0.1 or state[1] < -0.1 or state[2] < 0.1:
-            self.completeEpisode = True
-            return -240
-            return -240 + self.step_counter / self.SIM_FREQ
-        # # penalize if not landed by the end of the episode
-        elif self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
-            self.completeEpisode = True
-            return -240
-            return -240 + self.step_counter / self.SIM_FREQ
-
-        return 1 / pos_dist
+        cum_reward = 0
+        for reward_component in self.rewardComponents:
+            cum_reward += reward_component.calculateReward()
+        return cum_reward
 
     ################################################################################
 
