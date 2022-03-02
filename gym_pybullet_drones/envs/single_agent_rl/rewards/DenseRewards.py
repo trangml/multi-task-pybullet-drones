@@ -115,3 +115,20 @@ class LandingReward(DenseReward):
         return 1 / pos_dist
 
     ################################################################################
+
+class FieldCoverageReward(DenseReward):
+    """Calculate the field coverage reward."""
+
+    def __init__(self, aviary, scale, field):
+        super().__init__(aviary, scale)
+        self.field = field
+
+    def _calculateReward(self):
+        state = self._getDroneStateVector(0)
+        position = state[0:3]
+        if self.field.checkIsCovered((position[0], position[1])):
+            return 1
+        else:
+            return 0
+
+    ################################################################################

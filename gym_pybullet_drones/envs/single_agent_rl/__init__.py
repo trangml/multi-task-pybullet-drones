@@ -14,6 +14,9 @@ from gym_pybullet_drones.envs.single_agent_rl.NavigateObstaclesAviary import (
 from gym_pybullet_drones.envs.single_agent_rl.NavigateLandAviary import (
     NavigateLandAviary,
 )
+from gym_pybullet_drones.envs.single_agent_rl.FieldCoverageAviary import (
+    FieldCoverageAviary,
+)
 
 from gym_pybullet_drones.envs.single_agent_rl.BaseVisionAviary import BaseVisionAviary
 from gym_pybullet_drones.envs.single_agent_rl.LandVisionAviary import LandVisionAviary

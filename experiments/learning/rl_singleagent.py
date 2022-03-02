@@ -65,6 +65,9 @@ from gym_pybullet_drones.envs.single_agent_rl.NavigateObstaclesAviary import (
 from gym_pybullet_drones.envs.single_agent_rl.NavigateLandAviary import (
     NavigateLandAviary,
 )
+from gym_pybullet_drones.envs.single_agent_rl.FieldCoverageAviary import (
+    FieldCoverageAviary,
+)
 from gym_pybullet_drones.envs.single_agent_rl.TuneAviary import TuneAviary
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
     ActionType,
@@ -90,7 +93,7 @@ if __name__ == "__main__":
         "--env",
         default="land",
         type=str,
-        choices=["maze", "hover", "obstacles", "land", "land-vision"],
+        choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
         help="Task (default: hover)",
         metavar="",
     )
@@ -196,6 +199,10 @@ if __name__ == "__main__":
     if env_name == "land-aviary-v0":
         train_env = make_vec_env(
             NavigateLandAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0
+        )
+    if env_name == "field-aviary-v0":
+        train_env = make_vec_env(
+            FieldCoverageAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0
         )
     if env_name == "land-vision-aviary-v0":
         train_env = make_vec_env(
@@ -363,6 +370,10 @@ if __name__ == "__main__":
         if env_name == "obstacle-aviary-v0":
             eval_env = make_vec_env(
                 NavigateObstacleAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
+            )
+        if env_name == "field-aviary-v0":
+            eval_env = make_vec_env(
+                FieldCoverageAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
             )
         if env_name == "land-aviary-v0":
             eval_env = make_vec_env(
