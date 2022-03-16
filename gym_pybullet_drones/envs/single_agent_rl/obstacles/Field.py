@@ -61,7 +61,7 @@ class Field:
         """
         x = int(new_spot[0] / self.wlh[0])
         y = int(new_spot[1] / self.wlh[1])
-        if self.covered_area[x, y] == 1:
+        if self.covered_area[x, y] == 0:
             self.updateCoveredArea(new_spot)
             return True
         else:

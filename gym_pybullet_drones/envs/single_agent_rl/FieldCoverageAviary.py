@@ -33,7 +33,7 @@ class FieldCoverageAviary(BaseSingleAgentAviary):
         physics: Physics = Physics.PYB,
         freq: int = 240,
         aggregate_phy_steps: int = 1,
-        gui=True,
+        gui=False,
         record=False,
         obs: ObservationType = ObservationType.KIN,
         act: ActionType = ActionType.RPM,
@@ -70,8 +70,8 @@ class FieldCoverageAviary(BaseSingleAgentAviary):
         """
         self.landing_zone_xyz = landing_zone_xyz
         self.landing_zone_wlh = landing_zone_wlh
-        self.field_xyz = np.asarray([0, 0, 0.0625])
-        self.field_wlh = np.asarray([10, 10, 0.125])
+        self.field_xyz = np.asarray([0, 0, 0.0625/2])
+        self.field_wlh = np.asarray([10, 10, 0.0625])
         self.obstacles = []
         self.rewardComponents = []
         # self.bounds = [[30, 30, 10], [-10, -10, 0]]
@@ -88,6 +88,8 @@ class FieldCoverageAviary(BaseSingleAgentAviary):
             obs=obs,
             act=act,
         )
+        self.EPISODE_LEN_SEC = 10
+
         self.obstacles.append(
             Field(self.field_xyz, self.field_wlh, self.CLIENT)
         )
@@ -135,20 +137,8 @@ class FieldCoverageAviary(BaseSingleAgentAviary):
         state = self._getDroneStateVector(0)
         position = state[0:3]
         velocity = state[10:13]
-        target_position = [3.5, 3.5, 0.125]
-        target_velocity = [0, 0, 0]
-        max_dist = 5
-        pos_dist = np.linalg.norm(np.asarray(position) - np.asarray(target_position))
-        vel_dist = np.linalg.norm(np.asarray(velocity) - np.asarray(target_velocity))
-        max_dist = 5
 
-        if pos_dist < 0.1 and vel_dist < 0.1 and self.landing_frames > 10:
-            return True
-        elif pos_dist > max_dist:
-            return True
-        elif state[0] > 4 or state[1] > 4 or state[2] > 1:
-            return True
-        elif state[0] < -0.1 or state[1] < -0.1 or state[2] < 0.1:
+        if self.obstacles[0].isAllCovered():
             return True
         elif self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
             return True
