@@ -28,7 +28,7 @@ class FieldCoverageAviary(BaseSingleAgentAviary):
     def __init__(
         self,
         drone_model: DroneModel = DroneModel.CF2X,
-        initial_xyzs=np.asarray([[0, 0, 4]]),
+        initial_xyzs=np.asarray([[0, 0, 1]]),
         initial_rpys=None,
         physics: Physics = Physics.PYB,
         freq: int = 240,
@@ -134,10 +134,6 @@ class FieldCoverageAviary(BaseSingleAgentAviary):
             Whether the current episode is done.
 
         """
-        state = self._getDroneStateVector(0)
-        position = state[0:3]
-        velocity = state[10:13]
-
         if self.obstacles[0].isAllCovered():
             return True
         elif self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:

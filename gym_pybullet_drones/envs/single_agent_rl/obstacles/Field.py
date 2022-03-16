@@ -59,13 +59,15 @@ class Field:
             True if the new spot is covered by the field.
 
         """
-        x = int(new_spot[0] / self.wlh[0])
-        y = int(new_spot[1] / self.wlh[1])
-        if self.covered_area[x, y] == 0:
-            self.updateCoveredArea(new_spot)
-            return True
-        else:
-            return False
+        # convert to the covered area array coordinates
+        x = int(new_spot[0] + self.xyz[0])
+        y = int(new_spot[1] + self.xyz[1])
+
+        if x >= 0 and y >= 0 and x < self.covered_area.shape[0] and y < self.covered_area.shape[1]:
+            if self.covered_area[x, y] == 0:
+                self.updateCoveredArea(new_spot)
+                return True
+        return False
 
     def updateCoveredArea(self, new_spot):
         """Update the covered area of the field.
@@ -76,8 +78,8 @@ class Field:
             x, y, z position
 
         """
-        x = int(new_spot[0] / self.wlh[0])
-        y = int(new_spot[1] / self.wlh[1])
+        x = int(new_spot[0] + self.xyz[0])
+        y = int(new_spot[1] + self.xyz[1])
         self.covered_area[x, y] = 1
 
     def getTotalCoveredArea(self):
