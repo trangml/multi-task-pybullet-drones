@@ -23,6 +23,7 @@ class Field:
         self.CLIENT = physics
         self.color = color
         self.MASS = 100000
+        self.grid_dim = 0.5
         self.covered_area = np.zeros((int(wlh[0]), int(wlh[1])))
 
     def _addObstacles(self):

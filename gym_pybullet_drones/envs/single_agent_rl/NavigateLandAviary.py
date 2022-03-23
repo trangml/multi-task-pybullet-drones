@@ -37,6 +37,7 @@ class NavigateLandAviary(BaseSingleAgentAviary):
         act: ActionType = ActionType.RPM,
         landing_zone_xyz=np.asarray([3.5, 3.5, 0.0625]),
         landing_zone_wlh=np.asarray([0.25, 0.25, 0.125]),
+        random_landing_zone = False,
     ):
         """Initialization of a single agent RL environment.
 
@@ -66,7 +67,11 @@ class NavigateLandAviary(BaseSingleAgentAviary):
             The type of action space (1 or 3D; RPMS, thurst and torques, or waypoint with PID control)
 
         """
-        self.landing_zone_xyz = landing_zone_xyz
+        self.bounds = [[5, 5, 1], [-1, -1, 0.1]]
+        if random_landing_zone:
+            self.landing_zone_xyz = np.append(np.random.rand(2)*5, 0.0625)
+        else:
+            self.landing_zone_xyz = landing_zone_xyz
         self.landing_zone_wlh = landing_zone_wlh
         self.obstacles = []
         self.rewardComponents = []
@@ -128,28 +133,35 @@ class NavigateLandAviary(BaseSingleAgentAviary):
             Whether the current episode is done.
 
         """
-        state = self._getDroneStateVector(0)
-        position = state[0:3]
-        velocity = state[10:13]
-        target_position = [3.5, 3.5, 0.125]
-        target_velocity = [0, 0, 0]
-        max_dist = 5
-        pos_dist = np.linalg.norm(np.asarray(position) - np.asarray(target_position))
-        vel_dist = np.linalg.norm(np.asarray(velocity) - np.asarray(target_velocity))
-        max_dist = 5
-
-        if pos_dist < 0.1 and vel_dist < 0.1 and self.landing_frames > 10:
-            return True
-        elif pos_dist > max_dist:
-            return True
-        elif state[0] > 4 or state[1] > 4 or state[2] > 1:
-            return True
-        elif state[0] < -0.1 or state[1] < -0.1 or state[2] < 0.1:
+        if self.completeEpisode:
             return True
         elif self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
             return True
-        else:
-            return False
+
+        return False
+
+        # state = self._getDroneStateVector(0)
+        # position = state[0:3]
+        # velocity = state[10:13]
+        # target_position = [3.5, 3.5, 0.125]
+        # target_velocity = [0, 0, 0]
+        # max_dist = 5
+        # pos_dist = np.linalg.norm(np.asarray(position) - np.asarray(target_position))
+        # vel_dist = np.linalg.norm(np.asarray(velocity) - np.asarray(target_velocity))
+        # max_dist = 5
+
+        # if pos_dist < 0.1 and vel_dist < 0.1 and self.landing_frames > 10:
+        #     return True
+        # elif pos_dist > max_dist:
+        #     return True
+        # elif state[0] > 4 or state[1] > 4 or state[2] > 1:
+        #     return True
+        # elif state[0] < -0.1 or state[1] < -0.1 or state[2] < 0.1:
+        #     return True
+        # elif self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
+        #     return True
+        # else:
+        #     return False
 
     ################################################################################
 

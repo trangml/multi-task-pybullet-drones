@@ -58,7 +58,7 @@ if __name__ == "__main__":
         metavar="",
     )
     parser.add_argument(
-        "--landing-zone",
+        "--landing_zone",
         default="3.5, 3.5, 0.0625",
         type=str,
         help="Landing Zone XYZ location, comma separated (default: 3.5, 3.5, 0.0625)",
@@ -68,6 +68,9 @@ if __name__ == "__main__":
 
     #### Load the model from file ##############################
     algo = ARGS.exp.split("-")[2]
+
+    # if os.path.isfile(ARGS.exp + "/args.yaml"):
+    #     additional_args = yaml.load(open(ARGS.exp + "/args.yaml", "r"))
 
     if os.path.isfile(ARGS.exp + "/success_model.zip"):
         path = ARGS.exp + "/success_model.zip"
@@ -135,7 +138,7 @@ if __name__ == "__main__":
         test_env = gym.make(
             env_name,
             gui=True,
-            record=False,
+            record=True,
             aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
             obs=OBS,
             act=ACT,
@@ -145,7 +148,7 @@ if __name__ == "__main__":
         test_env = gym.make(
             env_name,
             gui=True,
-            record=False,
+            record=True,
             aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
             obs=OBS,
             act=ACT,
@@ -173,8 +176,8 @@ if __name__ == "__main__":
                 control=np.zeros(12),
             )
         sync(np.floor(i * test_env.AGGR_PHY_STEPS), start, test_env.TIMESTEP)
-        # if done:
-        #     obs = test_env.reset()  # OPTIONAL EPISODE HALT
+        if done:
+            obs = test_env.reset()  # OPTIONAL EPISODE HALT
         # if done:
         #     break  # OPTIONAL EPISODE Break
     test_env.close()

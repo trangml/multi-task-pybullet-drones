@@ -99,8 +99,8 @@ class LandingReward(DenseReward):
 
         if pos_dist < 0.1 and vel_dist < 0.1:
             self.aviary.landing_frames += 1
-            self.aviary.completeEpisode = True
             if self.aviary.landing_frames >= 10:
+                self.aviary.completeEpisode = True
                 return 2240
             else:
                 return 80
@@ -129,6 +129,6 @@ class FieldCoverageReward(DenseReward):
         if self.field.checkIsCovered((position[0], position[1])):
             return 1
         else:
-            return 0
+            return -0.01
 
     ################################################################################

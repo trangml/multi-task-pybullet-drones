@@ -72,10 +72,9 @@ class FieldCoverageAviary(BaseSingleAgentAviary):
         self.landing_zone_wlh = landing_zone_wlh
         self.field_xyz = np.asarray([0, 0, 0.0625/2])
         self.field_wlh = np.asarray([10, 10, 0.0625])
+        self.bounds = [[10, 10, 10], [-10, -10, 0.1]]
         self.obstacles = []
         self.rewardComponents = []
-        # self.bounds = [[30, 30, 10], [-10, -10, 0]]
-        # self.rewardComponents.append(BoundsReward(self, 240, self.bounds))
         super().__init__(
             drone_model=drone_model,
             initial_xyzs=initial_xyzs,
@@ -93,7 +92,8 @@ class FieldCoverageAviary(BaseSingleAgentAviary):
         self.obstacles.append(
             Field(self.field_xyz, self.field_wlh, self.CLIENT)
         )
-        self.rewardComponents.append(FieldCoverageReward(self, 10, self.obstacles[0]))
+        self.rewardComponents.append(FieldCoverageReward(self, 25, self.obstacles[0]))
+        self.rewardComponents.append(BoundsReward(self, 240, self.bounds))
 
     ################################################################################
 
@@ -135,6 +135,8 @@ class FieldCoverageAviary(BaseSingleAgentAviary):
 
         """
         if self.obstacles[0].isAllCovered():
+            return True
+        elif self.completeEpisode:
             return True
         elif self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
             return True

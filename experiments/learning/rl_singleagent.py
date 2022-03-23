@@ -78,7 +78,7 @@ from gym_pybullet_drones.envs.single_agent_rl.LandVisionAviary import LandVision
 
 import shared_constants
 
-EPISODE_REWARD_THRESHOLD = 2000  # Upperbound: rewards are always negative, but non-zero
+EPISODE_REWARD_THRESHOLD = 200000  # Upperbound: rewards are always negative, but non-zero
 """float: Reward threshold to halt the script."""
 
 MAX_EPISODES = 10000  # Upperbound: number of episodes
@@ -135,10 +135,17 @@ if __name__ == "__main__":
         metavar="",
     )
     parser.add_argument(
-        "--landing-zone",
+        "--landing_zone",
         default="3.5, 3.5, 0.0625",
         type=str,
         help="Landing Zone XYZ location, comma separated (default: 3.5, 3.5, 0.0625)",
+        metavar="",
+    )
+    parser.add_argument(
+        "--random_landing_zone",
+        default=False,
+        type=bool,
+        help="Randomize Landing Zone XYZ location, comma separated (default: False)",
         metavar="",
     )
     ARGS = parser.parse_args()
@@ -183,6 +190,8 @@ if __name__ == "__main__":
         sa_env_kwargs["landing_zone_xyz"] = np.fromstring(
             ARGS.landing_zone, dtype=float, sep=","
         )
+        sa_env_kwargs["random_landing_zone"] = ARGS.random_landing_zone
+
     # train_env = gym.make(env_name, aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act) # single environment instead of a vectorized one
     if env_name == "hover-aviary-v0":
         train_env = make_vec_env(
