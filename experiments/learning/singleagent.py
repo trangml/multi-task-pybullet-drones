@@ -22,6 +22,7 @@ To check the tensorboard results at:
 import os
 import time
 from datetime import datetime
+from sys import platform
 import argparse
 import subprocess
 import numpy as np
@@ -126,10 +127,11 @@ if __name__ == "__main__":
     if not os.path.exists(filename):
         os.makedirs(filename + "/")
 
-    # #### Print out current git commit hash #####################
-    # git_commit = subprocess.check_output(["git", "describe", "--tags"]).strip()
-    # with open(filename+'/git_commit.txt', 'w+') as f:
-    #     f.write(str(git_commit))
+    #### Print out current git commit hash #####################
+    if platform == "linux" or platform == "darwin":
+        git_commit = subprocess.check_output(["git", "describe", "--tags"]).strip()
+        with open(filename+'/git_commit.txt', 'w+') as f:
+            f.write(str(git_commit))
 
     #### Warning ###############################################
     if ARGS.env == "tune" and ARGS.act != ActionType.TUN:
