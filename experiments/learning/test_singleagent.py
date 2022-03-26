@@ -176,8 +176,8 @@ if __name__ == "__main__":
                 control=np.zeros(12),
             )
         sync(np.floor(i * test_env.AGGR_PHY_STEPS), start, test_env.TIMESTEP)
-        if done:
-            obs = test_env.reset()  # OPTIONAL EPISODE HALT
+        # if done:
+        #     obs = test_env.reset()  # OPTIONAL EPISODE HALT
         # if done:
         #     break  # OPTIONAL EPISODE Break
     test_env.close()

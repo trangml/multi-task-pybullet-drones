@@ -8,18 +8,20 @@ import pybullet as p
 from gym_pybullet_drones.envs.single_agent_rl.obstacles.LandingZone import LandingZone
 from gym_pybullet_drones.envs.single_agent_rl import BaseSingleAgentAviary
 from gym_pybullet_drones.envs.single_agent_rl.rewards.Reward import Reward
+
+
 POSITIVE_REWARD = 1
 NEGATIVE_REWARD = -1
 
 
-class DenseReward(Reward):
-    """Dense reward for a drone.
+class SparseReward(Reward):
+    """Sparse reward for a drone.
 
-    The reward is the distance to the closest obstacle.
 
     """
 
     def __init__(self, aviary, scale):
+        super().__init__()
         self.aviary = aviary
         self.scale = scale
 
@@ -48,8 +50,40 @@ class DenseReward(Reward):
         return self._calculateReward() * self.scale
 
 
-class DistanceReward(DenseReward):
-    """Calculate the dense distance reward."""
+class BoundsReward(SparseReward):
+    """Checks rewards for out of bounds"""
+
+    def __init__(self, aviary, scale, bounds, useTimeScaling=False):
+        super().__init__(aviary, scale)
+        # Defined as [[x_high, y_high, z_high], [x_low, y_low, z_low]]
+        self.bounds = bounds
+        self.XYZ_IDX = [0, 1, 2]
+        self.useTimeScaling = useTimeScaling
+
+    def _calculateReward(self):
+        state = self._getDroneStateVector(0)
+        position = state[0:3]
+
+        for dim_idx in self.XYZ_IDX:
+            if (
+                state[dim_idx] > self.bounds[0][dim_idx]
+                or state[dim_idx] < self.bounds[1][dim_idx]
+            ):
+                self.aviary.completeEpisode = True
+                if self.useTimeScaling:
+                    return NEGATIVE_REWARD * (
+                        1
+                        - (
+                            (self.aviary.step_counter / self.aviary.SIM_FREQ)
+                            / self.aviary.EPISODE_LEN_SEC
+                        )
+                    )
+                return NEGATIVE_REWARD
+        return 0
+
+
+class LandingReward(SparseReward):
+    """Calculate the landing reward."""
 
     def __init__(self, aviary, scale, landing_zone_xyz):
         super().__init__(aviary, scale)
@@ -58,57 +92,21 @@ class DistanceReward(DenseReward):
     def _calculateReward(self):
         state = self._getDroneStateVector(0)
         position = state[0:3]
-        target_position = self.landing_zone_xyz
-        pos_dist = np.linalg.norm(position - target_position)
-
-        max_dist =  10
-        reward = 1  - ((pos_dist) / max_dist) ** 0.5
-        return reward
-
-    ################################################################################
-
-class SlowdownReward(DenseReward):
-    """Calculate the dense slowdown reward.
-
-    This reward is supposed to help encourage the drone to slow down when approaching the landing zone
-
-    """
-
-    def __init__(self, aviary, scale, landing_zone_xyz, slowdown_dist):
-        super().__init__(aviary, scale)
-        self.landing_zone_xyz = landing_zone_xyz
-        self.slowdown_dist = slowdown_dist
-
-    def _calculateReward(self):
-        state = self._getDroneStateVector(0)
-        position = state[0:3]
         velocity = state[10:13]
         target_position = self.landing_zone_xyz
         target_velocity = np.asarray([0, 0, 0])
         pos_dist = np.linalg.norm(position - target_position)
-
         vel_dist = np.linalg.norm(velocity - target_velocity)
 
-        if pos_dist < self.slowdown_dist:
-            reward = 1 - (vel_dist / 10) ** 0.5
+        if pos_dist < 0.1 and vel_dist < 0.1:
+            self.aviary.landing_frames += 1
+            if self.aviary.landing_frames >= 10:
+                self.aviary.completeEpisode = True
+                return 2240
+            else:
+                return 80
         else:
-            reward = 0
-
-        return reward
-
-class FieldCoverageReward(DenseReward):
-    """Calculate the field coverage reward."""
-
-    def __init__(self, aviary, scale, field):
-        super().__init__(aviary, scale)
-        self.field = field
-
-    def _calculateReward(self):
-        state = self._getDroneStateVector(0)
-        position = state[0:3]
-        if self.field.checkIsCovered((position[0], position[1])):
-            return 1
-        else:
-            return -0.01
+            return 0
 
     ################################################################################
+

@@ -33,9 +33,11 @@ class LandingZone:
         colBoxId = p.createCollisionShape(
             p.GEOM_BOX, halfExtents=self.wlh / 2, physicsClientId=self.CLIENT
         )
-        p.createMultiBody(
+        box = p.createMultiBody(
             self.MASS, colBoxId, -1, self.xyz, [0, 0, 0, 1], physicsClientId=self.CLIENT
         )
+
+        p.changeVisualShape(box ,colBoxId,rgbaColor=[255, 0,0,1])
 
         # self.landing_zone = p.loadURDF(
         #     "cube.urdf",
