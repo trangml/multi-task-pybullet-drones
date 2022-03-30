@@ -18,5 +18,4 @@ class RewardLoggerCallback(BaseCallback):
             self.logger.record(
                 "reward/{}".format(reward), rewards_dict[reward]
             )
-            self.logger.record('random_value', value)
         return True

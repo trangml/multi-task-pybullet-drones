@@ -11,6 +11,7 @@ from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
 )
 
 from gym_pybullet_drones.envs.single_agent_rl.obstacles.LandingZone import LandingZone
+from gym_pybullet_drones.envs.single_agent_rl.rewards.Reward import (Reward, getRewardDict)
 from gym_pybullet_drones.envs.single_agent_rl.rewards.DenseRewards import (
     DenseReward,
     SlowdownReward,
@@ -82,7 +83,7 @@ class NavigateLandAviary(BaseSingleAgentAviary):
         self.rewardComponents.append(BoundsReward(self, 240, self.bounds))
         self.rewardComponents.append(LandingReward(self, 100, self.landing_zone_xyz))
         self.rewardComponents.append(DistanceReward(self, 3, self.landing_zone_xyz))
-        self.rewardComponents.append(SlowdownReward(self, 2, self.landing_zone_xyz, 1))
+        self.rewardComponents.append(SlowdownReward(self, 0.5, self.landing_zone_xyz, 1))
         super().__init__(
             drone_model=drone_model,
             initial_xyzs=initial_xyzs,
@@ -98,7 +99,7 @@ class NavigateLandAviary(BaseSingleAgentAviary):
         self.obstacles.append(
             LandingZone(self.landing_zone_xyz, self.landing_zone_wlh, self.CLIENT)
         )
-        self.reward_dict = {}
+        self.reward_dict = getRewardDict(self.rewardComponents)
 
     ################################################################################
 
@@ -124,8 +125,11 @@ class NavigateLandAviary(BaseSingleAgentAviary):
 
         """
         cum_reward = 0
-        for reward_component in self.rewardComponents:
-            cum_reward += reward_component.calculateReward()
+        for reward_component, r_dict in zip(self.rewardComponents, self.reward_dict):
+            r = reward_component.calculateReward()
+            self.reward_dict[r_dict] += r
+            cum_reward += r
+
         return cum_reward
 
     ################################################################################

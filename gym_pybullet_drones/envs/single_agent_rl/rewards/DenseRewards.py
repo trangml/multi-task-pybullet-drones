@@ -61,8 +61,8 @@ class DistanceReward(DenseReward):
         target_position = self.landing_zone_xyz
         pos_dist = np.linalg.norm(position - target_position)
 
-        max_dist =  10
-        reward = 1  - ((pos_dist) / max_dist) ** 0.5
+        max_dist =  np.linalg.norm(target_position)+1
+        reward = 1  - ((pos_dist) / max_dist) ** 0.9
         return reward
 
     ################################################################################

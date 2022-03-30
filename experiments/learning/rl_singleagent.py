@@ -76,6 +76,8 @@ from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
 
 from gym_pybullet_drones.envs.single_agent_rl.LandVisionAviary import LandVisionAviary
 
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.RewardLogger import (RewardLoggerCallback)
+
 import shared_constants
 
 EPISODE_REWARD_THRESHOLD = 200000  # Upperbound: rewards are always negative, but non-zero
@@ -410,7 +412,7 @@ if __name__ == "__main__":
     max_episode_callback = StopTrainingOnMaxEpisodes(max_episodes=MAX_EPISODES)
     combo_callback = CallbackList([checkpoint_callback, eval_callback])
     model.learn(
-        total_timesteps=int(1.5e6),
+        total_timesteps=int(5e7),
         # callback=combo_callback,
         callback=eval_callback,
         # callback=checkpoint_callback,
