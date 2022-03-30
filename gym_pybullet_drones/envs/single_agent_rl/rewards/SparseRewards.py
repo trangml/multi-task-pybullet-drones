@@ -110,3 +110,22 @@ class LandingReward(SparseReward):
 
     ################################################################################
 
+
+class SpeedReward(SparseReward):
+    """Calculate the landing reward."""
+
+    def __init__(self, aviary, scale):
+        super().__init__(aviary, scale)
+
+    def _calculateReward(self):
+        state = self._getDroneStateVector(0)
+        velocity = state[10:13]
+        vel = np.linalg.norm(velocity)
+
+        if vel > 1:
+            return -1
+        else:
+            return 0
+
+    ################################################################################
+
