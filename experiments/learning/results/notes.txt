@@ -1,0 +1,1 @@
+3/30, first one to run had learning rate with **0.3, second one had reward with **0.9
