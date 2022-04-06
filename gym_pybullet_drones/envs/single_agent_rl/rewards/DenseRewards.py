@@ -8,6 +8,7 @@ import pybullet as p
 from gym_pybullet_drones.envs.single_agent_rl.obstacles.LandingZone import LandingZone
 from gym_pybullet_drones.envs.single_agent_rl import BaseSingleAgentAviary
 from gym_pybullet_drones.envs.single_agent_rl.rewards.Reward import Reward
+
 POSITIVE_REWARD = 1
 NEGATIVE_REWARD = -1
 
@@ -61,11 +62,12 @@ class DistanceReward(DenseReward):
         target_position = self.landing_zone_xyz
         pos_dist = np.linalg.norm(position - target_position)
 
-        max_dist =  np.linalg.norm(target_position)+1
-        reward = 1  - ((pos_dist) / max_dist) ** 0.9
+        max_dist = np.linalg.norm(target_position) + 1
+        reward = 1 - ((pos_dist) / max_dist) ** 0.5
         return reward
 
     ################################################################################
+
 
 class SlowdownReward(DenseReward):
     """Calculate the dense slowdown reward.
@@ -82,19 +84,21 @@ class SlowdownReward(DenseReward):
     def _calculateReward(self):
         state = self._getDroneStateVector(0)
         position = state[0:3]
-        velocity = state[10:13]
+        # only consider the x and y coordinates, as y can still change to get us closer
+        velocity = state[10:12]
         target_position = self.landing_zone_xyz
-        target_velocity = np.asarray([0, 0, 0])
+        target_velocity = np.asarray([0, 0])
         pos_dist = np.linalg.norm(position - target_position)
 
         vel_dist = np.linalg.norm(velocity - target_velocity)
 
         if pos_dist < self.slowdown_dist:
-            reward = 1 - (vel_dist / 10) ** 0.5
+            reward = 1 - (vel_dist / 3) ** 0.5
         else:
             reward = 0
 
         return reward
+
 
 class FieldCoverageReward(DenseReward):
     """Calculate the field coverage reward."""

@@ -64,6 +64,13 @@ if __name__ == "__main__":
         help="Landing Zone XYZ location, comma separated (default: 3.5, 3.5, 0.0625)",
         metavar="",
     )
+    parser.add_argument(
+        "--record",
+        default=False,
+        type=bool,
+        help="Whether or not to record the video of the simulation (default: False)",
+        metavar="",
+    )
     ARGS = parser.parse_args()
 
     #### Load the model from file ##############################
@@ -138,7 +145,7 @@ if __name__ == "__main__":
         test_env = gym.make(
             env_name,
             gui=True,
-            record=True,
+            record=ARGS.record,
             aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
             obs=OBS,
             act=ACT,
@@ -148,7 +155,7 @@ if __name__ == "__main__":
         test_env = gym.make(
             env_name,
             gui=True,
-            record=True,
+            record=ARGS.record,
             aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
             obs=OBS,
             act=ACT,

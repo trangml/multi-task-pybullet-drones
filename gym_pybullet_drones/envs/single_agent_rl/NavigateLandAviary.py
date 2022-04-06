@@ -11,15 +11,21 @@ from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
 )
 
 from gym_pybullet_drones.envs.single_agent_rl.obstacles.LandingZone import LandingZone
-from gym_pybullet_drones.envs.single_agent_rl.rewards.Reward import (Reward, getRewardDict)
+from gym_pybullet_drones.envs.single_agent_rl.rewards.Reward import (
+    Reward,
+    getRewardDict,
+)
 from gym_pybullet_drones.envs.single_agent_rl.rewards.DenseRewards import (
     DenseReward,
     SlowdownReward,
     DistanceReward,
 )
 from gym_pybullet_drones.envs.single_agent_rl.rewards.SparseRewards import (
-    SparseReward, LandingReward, BoundsReward, SpeedReward
-    )
+    SparseReward,
+    LandingReward,
+    BoundsReward,
+    SpeedReward,
+)
 
 
 class NavigateLandAviary(BaseSingleAgentAviary):
@@ -41,7 +47,7 @@ class NavigateLandAviary(BaseSingleAgentAviary):
         act: ActionType = ActionType.RPM,
         landing_zone_xyz=np.asarray([3.5, 3.5, 0.0625]),
         landing_zone_wlh=np.asarray([0.25, 0.25, 0.125]),
-        random_landing_zone = False,
+        random_landing_zone=False,
     ):
         """Initialization of a single agent RL environment.
 
@@ -73,18 +79,20 @@ class NavigateLandAviary(BaseSingleAgentAviary):
         """
         self.bounds = [[5, 5, 1], [-1, -1, 0.1]]
         if random_landing_zone:
-            self.landing_zone_xyz = np.append(np.random.rand(2)*5, 0.0625)
+            self.landing_zone_xyz = np.append(np.random.rand(2) * 5, 0.0625)
         else:
             self.landing_zone_xyz = landing_zone_xyz
         self.landing_zone_wlh = landing_zone_wlh
         self.obstacles = []
         self.rewardComponents = []
         self.bounds = [[5, 5, 1], [-1, -1, 0.1]]
-        self.rewardComponents.append(BoundsReward(self, 240, self.bounds))
+        self.rewardComponents.append(
+            BoundsReward(self, 240, self.bounds, useTimeScaling=True)
+        )
         self.rewardComponents.append(LandingReward(self, 100, self.landing_zone_xyz))
-        self.rewardComponents.append(DistanceReward(self, 3, self.landing_zone_xyz))
-        self.rewardComponents.append(SlowdownReward(self, 0.5, self.landing_zone_xyz, 1))
-        self.rewardComponents.append(SpeedReward(self, 100, 2))
+        self.rewardComponents.append(DistanceReward(self, 15, self.landing_zone_xyz))
+        self.rewardComponents.append(SlowdownReward(self, 3, self.landing_zone_xyz, 2))
+        self.rewardComponents.append(SpeedReward(self, 25, 3))
         super().__init__(
             drone_model=drone_model,
             initial_xyzs=initial_xyzs,

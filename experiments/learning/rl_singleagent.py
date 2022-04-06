@@ -80,7 +80,7 @@ from gym_pybullet_drones.envs.single_agent_rl.callbacks.RewardLogger import (Rew
 
 import shared_constants
 
-EPISODE_REWARD_THRESHOLD = 200000  # Upperbound: rewards are always negative, but non-zero
+EPISODE_REWARD_THRESHOLD = 10000  # Upperbound: rewards are always negative, but non-zero
 """float: Reward threshold to halt the script."""
 
 MAX_EPISODES = 10000  # Upperbound: number of episodes
