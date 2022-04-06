@@ -93,7 +93,7 @@ class SlowdownReward(DenseReward):
         vel_dist = np.linalg.norm(velocity - target_velocity)
 
         if pos_dist < self.slowdown_dist:
-            reward = 1 - (vel_dist / 3) ** 0.5
+            reward = 1 - (vel_dist / 5) ** 0.5
         else:
             reward = 0
 

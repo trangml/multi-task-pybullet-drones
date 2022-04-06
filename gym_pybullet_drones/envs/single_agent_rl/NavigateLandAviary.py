@@ -89,10 +89,10 @@ class NavigateLandAviary(BaseSingleAgentAviary):
         self.rewardComponents.append(
             BoundsReward(self, 240, self.bounds, useTimeScaling=True)
         )
-        self.rewardComponents.append(LandingReward(self, 100, self.landing_zone_xyz))
-        self.rewardComponents.append(DistanceReward(self, 15, self.landing_zone_xyz))
+        self.rewardComponents.append(LandingReward(self, 10, self.landing_zone_xyz))
+        self.rewardComponents.append(DistanceReward(self, 10, self.landing_zone_xyz))
         self.rewardComponents.append(SlowdownReward(self, 3, self.landing_zone_xyz, 2))
-        self.rewardComponents.append(SpeedReward(self, 25, 3))
+        self.rewardComponents.append(SpeedReward(self, 25, 8))
         super().__init__(
             drone_model=drone_model,
             initial_xyzs=initial_xyzs,

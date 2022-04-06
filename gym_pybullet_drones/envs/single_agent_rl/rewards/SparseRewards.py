@@ -91,20 +91,17 @@ class LandingReward(SparseReward):
         position = state[0:3]
 
         # only consider x and y
-        velocity = state[10:12]
         target_position = self.landing_zone_xyz
-        target_velocity = np.asarray([0, 0])
         pos_dist = np.linalg.norm(position - target_position)
-        vel_dist = np.linalg.norm(velocity - target_velocity)
 
-        if pos_dist < 0.1 and vel_dist < 0.1:
-            return 2240
-            # self.aviary.landing_frames += 1
-            # if self.aviary.landing_frames >= 10:
-            #     self.aviary.completeEpisode = True
-            #     return 2240
-            # else:
-            #     return 80
+        if pos_dist < 0.3:
+            self.aviary.landing_frames += 1
+            if self.aviary.landing_frames >= 10:
+                self.aviary.completeEpisode = True
+                return 2240
+            else:
+                y_dist = np.linalg.norm(position[2] - (target_position[2] - 0.1))
+                return 80 + (1 - y_dist) * 10
         else:
             return 0
 
