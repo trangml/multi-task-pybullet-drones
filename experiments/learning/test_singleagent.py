@@ -162,11 +162,16 @@ if __name__ == "__main__":
         )
 
     logger = Logger(
-        logging_freq_hz=int(test_env.SIM_FREQ / test_env.AGGR_PHY_STEPS), num_drones=1
+        logging_freq_hz=int(test_env.SIM_FREQ / test_env.AGGR_PHY_STEPS),
+        num_drones=1,
+        num_rewards=len(test_env.reward_dict),
+        rewards_names=list(test_env.reward_dict.keys()),
     )
     obs = test_env.reset()
     start = time.time()
-    for i in range(6 * int(test_env.SIM_FREQ / test_env.AGGR_PHY_STEPS)):  # Up to 6''
+    for i in range(
+        test_env.EPISODE_LEN_SEC * int(test_env.SIM_FREQ / test_env.AGGR_PHY_STEPS)
+    ):  # Up to 6''
         action, _states = model.predict(
             obs, deterministic=True
         )  # OPTIONAL 'deterministic=False'
@@ -181,6 +186,8 @@ if __name__ == "__main__":
                     [obs[0:3], np.zeros(4), obs[3:15], np.resize(action, (4))]
                 ),
                 control=np.zeros(12),
+                reward=list(test_env.reward_dict.values()),
+                done=done,
             )
         sync(np.floor(i * test_env.AGGR_PHY_STEPS), start, test_env.TIMESTEP)
         # if done:
@@ -188,8 +195,9 @@ if __name__ == "__main__":
         # if done:
         #     break  # OPTIONAL EPISODE Break
     test_env.close()
-    logger.save_as_csv("sa")  # Optional CSV save
+    # logger.save_as_csv("sa")  # Optional CSV save
     logger.plot()
+    logger.plot_rewards()
 
     # with np.load(ARGS.exp+'/evaluations.npz') as data:
     #     print(data.files)

@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 
 
-class Logger(object):
-    """A class for logging and visualization.
+class RewardLogger(object):
+    """A class for logging rewards
 
     Stores, saves to file, and plots the kinematic information and RPMs
     of a simulation with one or more drones.
@@ -19,12 +19,7 @@ class Logger(object):
     ################################################################################
 
     def __init__(
-        self,
-        logging_freq_hz: int,
-        num_drones: int = 1,
-        duration_sec: int = 0,
-        num_rewards: int = 1,
-        rewards_names: list = ["r"],
+        self, logging_freq_hz: int, num_drones: int = 1, duration_sec: int = 0
     ):
         """Logger class __init__ method.
 
@@ -65,41 +60,10 @@ class Logger(object):
         # rpm1,
         # rpm2,
         # rpm3
-        #### Note: this is the suggest information to log ##############################
-        self.controls = np.zeros(
-            (num_drones, 12, duration_sec * self.LOGGING_FREQ_HZ)
-        )  #### 12 control targets: pos_x,
-        # pos_y,
-        # pos_z,
-        # vel_x,
-        # vel_y,
-        # vel_z,
-        # roll,
-        # pitch,
-        # yaw,
-        # ang_vel_x,
-        # ang_vel_y,
-        # ang_vel_z
-        self.num_rewards = num_rewards
-        self.rewards = np.zeros(
-            (num_drones, num_rewards, duration_sec * self.LOGGING_FREQ_HZ)
-        )  ### variable number of reward components ###
-        self.rewards_names = rewards_names
-        self.dones = np.zeros(
-            (num_drones, duration_sec * self.LOGGING_FREQ_HZ)
-        )  ### variable number of reward components ###
 
-    ################################################################################
+        self.rewards = np.zeros((num_drones, num_rewards, duration_sec * self.LOGGING_FREQ_HZ))
 
-    def log(
-        self,
-        drone: int,
-        timestamp,
-        state,
-        control=np.zeros(12),
-        reward=np.zeros(1),
-        done=bool,
-    ):
+    def log(self, drone: int, timestamp, state, control=np.zeros(12)):
         """Logs entries for a single simulation step, of a single drone.
 
         Parameters
@@ -134,12 +98,6 @@ class Logger(object):
             self.controls = np.concatenate(
                 (self.controls, np.zeros((self.NUM_DRONES, 12, 1))), axis=2
             )
-            self.rewards = np.concatenate(
-                (self.rewards, np.zeros((self.NUM_DRONES, self.num_rewards, 1))), axis=2
-            )
-            self.dones = np.concatenate(
-                (self.dones, np.zeros((self.NUM_DRONES, 1))), axis=1
-            )
         #### Advance a counter is the matrices have overgrown it ###
         elif (
             not self.PREALLOCATED_ARRAYS and self.timestamps.shape[1] > current_counter
@@ -152,8 +110,6 @@ class Logger(object):
             [state[0:3], state[10:13], state[7:10], state[13:20]]
         )
         self.controls[drone, :, current_counter] = control
-        self.rewards[drone, :, current_counter] = reward
-        self.dones[drone, current_counter] = 1 if done else 0
         self.counters[drone] = current_counter + 1
 
     ################################################################################
@@ -172,7 +128,6 @@ class Logger(object):
                 timestamps=self.timestamps,
                 states=self.states,
                 controls=self.controls,
-                rewards=self.rewards,
             )
 
     ################################################################################
@@ -362,50 +317,6 @@ class Logger(object):
                 )
 
     ################################################################################
-    def plot_rewards(self, pwm=False):
-        """Logs entries for a single simulation step, of a single drone.
-
-        Parameters
-        ----------
-        pwm : bool, optional
-            If True, converts logged RPM into PWM values (for Crazyflies).
-
-        """
-        #### Loop over colors and line styles ######################
-        plt.rc(
-            "axes",
-            prop_cycle=(
-                cycler("color", ["r", "g", "b", "y"])
-                + cycler("linestyle", ["-", "--", ":", "-."])
-            ),
-        )
-        fig, axs = plt.subplots(self.num_rewards + 1, 1)
-        t = np.arange(
-            0, self.timestamps.shape[1] / self.LOGGING_FREQ_HZ, 1 / self.LOGGING_FREQ_HZ
-        )
-
-        #### Column ################################################
-        col = 0
-
-        #### XYZ ###################################################
-        for row, r_name in enumerate(self.rewards_names):
-            for j in range(self.NUM_DRONES):
-                axs[row].plot(t, self.rewards[j, row, :], label="drone_" + str(j))
-            axs[row].set_xlabel("time")
-            axs[row].set_ylabel(r_name)
-
-        # Plot the dones
-        for j in range(self.NUM_DRONES):
-            axs[self.num_rewards].plot(t, self.dones[j], label="drone_" + str(j))
-        axs[self.num_rewards].set_xlabel("time")
-        axs[self.num_rewards].set_ylabel("dones")
-
-        #### Drawing options #######################################
-        for i in range(self.num_rewards):
-            axs[i].grid(True)
-            axs[i].legend(loc="upper right", frameon=True)
-
-        plt.show()
 
     def plot(self, pwm=False):
         """Logs entries for a single simulation step, of a single drone.

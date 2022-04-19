@@ -87,12 +87,12 @@ class NavigateLandAviary(BaseSingleAgentAviary):
         self.rewardComponents = []
         self.bounds = [[5, 5, 1], [-1, -1, 0.1]]
         self.rewardComponents.append(
-            BoundsReward(self, 240, self.bounds, useTimeScaling=True)
+            BoundsReward(self, 240, self.bounds, useTimeScaling=False)
         )
-        self.rewardComponents.append(LandingReward(self, 10, self.landing_zone_xyz))
-        self.rewardComponents.append(DistanceReward(self, 10, self.landing_zone_xyz))
+        self.rewardComponents.append(LandingReward(self, 1, self.landing_zone_xyz))
+        self.rewardComponents.append(DistanceReward(self, 1, self.landing_zone_xyz))
         self.rewardComponents.append(SlowdownReward(self, 3, self.landing_zone_xyz, 2))
-        self.rewardComponents.append(SpeedReward(self, 25, 8))
+        self.rewardComponents.append(SpeedReward(self, 25, 3))
         super().__init__(
             drone_model=drone_model,
             initial_xyzs=initial_xyzs,
@@ -105,10 +105,13 @@ class NavigateLandAviary(BaseSingleAgentAviary):
             obs=obs,
             act=act,
         )
+        # override base aviary episode length
+        self.EPISODE_LEN_SEC = 10
         self.obstacles.append(
             LandingZone(self.landing_zone_xyz, self.landing_zone_wlh, self.CLIENT)
         )
         self.reward_dict = getRewardDict(self.rewardComponents)
+        self.cum_reward_dict = getRewardDict(self.rewardComponents)
 
     ################################################################################
 
@@ -136,7 +139,8 @@ class NavigateLandAviary(BaseSingleAgentAviary):
         cum_reward = 0
         for reward_component, r_dict in zip(self.rewardComponents, self.reward_dict):
             r = reward_component.calculateReward()
-            self.reward_dict[r_dict] += r
+            self.reward_dict[r_dict] = r
+            self.cum_reward_dict[r_dict] += r
             cum_reward += r
 
         return cum_reward

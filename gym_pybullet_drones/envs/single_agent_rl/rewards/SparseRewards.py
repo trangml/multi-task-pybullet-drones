@@ -66,7 +66,7 @@ class BoundsReward(SparseReward):
                 state[dim_idx] > self.bounds[0][dim_idx]
                 or state[dim_idx] < self.bounds[1][dim_idx]
             ):
-                self.aviary.completeEpisode = True
+                # self.aviary.completeEpisode = True
                 if self.useTimeScaling:
                     return NEGATIVE_REWARD * (
                         1
@@ -92,12 +92,12 @@ class LandingReward(SparseReward):
 
         # only consider x and y
         target_position = self.landing_zone_xyz
-        pos_dist = np.linalg.norm(position - target_position)
+        pos_dist = np.linalg.norm(position[0:2] - target_position[0:2])
 
-        if pos_dist < 0.3:
+        if pos_dist < 0.15:
             self.aviary.landing_frames += 1
             if self.aviary.landing_frames >= 10:
-                self.aviary.completeEpisode = True
+                # self.aviary.completeEpisode = True
                 return 2240
             else:
                 y_dist = np.linalg.norm(position[2] - (target_position[2] - 0.1))

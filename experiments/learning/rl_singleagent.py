@@ -76,7 +76,6 @@ from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
 
 from gym_pybullet_drones.envs.single_agent_rl.LandVisionAviary import LandVisionAviary
 
-from gym_pybullet_drones.envs.single_agent_rl.callbacks.RewardLogger import (RewardLoggerCallback)
 
 import shared_constants
 

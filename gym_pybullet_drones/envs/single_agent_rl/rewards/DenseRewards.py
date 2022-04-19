@@ -57,13 +57,26 @@ class DistanceReward(DenseReward):
         self.landing_zone_xyz = landing_zone_xyz
 
     def _calculateReward(self):
+        # get the actual state, not the obs
         state = self._getDroneStateVector(0)
         position = state[0:3]
         target_position = self.landing_zone_xyz
-        pos_dist = np.linalg.norm(position - target_position)
+        pos_dist = np.linalg.norm(position[0:2] - target_position[0:2])
+        # if pos_dist < 0.1:
+        #     return POSITIVE_REWARD
+        # if self.aviary.step_counter > 0:
+        #     dist_delta = pos_dist - self.last_pos_dist
+        #     self.last_pos_dist = pos_dist
+        #     if dist_delta < 0:
+        #         return POSITIVE_REWARD
+        #     else:
+        #         return NEGATIVE_REWARD
+        # else:
+        #     self.last_pos_dist = pos_dist
+        #     return 0
 
         max_dist = np.linalg.norm(target_position) + 1
-        reward = 1 - ((pos_dist) / max_dist) ** 0.5
+        reward = 1 - ((pos_dist) / 5) ** 0.5
         return reward
 
     ################################################################################
