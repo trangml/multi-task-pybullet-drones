@@ -77,7 +77,9 @@ if __name__ == "__main__":
     algo = ARGS.exp.split("-")[2]
 
     # if os.path.isfile(ARGS.exp + "/args.yaml"):
-    #     additional_args = yaml.load(open(ARGS.exp + "/args.yaml", "r"))
+    #     with open(ARGS.exp + "/args.yaml", "r") as f:
+    #         additional_args = yaml.safe_load(f)
+    #         ARGS.__dict__ = {**ARGS.__dict__, **additional_args}
 
     if os.path.isfile(ARGS.exp + "/success_model.zip"):
         path = ARGS.exp + "/success_model.zip"

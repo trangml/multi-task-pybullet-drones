@@ -82,6 +82,39 @@ class DistanceReward(DenseReward):
     ################################################################################
 
 
+class DeltaDistanceReward(DenseReward):
+    """Calculate the dense delta distance reward.
+
+    Reward = +1 if we are closer than the last step, -1 if we are further away or the same
+
+    Reward is always 1 if we are closer than 0.1
+
+    """
+
+    def __init__(self, aviary, scale, landing_zone_xyz):
+        super().__init__(aviary, scale)
+        self.landing_zone_xyz = landing_zone_xyz
+
+    def _calculateReward(self):
+        # get the actual state, not the obs
+        state = self._getDroneStateVector(0)
+        position = state[0:3]
+        target_position = self.landing_zone_xyz
+        pos_dist = np.linalg.norm(position[0:2] - target_position[0:2])
+        if pos_dist < 0.1:
+            return POSITIVE_REWARD
+        if self.aviary.step_counter > 0:
+            dist_delta = pos_dist - self.last_pos_dist
+            self.last_pos_dist = pos_dist
+            if dist_delta < 0:
+                return POSITIVE_REWARD
+            else:
+                return NEGATIVE_REWARD
+        else:
+            self.last_pos_dist = pos_dist
+            return 0
+
+
 class SlowdownReward(DenseReward):
     """Calculate the dense slowdown reward.
 

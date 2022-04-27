@@ -19,6 +19,7 @@ from gym_pybullet_drones.envs.single_agent_rl.rewards.DenseRewards import (
     DenseReward,
     SlowdownReward,
     DistanceReward,
+    DeltaDistanceReward,
 )
 from gym_pybullet_drones.envs.single_agent_rl.rewards.SparseRewards import (
     SparseReward,
@@ -86,11 +87,14 @@ class NavigateLandAviary(BaseSingleAgentAviary):
         self.obstacles = []
         self.rewardComponents = []
         self.bounds = [[5, 5, 1], [-1, -1, 0.1]]
-        self.rewardComponents.append(
-            BoundsReward(self, 240, self.bounds, useTimeScaling=False)
-        )
+        # self.rewardComponents.append(
+        #     BoundsReward(self, 240, self.bounds, useTimeScaling=False)
+        # )
         self.rewardComponents.append(LandingReward(self, 1, self.landing_zone_xyz))
         self.rewardComponents.append(DistanceReward(self, 1, self.landing_zone_xyz))
+        self.rewardComponents.append(
+            DeltaDistanceReward(self, 2, self.landing_zone_xyz)
+        )
         self.rewardComponents.append(SlowdownReward(self, 3, self.landing_zone_xyz, 2))
         self.rewardComponents.append(SpeedReward(self, 25, 3))
         super().__init__(

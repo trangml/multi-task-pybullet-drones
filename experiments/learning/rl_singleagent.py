@@ -79,7 +79,9 @@ from gym_pybullet_drones.envs.single_agent_rl.LandVisionAviary import LandVision
 
 import shared_constants
 
-EPISODE_REWARD_THRESHOLD = 10000  # Upperbound: rewards are always negative, but non-zero
+EPISODE_REWARD_THRESHOLD = (
+    10000  # Upperbound: rewards are always negative, but non-zero
+)
 """float: Reward threshold to halt the script."""
 
 MAX_EPISODES = 10000  # Upperbound: number of episodes
@@ -225,7 +227,7 @@ if __name__ == "__main__":
     #### On-policy algorithms ##################################
     onpolicy_kwargs = dict(
         activation_fn=torch.nn.ReLU,
-        net_arch=[512, 512, dict(vf=[256, 128], pi=[256, 128])],
+        net_arch=[512, 512, 256, dict(vf=[256, 128], pi=[256, 128])],
     )  # or None
 
     ### Load the saved model if specified #################
