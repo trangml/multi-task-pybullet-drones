@@ -2,6 +2,7 @@ import os
 import numpy as np
 from gym import spaces
 import pybullet as p
+import yaml
 
 from gym_pybullet_drones.envs.BaseAviary import DroneModel, Physics, BaseAviary
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
@@ -88,15 +89,15 @@ class NavigateLandAviary(BaseSingleAgentAviary):
         self.rewardComponents = []
         self.bounds = [[5, 5, 1], [-1, -1, 0.1]]
         # self.rewardComponents.append(
-        #     BoundsReward(self, 240, self.bounds, useTimeScaling=False)
+        #     BoundsReward(240, self.bounds, useTimeScaling=False)
         # )
-        self.rewardComponents.append(LandingReward(self, 1, self.landing_zone_xyz))
-        self.rewardComponents.append(DistanceReward(self, 1, self.landing_zone_xyz))
+        self.rewardComponents.append(LandingReward(1, self.landing_zone_xyz))
+        self.rewardComponents.append(DistanceReward(1, self.landing_zone_xyz))
         self.rewardComponents.append(
-            DeltaDistanceReward(self, 2, self.landing_zone_xyz)
+            DeltaDistanceReward(2, self.landing_zone_xyz)
         )
-        self.rewardComponents.append(SlowdownReward(self, 3, self.landing_zone_xyz, 2))
-        self.rewardComponents.append(SpeedReward(self, 25, 3))
+        self.rewardComponents.append(SlowdownReward(3, self.landing_zone_xyz, 2))
+        self.rewardComponents.append(SpeedReward(25, 3))
         super().__init__(
             drone_model=drone_model,
             initial_xyzs=initial_xyzs,
@@ -141,8 +142,9 @@ class NavigateLandAviary(BaseSingleAgentAviary):
 
         """
         cum_reward = 0
+        state = self._getDroneStateVector(0)
         for reward_component, r_dict in zip(self.rewardComponents, self.reward_dict):
-            r = reward_component.calculateReward()
+            r = reward_component.calculateReward(state)
             self.reward_dict[r_dict] = r
             self.cum_reward_dict[r_dict] += r
             cum_reward += r

@@ -2,6 +2,7 @@ import os
 import numpy as np
 import math
 import abc
+import ruamel.yaml
 
 from gym import spaces
 import pybullet as p
@@ -20,45 +21,44 @@ class DenseReward(Reward):
 
     """
 
-    def __init__(self, aviary, scale):
-        self.aviary = aviary
+    def __init__(self, scale):
         self.scale = scale
 
-    def _calculateReward():
+    def _calculateReward(self, state):
         return 0
 
-    def _getDroneStateVector(self, drone_id=0):
-        """Get the drone state vector.
-
-        Parameters
-        ----------
-        drone_id : int
-            Drone id.
-
-        Returns
-        -------
-        np.array
-            Drone state vector.
-
-        """
-        # state = p.getLinkState(drone_id, 0)
-        state = self.aviary._getDroneStateVector(drone_id)
-        return np.array(state)
-
-    def calculateReward(self):
-        return self._calculateReward() * self.scale
+    def calculateReward(self, state):
+        return self._calculateReward(state) * self.scale
 
 
 class DistanceReward(DenseReward):
     """Calculate the dense distance reward."""
 
-    def __init__(self, aviary, scale, landing_zone_xyz):
-        super().__init__(aviary, scale)
+    def __init__(self, scale, landing_zone_xyz):
+        super().__init__(scale)
         self.landing_zone_xyz = landing_zone_xyz
 
-    def _calculateReward(self):
-        # get the actual state, not the obs
-        state = self._getDroneStateVector(0)
+    @classmethod
+    def from_yaml(cls, constructor, node):
+        """Create a DistanceReward from YAML.
+
+        Parameters
+        ----------
+        slx : Constructor
+            YAML constructor.
+        node : yaml.nodes.Node
+            YAML node.
+
+        Returns
+        -------
+        DistanceReward
+            DistanceReward instance.
+
+        """
+        args = constructor.construct_yaml_map(node)
+        return DistanceReward(**args)
+
+    def _calculateReward(self, state):
         position = state[0:3]
         target_position = self.landing_zone_xyz
         pos_dist = np.linalg.norm(position[0:2] - target_position[0:2])
@@ -91,19 +91,19 @@ class DeltaDistanceReward(DenseReward):
 
     """
 
-    def __init__(self, aviary, scale, landing_zone_xyz):
-        super().__init__(aviary, scale)
+    def __init__(self, scale, landing_zone_xyz):
+        super().__init__(scale)
         self.landing_zone_xyz = landing_zone_xyz
+        self._initial_step = True
 
-    def _calculateReward(self):
+    def _calculateReward(self, state):
         # get the actual state, not the obs
-        state = self._getDroneStateVector(0)
         position = state[0:3]
         target_position = self.landing_zone_xyz
         pos_dist = np.linalg.norm(position[0:2] - target_position[0:2])
         if pos_dist < 0.1:
             return POSITIVE_REWARD
-        if self.aviary.step_counter > 0:
+        if not self._initial_step:
             dist_delta = pos_dist - self.last_pos_dist
             self.last_pos_dist = pos_dist
             if dist_delta < 0:
@@ -112,6 +112,7 @@ class DeltaDistanceReward(DenseReward):
                 return NEGATIVE_REWARD
         else:
             self.last_pos_dist = pos_dist
+            self._initial_step = False
             return 0
 
 
@@ -122,13 +123,12 @@ class SlowdownReward(DenseReward):
 
     """
 
-    def __init__(self, aviary, scale, landing_zone_xyz, slowdown_dist):
-        super().__init__(aviary, scale)
+    def __init__(self, scale, landing_zone_xyz, slowdown_dist):
+        super().__init__(scale)
         self.landing_zone_xyz = landing_zone_xyz
         self.slowdown_dist = slowdown_dist
 
-    def _calculateReward(self):
-        state = self._getDroneStateVector(0)
+    def _calculateReward(self, state):
         position = state[0:3]
         # only consider the x and y coordinates, as y can still change to get us closer
         velocity = state[10:12]
@@ -149,12 +149,11 @@ class SlowdownReward(DenseReward):
 class FieldCoverageReward(DenseReward):
     """Calculate the field coverage reward."""
 
-    def __init__(self, aviary, scale, field):
-        super().__init__(aviary, scale)
+    def __init__(self, scale, field):
+        super().__init__(scale)
         self.field = field
 
     def _calculateReward(self):
-        state = self._getDroneStateVector(0)
         position = state[0:3]
         if self.field.checkIsCovered((position[0], position[1])):
             return 1
@@ -162,3 +161,22 @@ class FieldCoverageReward(DenseReward):
             return -0.01
 
     ################################################################################
+
+
+def test_yaml_load():
+    """Test the YAML load of the DistanceReward."""
+    yaml_str = """
+    !DistanceReward
+    scale: 0.1
+    landing_zone_xyz: [0, 0, 0]
+    """
+    yaml = ruamel.yaml.YAML(typ="safe")
+    yaml.register_class(Item)
+    yaml.register_class(Message)
+    yaml_map = yaml.load(yaml_str)
+    # with open('input.yaml') as fp:
+    #     data = yaml.load(fp)
+
+
+if __name__ == "__main__":
+    test_yaml_load()

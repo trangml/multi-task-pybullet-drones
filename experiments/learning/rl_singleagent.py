@@ -28,6 +28,7 @@ import numpy as np
 import gym
 import torch
 import yaml
+import hydra
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.env_util import (
     make_vec_env,
@@ -149,6 +150,13 @@ if __name__ == "__main__":
         default=False,
         type=bool,
         help="Randomize Landing Zone XYZ location, comma separated (default: False)",
+        metavar="",
+    )
+    parser.add_argument(
+        "--config",
+        default=None,
+        type=str,
+        help="Path to yaml config file (default: False)",
         metavar="",
     )
     ARGS = parser.parse_args()

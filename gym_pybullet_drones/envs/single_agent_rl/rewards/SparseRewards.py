@@ -17,48 +17,28 @@ NEGATIVE_REWARD = -1
 class SparseReward(Reward):
     """Sparse reward for a drone."""
 
-    def __init__(self, aviary, scale):
+    def __init__(self, scale):
         super().__init__()
-        self.aviary = aviary
         self.scale = scale
 
-    def _calculateReward():
+    def _calculateReward(self, state):
         return 0
 
-    def _getDroneStateVector(self, drone_id=0):
-        """Get the drone state vector.
-
-        Parameters
-        ----------
-        drone_id : int
-            Drone id.
-
-        Returns
-        -------
-        np.array
-            Drone state vector.
-
-        """
-        # state = p.getLinkState(drone_id, 0)
-        state = self.aviary._getDroneStateVector(drone_id)
-        return np.array(state)
-
-    def calculateReward(self):
-        return self._calculateReward() * self.scale
+    def calculateReward(self, state):
+        return self._calculateReward(state) * self.scale
 
 
 class BoundsReward(SparseReward):
     """Checks rewards for out of bounds"""
 
-    def __init__(self, aviary, scale, bounds, useTimeScaling=False):
-        super().__init__(aviary, scale)
+    def __init__(self, scale, bounds, useTimeScaling=False):
+        super().__init__(scale)
         # Defined as [[x_high, y_high, z_high], [x_low, y_low, z_low]]
         self.bounds = bounds
         self.XYZ_IDX = [0, 1, 2]
         self.useTimeScaling = useTimeScaling
 
-    def _calculateReward(self):
-        state = self._getDroneStateVector(0)
+    def _calculateReward(self, state):
         position = state[0:3]
 
         for dim_idx in self.XYZ_IDX:
@@ -82,12 +62,12 @@ class BoundsReward(SparseReward):
 class LandingReward(SparseReward):
     """Calculate the landing reward."""
 
-    def __init__(self, aviary, scale, landing_zone_xyz):
-        super().__init__(aviary, scale)
+    def __init__(self, scale, landing_zone_xyz):
+        super().__init__(scale)
         self.landing_zone_xyz = landing_zone_xyz
+        self.landing_frames = 0
 
-    def _calculateReward(self):
-        state = self._getDroneStateVector(0)
+    def _calculateReward(self, state):
         position = state[0:3]
 
         # only consider x and y
@@ -95,8 +75,8 @@ class LandingReward(SparseReward):
         pos_dist = np.linalg.norm(position[0:2] - target_position[0:2])
 
         if pos_dist < 0.15:
-            self.aviary.landing_frames += 1
-            if self.aviary.landing_frames >= 10:
+            self.landing_frames += 1
+            if self.landing_frames >= 10:
                 # self.aviary.completeEpisode = True
                 return 2240
             else:
@@ -111,12 +91,11 @@ class LandingReward(SparseReward):
 class SpeedReward(SparseReward):
     """Calculate the landing reward."""
 
-    def __init__(self, aviary, scale, max_speed):
-        super().__init__(aviary, scale)
+    def __init__(self, scale, max_speed):
+        super().__init__(scale)
         self.max_speed = max_speed
 
-    def _calculateReward(self):
-        state = self._getDroneStateVector(0)
+    def _calculateReward(self, state):
         velocity = state[10:13]
         vel = np.linalg.norm(velocity)
 

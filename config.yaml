@@ -1,0 +1,44 @@
+- !!python/object:gym_pybullet_drones.envs.single_agent_rl.rewards.SparseRewards.LandingReward
+  landing_zone_xyz: &id001 !!python/object/apply:numpy.core.multiarray._reconstruct
+    args:
+    - !!python/name:numpy.ndarray ''
+    - !!python/tuple
+      - 0
+    - !!binary |
+      Yg==
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 3
+    - !!python/object/apply:numpy.dtype
+      args:
+      - f8
+      - false
+      - true
+      state: !!python/tuple
+      - 3
+      - <
+      - null
+      - null
+      - null
+      - -1
+      - -1
+      - 0
+    - false
+    - !!binary |
+      AAAAAAAADEAAAAAAAAAMQAAAAAAAALA/
+  scale: 1
+- !!python/object:gym_pybullet_drones.envs.single_agent_rl.rewards.DenseRewards.DistanceReward
+  landing_zone_xyz: *id001
+  scale: 1
+- !!python/object:gym_pybullet_drones.envs.single_agent_rl.rewards.DenseRewards.DeltaDistanceReward
+  _initial_step: true
+  landing_zone_xyz: *id001
+  scale: 2
+- !!python/object:gym_pybullet_drones.envs.single_agent_rl.rewards.DenseRewards.SlowdownReward
+  landing_zone_xyz: *id001
+  scale: 3
+  slowdown_dist: 2
+- !!python/object:gym_pybullet_drones.envs.single_agent_rl.rewards.SparseRewards.SpeedReward
+  max_speed: 3
+  scale: 25
