@@ -29,6 +29,9 @@ import gym
 import torch
 import yaml
 import hydra
+import pickle
+from omegaconf import DictConfig
+from omegaconf import OmegaConf
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.env_util import (
     make_vec_env,
@@ -87,91 +90,21 @@ EPISODE_REWARD_THRESHOLD = (
 
 MAX_EPISODES = 10000  # Upperbound: number of episodes
 
-if __name__ == "__main__":
-
-    #### Define and parse (optional) arguments for the script ##
-    parser = argparse.ArgumentParser(
-        description="Single agent reinforcement learning experiments script"
-    )
-    parser.add_argument(
-        "--env",
-        default="land",
-        type=str,
-        choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
-        help="Task (default: hover)",
-        metavar="",
-    )
-    parser.add_argument(
-        "--algo",
-        default="ppo",
-        type=str,
-        choices=["a2c", "ppo", "sac", "td3", "ddpg"],
-        help="RL agent (default: ppo)",
-        metavar="",
-    )
-    parser.add_argument(
-        "--obs",
-        default="kin",
-        type=ObservationType,
-        # choices=["kin", "rgb"],
-        help="Observation space (default: kin)",
-        metavar="",
-    )
-    parser.add_argument(
-        "--act",
-        default="rpm",
-        type=ActionType,
-        help="Action space (default: rpm)",
-        metavar="",
-    )
-    parser.add_argument(
-        "--cpu",
-        default="1",
-        type=int,
-        help="Number of training environments (default: 1)",
-        metavar="",
-    )
-    parser.add_argument(
-        "--exp",
-        default="none",
-        type=str,
-        help="Model path to resume training from (default: none)",
-        metavar="",
-    )
-    parser.add_argument(
-        "--landing_zone",
-        default="3.5, 3.5, 0.0625",
-        type=str,
-        help="Landing Zone XYZ location, comma separated (default: 3.5, 3.5, 0.0625)",
-        metavar="",
-    )
-    parser.add_argument(
-        "--random_landing_zone",
-        default=False,
-        type=bool,
-        help="Randomize Landing Zone XYZ location, comma separated (default: False)",
-        metavar="",
-    )
-    parser.add_argument(
-        "--config",
-        default=None,
-        type=str,
-        help="Path to yaml config file (default: False)",
-        metavar="",
-    )
-    ARGS = parser.parse_args()
-
-    # if ARGS.saved_model != "none":
-    #     assert os.path.isfile(ARGS.saved_model)
-    #     filename=ARGS.saved_model
+#@hydra.main(config_path="config", config_name="rl_singleagent" )
+def train_loop(ARGS, cfg:DictConfig=None):
+    cfg = OmegaConf.load(ARGS.config)
+    cli = OmegaConf.from_cli()
+    cfg = OmegaConf.merge(cfg, cli)
+    a = cfg.tag
+    b = cfg["tag"]
 
     #### Save directory ########################################
     filename = (
         os.path.dirname(os.path.abspath(__file__))
         + "/results/save-"
-        + ARGS.env
+        + cfg.env
         + "-"
-        + ARGS.algo
+        + cfg.algo
         + "-"
         + ARGS.obs.value
         + "-"
@@ -182,51 +115,50 @@ if __name__ == "__main__":
     if not os.path.exists(filename):
         os.makedirs(filename + "/")
 
-    if ARGS.algo in ["sac", "td3", "ddpg"] and ARGS.cpu != 1:
+    if cfg.algo in ["sac", "td3", "ddpg"] and cfg.cpu != 1:
         print("[ERROR] The selected algorithm does not support multiple environments")
         exit()
 
     with open(filename + "/args.yaml", "w") as f:
-        yaml.dump(vars(ARGS), f)
+        OmegaConf.save(cfg, f)
+        #pickle.dump(cfg, f)
+        #yaml.dump(cfg, f)
     #### Uncomment to debug slurm scripts ######################
     # exit()
 
-    env_name = ARGS.env + "-aviary-v0"
+    env_name = cfg.env + "-aviary-v0"
     sa_env_kwargs = dict(
         aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
         obs=ARGS.obs,
         act=ARGS.act,
+        **cfg.env_kwargs,
     )
-    if env_name == "land-aviary-v0" or env_name == "obstacles-aviary-v0":
-        sa_env_kwargs["landing_zone_xyz"] = np.fromstring(
-            ARGS.landing_zone, dtype=float, sep=","
-        )
-        sa_env_kwargs["random_landing_zone"] = ARGS.random_landing_zone
+
 
     # train_env = gym.make(env_name, aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act) # single environment instead of a vectorized one
     if env_name == "hover-aviary-v0":
         train_env = make_vec_env(
-            HoverAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0
+            HoverAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
         )
     if env_name == "maze-aviary-v0":
         train_env = make_vec_env(
-            NavigateMazeAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0
+            NavigateMazeAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
         )
     if env_name == "obstacles-aviary-v0":
         train_env = make_vec_env(
-            NavigateObstaclesAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0
+            NavigateObstaclesAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
         )
     if env_name == "land-aviary-v0":
         train_env = make_vec_env(
-            NavigateLandAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0
+            NavigateLandAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
         )
     if env_name == "field-aviary-v0":
         train_env = make_vec_env(
-            FieldCoverageAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0
+            FieldCoverageAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
         )
     if env_name == "land-vision-aviary-v0":
         train_env = make_vec_env(
-            LandVisionAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0
+            LandVisionAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
         )
     print("[INFO] Action space:", train_env.action_space)
     print("[INFO] Observation space:", train_env.observation_space)
@@ -239,17 +171,17 @@ if __name__ == "__main__":
     )  # or None
 
     ### Load the saved model if specified #################
-    if ARGS.exp != "none":
+    if cfg.exp != "none":
         #### Load the model from file ##############################
-        # algo = ARGS.exp.split("-")[2]
-        algo = ARGS.algo
+        # algo = cfg.exp.split("-")[2]
+        algo = cfg.algo
 
-        if os.path.isfile(ARGS.exp + "/success_model.zip"):
-            path = ARGS.exp + "/success_model.zip"
-        elif os.path.isfile(ARGS.exp + "/best_model.zip"):
-            path = ARGS.exp + "/best_model.zip"
+        if os.path.isfile(cfg.exp + "/success_model.zip"):
+            path = cfg.exp + "/success_model.zip"
+        elif os.path.isfile(cfg.exp + "/best_model.zip"):
+            path = cfg.exp + "/best_model.zip"
         else:
-            print("[ERROR]: no model under the specified path", ARGS.exp)
+            print("[ERROR]: no model under the specified path", cfg.exp)
         if algo == "a2c":
             model = A2C.load(path, tensorboard_log=filename + "/tb_log")
         if algo == "ppo":
@@ -262,7 +194,7 @@ if __name__ == "__main__":
             model = DDPG.load(path, tensorboard_log=filename + "/tb_log")
         model.set_env(train_env)
     else:
-        if ARGS.algo == "a2c":
+        if cfg.algo == "a2c":
             model = (
                 A2C(
                     a2cppoMlpPolicy,
@@ -280,7 +212,7 @@ if __name__ == "__main__":
                     verbose=1,
                 )
             )
-        if ARGS.algo == "ppo":
+        if cfg.algo == "ppo":
             model = (
                 PPO(
                     a2cppoMlpPolicy,
@@ -303,7 +235,7 @@ if __name__ == "__main__":
         offpolicy_kwargs = dict(
             activation_fn=torch.nn.ReLU, net_arch=[512, 512, 256, 128]
         )  # or None # or dict(net_arch=dict(qf=[256, 128, 64, 32], pi=[256, 128, 64, 32]))
-        if ARGS.algo == "sac":
+        if cfg.algo == "sac":
             model = (
                 SAC(
                     sacMlpPolicy,
@@ -321,7 +253,7 @@ if __name__ == "__main__":
                     verbose=1,
                 )
             )
-        if ARGS.algo == "td3":
+        if cfg.algo == "td3":
             model = (
                 TD3(
                     td3ddpgMlpPolicy,
@@ -339,7 +271,7 @@ if __name__ == "__main__":
                     verbose=1,
                 )
             )
-        if ARGS.algo == "ddpg":
+        if cfg.algo == "ddpg":
             model = (
                 DDPG(
                     td3ddpgMlpPolicy,
@@ -360,11 +292,16 @@ if __name__ == "__main__":
 
     #### Create evaluation environment #########################
     if ARGS.obs == ObservationType.KIN:
+        # eval_env = gym.make(
+        #     env_name,
+        #     aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
+        #     obs=ARGS.obs,
+        #     act=ARGS.act,
+        #     **cfg.env_kwargs,
+        # )
         eval_env = gym.make(
             env_name,
-            aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
-            obs=ARGS.obs,
-            act=ARGS.act,
+            **sa_env_kwargs
         )
     elif ARGS.obs == ObservationType.RGB:
         if env_name == "takeoff-aviary-v0":
@@ -414,7 +351,7 @@ if __name__ == "__main__":
         verbose=1,
         best_model_save_path=filename + "/",
         log_path=filename + "/",
-        eval_freq=int(2000 / ARGS.cpu),
+        eval_freq=int(2000 / cfg.cpu),
         deterministic=True,
         render=False,
     )
@@ -439,3 +376,22 @@ if __name__ == "__main__":
                 print(str(data["timesteps"][j]) + "," + str(data["results"][j][0]))
             except:
                 print("oops")
+
+if __name__ == "__main__":
+    #### Define and parse (optional) arguments for the script ##
+    parser = argparse.ArgumentParser(
+        description="Single agent reinforcement learning experiments script"
+    )
+    parser.add_argument(
+        "--config",
+        default=None,
+        type=str,
+        help="Path to yaml config file (default: False)",
+        metavar="",
+    )
+    parser.add_argument('--obs', default='kin',type=ObservationType, help='Observation space (default: kin)', metavar='')
+    parser.add_argument('--act', default='rpm',  type=ActionType, help='Action space (default: one_d_rpm)', metavar='')
+
+    ARGS = parser.parse_args()
+    train_loop(ARGS)
+
