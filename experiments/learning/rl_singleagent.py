@@ -29,7 +29,7 @@ import gym
 import torch
 import yaml
 import hydra
-import pickle
+import pprint
 from omegaconf import DictConfig
 from omegaconf import OmegaConf
 from stable_baselines3.common.env_checker import check_env
@@ -79,7 +79,7 @@ from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
 )
 
 from gym_pybullet_drones.envs.single_agent_rl.LandVisionAviary import LandVisionAviary
-
+from gym_pybullet_drones.envs.single_agent_rl.callbacks import (RewardCallback,)
 
 import shared_constants
 
@@ -90,13 +90,12 @@ EPISODE_REWARD_THRESHOLD = (
 
 MAX_EPISODES = 10000  # Upperbound: number of episodes
 
-#@hydra.main(config_path="config", config_name="rl_singleagent" )
-def train_loop(ARGS, cfg:DictConfig=None):
-    cfg = OmegaConf.load(ARGS.config)
+@hydra.main(version_base=None, config_path="config", config_name="rl_singleagent" )
+def train_loop(cfg:DictConfig=None):
+    #cfg = OmegaConf.load(ARGS.config)
     cli = OmegaConf.from_cli()
     cfg = OmegaConf.merge(cfg, cli)
-    a = cfg.tag
-    b = cfg["tag"]
+    pprint.pprint(cfg)
 
     #### Save directory ########################################
     filename = (
@@ -106,9 +105,11 @@ def train_loop(ARGS, cfg:DictConfig=None):
         + "-"
         + cfg.algo
         + "-"
-        + ARGS.obs.value
+        + cfg.obs
         + "-"
-        + ARGS.act.value
+        + cfg.act
+        + "-"
+        + cfg.tag
         + "-"
         + datetime.now().strftime("%m.%d.%Y_%H.%M.%S")
     )
@@ -119,23 +120,21 @@ def train_loop(ARGS, cfg:DictConfig=None):
         print("[ERROR] The selected algorithm does not support multiple environments")
         exit()
 
-    with open(filename + "/args.yaml", "w") as f:
+    with open(filename + "/config.yaml", "w") as f:
         OmegaConf.save(cfg, f)
-        #pickle.dump(cfg, f)
-        #yaml.dump(cfg, f)
     #### Uncomment to debug slurm scripts ######################
     # exit()
 
     env_name = cfg.env + "-aviary-v0"
     sa_env_kwargs = dict(
         aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
-        obs=ARGS.obs,
-        act=ARGS.act,
+        obs=ObservationType[cfg.obs],
+        act=ActionType[cfg.act],
         **cfg.env_kwargs,
     )
 
 
-    # train_env = gym.make(env_name, aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act) # single environment instead of a vectorized one
+    # train_env = gym.make(env_name, aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ObservationType[cfg.obs], act=ActionType[cfg.act]) # single environment instead of a vectorized one
     if env_name == "hover-aviary-v0":
         train_env = make_vec_env(
             HoverAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
@@ -203,7 +202,7 @@ def train_loop(ARGS, cfg:DictConfig=None):
                     tensorboard_log=filename + "/tb/",
                     verbose=1,
                 )
-                if ARGS.obs == ObservationType.KIN
+                if cfg.obs == ObservationType.KIN
                 else A2C(
                     a2cppoCnnPolicy,
                     train_env,
@@ -221,7 +220,7 @@ def train_loop(ARGS, cfg:DictConfig=None):
                     tensorboard_log=filename + "/tb/",
                     verbose=1,
                 )
-                if ARGS.obs == ObservationType.KIN
+                if ObservationType[cfg.obs] == ObservationType.KIN
                 else PPO(
                     a2cppoCnnPolicy,
                     train_env,
@@ -244,7 +243,7 @@ def train_loop(ARGS, cfg:DictConfig=None):
                     tensorboard_log=filename + "/tb/",
                     verbose=1,
                 )
-                if ARGS.obs == ObservationType.KIN
+                if ObservationType[cfg.obs] == ObservationType.KIN
                 else SAC(
                     sacCnnPolicy,
                     train_env,
@@ -262,7 +261,7 @@ def train_loop(ARGS, cfg:DictConfig=None):
                     tensorboard_log=filename + "/tb/",
                     verbose=1,
                 )
-                if ARGS.obs == ObservationType.KIN
+                if ObservationType[cfg.obs] == ObservationType.KIN
                 else TD3(
                     td3ddpgCnnPolicy,
                     train_env,
@@ -280,7 +279,7 @@ def train_loop(ARGS, cfg:DictConfig=None):
                     tensorboard_log=filename + "/tb/",
                     verbose=1,
                 )
-                if ARGS.obs == ObservationType.KIN
+                if ObservationType[cfg.obs] == ObservationType.KIN
                 else DDPG(
                     td3ddpgCnnPolicy,
                     train_env,
@@ -291,19 +290,12 @@ def train_loop(ARGS, cfg:DictConfig=None):
             )
 
     #### Create evaluation environment #########################
-    if ARGS.obs == ObservationType.KIN:
-        # eval_env = gym.make(
-        #     env_name,
-        #     aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
-        #     obs=ARGS.obs,
-        #     act=ARGS.act,
-        #     **cfg.env_kwargs,
-        # )
+    if ObservationType[cfg.obs] == ObservationType.KIN:
         eval_env = gym.make(
             env_name,
             **sa_env_kwargs
         )
-    elif ARGS.obs == ObservationType.RGB:
+    elif ObservationType[cfg.obs] == ObservationType.RGB:
         if env_name == "takeoff-aviary-v0":
             eval_env = make_vec_env(
                 TakeoffAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
@@ -356,14 +348,17 @@ def train_loop(ARGS, cfg:DictConfig=None):
         render=False,
     )
     max_episode_callback = StopTrainingOnMaxEpisodes(max_episodes=MAX_EPISODES)
-    combo_callback = CallbackList([checkpoint_callback, eval_callback])
+    reward_callback = RewardCallback()
+    combo_callback = CallbackList([checkpoint_callback, eval_callback, reward_callback])
+    acombo_callback = CallbackList([eval_callback, reward_callback])
     model.learn(
-        total_timesteps=int(5e7),
-        # callback=combo_callback,
-        callback=eval_callback,
+        total_timesteps=int(cfg.n_steps),
+        callback=acombo_callback,
+        #callback=eval_callback,
         # callback=checkpoint_callback,
         log_interval=1000,
     )
+    reward = eval_callback.last_mean_reward
 
     #### Save the model ########################################
     model.save(filename + "/success_model.zip")
@@ -376,22 +371,23 @@ def train_loop(ARGS, cfg:DictConfig=None):
                 print(str(data["timesteps"][j]) + "," + str(data["results"][j][0]))
             except:
                 print("oops")
+    return reward
 
 if __name__ == "__main__":
     #### Define and parse (optional) arguments for the script ##
-    parser = argparse.ArgumentParser(
-        description="Single agent reinforcement learning experiments script"
-    )
-    parser.add_argument(
-        "--config",
-        default=None,
-        type=str,
-        help="Path to yaml config file (default: False)",
-        metavar="",
-    )
-    parser.add_argument('--obs', default='kin',type=ObservationType, help='Observation space (default: kin)', metavar='')
-    parser.add_argument('--act', default='rpm',  type=ActionType, help='Action space (default: one_d_rpm)', metavar='')
+    # parser = argparse.ArgumentParser(
+    #     description="Single agent reinforcement learning experiments script"
+    # )
+    # parser.add_argument(
+    #     "--config",
+    #     default=None,
+    #     type=str,
+    #     help="Path to yaml config file (default: False)",
+    #     metavar="",
+    # )
+    # parser.add_argument('--obs', default='kin',type=ObservationType, help='Observation space (default: kin)', metavar='')
+    # parser.add_argument('--act', default='rpm',  type=ActionType, help='Action space (default: one_d_rpm)', metavar='')
 
-    ARGS = parser.parse_args()
-    train_loop(ARGS)
+    # ARGS = parser.parse_args()
+    train_loop()
 

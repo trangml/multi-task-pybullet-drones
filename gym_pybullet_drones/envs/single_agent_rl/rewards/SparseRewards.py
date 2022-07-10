@@ -31,12 +31,12 @@ class SparseReward(Reward):
 class BoundsReward(SparseReward):
     """Checks rewards for out of bounds"""
 
-    def __init__(self, scale, bounds, useTimeScaling=False):
+    def __init__(self, scale, bounds, use_time_scaling=False):
         super().__init__(scale)
         # Defined as [[x_high, y_high, z_high], [x_low, y_low, z_low]]
         self.bounds = bounds
         self.XYZ_IDX = [0, 1, 2]
-        self.useTimeScaling = useTimeScaling
+        self.use_time_scaling = use_time_scaling
 
     def _calculateReward(self, state):
         position = state[0:3]
@@ -47,7 +47,7 @@ class BoundsReward(SparseReward):
                 or state[dim_idx] < self.bounds[1][dim_idx]
             ):
                 # self.aviary.completeEpisode = True
-                if self.useTimeScaling:
+                if self.use_time_scaling:
                     return NEGATIVE_REWARD * (
                         1
                         - (
@@ -78,10 +78,10 @@ class LandingReward(SparseReward):
             self.landing_frames += 1
             if self.landing_frames >= 10:
                 # self.aviary.completeEpisode = True
-                return 2240
+                return 10*POSITIVE_REWARD
             else:
                 y_dist = np.linalg.norm(position[2] - (target_position[2] - 0.1))
-                return 80 + (1 - y_dist) * 10
+                return POSITIVE_REWARD * (1 - y_dist)
         else:
             return 0
 

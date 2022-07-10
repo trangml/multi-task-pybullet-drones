@@ -325,7 +325,7 @@ class BaseAviary(gym.Env):
                 .reshape(self.NUM_DRONES, 3)
             )
         elif np.array(initial_xyzs).shape == (self.NUM_DRONES, 3):
-            self.INIT_XYZS = initial_xyzs
+            self.INIT_XYZS = np.array(initial_xyzs)
         else:
             print(
                 "[ERROR] invalid initial_xyzs in BaseAviary.__init__(), try initial_xyzs.reshape(NUM_DRONES,3)"

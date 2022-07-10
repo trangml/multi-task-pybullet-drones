@@ -104,9 +104,10 @@ class DeltaDistanceReward(DenseReward):
         if pos_dist < 0.1:
             return POSITIVE_REWARD
         if not self._initial_step:
+            # we want the distance to decrease at each step, thus negative dist_delta
             dist_delta = pos_dist - self.last_pos_dist
             self.last_pos_dist = pos_dist
-            if dist_delta < 0:
+            if dist_delta < -0.01:
                 return POSITIVE_REWARD
             else:
                 return NEGATIVE_REWARD
@@ -163,20 +164,3 @@ class FieldCoverageReward(DenseReward):
     ################################################################################
 
 
-def test_yaml_load():
-    """Test the YAML load of the DistanceReward."""
-    yaml_str = """
-    !DistanceReward
-    scale: 0.1
-    landing_zone_xyz: [0, 0, 0]
-    """
-    yaml = ruamel.yaml.YAML(typ="safe")
-    yaml.register_class(Item)
-    yaml.register_class(Message)
-    yaml_map = yaml.load(yaml_str)
-    # with open('input.yaml') as fp:
-    #     data = yaml.load(fp)
-
-
-if __name__ == "__main__":
-    test_yaml_load()

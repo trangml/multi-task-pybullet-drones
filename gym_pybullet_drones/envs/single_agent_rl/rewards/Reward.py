@@ -8,4 +8,5 @@ def getRewardDict(rewards):
     rewardDict = {}
     for reward in rewards:
         rewardDict[reward.__class__.__name__] = 0
+    rewardDict["total"] = 0
     return rewardDict

@@ -1,4 +1,3 @@
-# general script settings
 tag: test_land
 env: land
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
@@ -8,10 +7,7 @@ obs: KIN
 # choices=["kin", "rgb"],
 act: RPM
 exp: none
-cpu: 8
-n_steps: 1e7
-
-# PPO arguments
+cpu: 1
 
 # Env specific settings
 env_kwargs:
@@ -23,22 +19,22 @@ env_kwargs:
   # rewards
   reward_components:
     LandingReward:
-      scale: 10.0
-      landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
+        scale: 10.0
+        landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
     DistanceReward:
-      scale: 10.0
-      landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
+        scale: 1.0
+        landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
     DeltaDistanceReward:
-      scale: 10.0
-      landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
+        scale: 1.0
+        landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
     SlowdownReward:
-      scale: 3.0
-      landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
-      slowdown_dist: 1.0
+        scale: 1.0
+        landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
+        slowdown_dist: 1.0
     SpeedReward:
-      scale: 0.0
-      max_speed: 5.0
+        scale: 0.0
+        max_speed: 5.0
     BoundsReward:
-      scale: 10.0
-      bounds: ${env_kwargs.bounds}
-      use_time_scaling: false
+        scale: 2.0
+        bounds: ${env_kwargs.bounds}
+        use_time_scaling: false

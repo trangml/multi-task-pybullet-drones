@@ -17,7 +17,7 @@ import re
 import numpy as np
 import gym
 import torch
-import yaml
+from omegaconf import OmegaConf
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3 import A2C
 from stable_baselines3 import PPO
@@ -73,13 +73,16 @@ if __name__ == "__main__":
     )
     ARGS = parser.parse_args()
 
+    if os.path.isfile(ARGS.exp + "/config.yaml"):
+        with open(ARGS.exp + "/config.yaml", "r") as f:
+            exp = ARGS.exp
+            additional_args = OmegaConf.load(f)
+            ARGS.__dict__ = {**ARGS.__dict__, **additional_args}
+            ARGS.exp = exp
+    print(ARGS)
     #### Load the model from file ##############################
-    algo = ARGS.exp.split("-")[2]
+    algo = ARGS.algo
 
-    # if os.path.isfile(ARGS.exp + "/args.yaml"):
-    #     with open(ARGS.exp + "/args.yaml", "r") as f:
-    #         additional_args = yaml.safe_load(f)
-    #         ARGS.__dict__ = {**ARGS.__dict__, **additional_args}
 
     if os.path.isfile(ARGS.exp + "/success_model.zip"):
         path = ARGS.exp + "/success_model.zip"
@@ -99,69 +102,33 @@ if __name__ == "__main__":
         model = DDPG.load(path)
 
     #### Parameters to recreate the environment ################
-    env_name = ARGS.exp.split("-")[1] + "-aviary-v0"
-    OBS = (
-        ObservationType.KIN if ARGS.exp.split("-")[3] == "kin" else ObservationType.RGB
-    )
-    if ARGS.exp.split("-")[4] == "rpm":
-        ACT = ActionType.RPM
-    elif ARGS.exp.split("-")[4] == "dyn":
-        ACT = ActionType.DYN
-    elif ARGS.exp.split("-")[4] == "pid":
-        ACT = ActionType.PID
-    elif ARGS.exp.split("-")[4] == "vel":
-        ACT = ActionType.VEL
-    elif ARGS.exp.split("-")[4] == "tun":
-        ACT = ActionType.TUN
-    elif ARGS.exp.split("-")[4] == "one_d_rpm":
-        ACT = ActionType.ONE_D_RPM
-    elif ARGS.exp.split("-")[4] == "one_d_dyn":
-        ACT = ActionType.ONE_D_DYN
-    elif ARGS.exp.split("-")[4] == "one_d_pid":
-        ACT = ActionType.ONE_D_PID
+    env_name = ARGS.env + "-aviary-v0"
+    OBS = ObservationType[ARGS.obs]
+    ACT = ActionType[ARGS.act]
 
     #### Evaluate the model ####################################
     print(ARGS.landing_zone)
-    landing_zone_xyz = np.fromstring(ARGS.landing_zone, dtype=float, sep=",")
-    print(landing_zone_xyz)
-    if env_name == "land-aviary-v0" or env_name == "obstacles-aviary-v0":
-        eval_env = gym.make(
-            env_name,
-            aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
-            obs=OBS,
-            act=ACT,
-            landing_zone_xyz=landing_zone_xyz,
-        )
-    else:
-        eval_env = gym.make(
-            env_name,
-            aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
-            obs=OBS,
-            act=ACT,
-        )
+    eval_env = gym.make(
+        env_name,
+        aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
+        obs=OBS,
+        act=ACT,
+        **ARGS.env_kwargs,
+    )
+
     mean_reward, std_reward = evaluate_policy(model, eval_env, n_eval_episodes=10)
     print("\n\n\nMean reward ", mean_reward, " +- ", std_reward, "\n\n")
 
     #### Show, record a video, and log the model's performance #
-    if env_name == "land-aviary-v0" or env_name == "obstacles-aviary-v0":
-        test_env = gym.make(
-            env_name,
-            gui=True,
-            record=ARGS.record,
-            aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
-            obs=OBS,
-            act=ACT,
-            landing_zone_xyz=landing_zone_xyz,
-        )
-    else:
-        test_env = gym.make(
-            env_name,
-            gui=True,
-            record=ARGS.record,
-            aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
-            obs=OBS,
-            act=ACT,
-        )
+    test_env = gym.make(
+        env_name,
+        gui=True,
+        record=ARGS.record,
+        aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
+        obs=OBS,
+        act=ACT,
+        **ARGS.env_kwargs,
+    )
 
     logger = Logger(
         logging_freq_hz=int(test_env.SIM_FREQ / test_env.AGGR_PHY_STEPS),

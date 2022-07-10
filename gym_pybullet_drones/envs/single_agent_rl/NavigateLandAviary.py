@@ -54,6 +54,7 @@ class NavigateLandAviary(BaseSingleAgentAviary):
         random_landing_zone: bool =False,
         reward_components: List =[],
         bounds: List = [[5, 5, 1], [-1, -1, 0.1]],
+        early_stop: bool = False,
         **kwargs
     ):
         """Initialization of a single agent RL environment.
@@ -103,9 +104,9 @@ class NavigateLandAviary(BaseSingleAgentAviary):
         # self.rewardComponents.append(SlowdownReward(3, self.landing_zone_xyz, 2))
         # self.rewardComponents.append(SpeedReward(25, 3))
 
-        for reward_component in reward_components:
-            r_class = getattr(rewards, reward_component["r"]["name"])
-            self.rewardComponents.append(r_class(**reward_component["r"]["kwargs"]))
+        for ix, reward_name in enumerate(reward_components):
+            r_class = getattr(rewards, reward_name)
+            self.rewardComponents.append(r_class(**reward_components[reward_name]))
         super().__init__(
             drone_model=drone_model,
             initial_xyzs=initial_xyzs,
@@ -157,6 +158,8 @@ class NavigateLandAviary(BaseSingleAgentAviary):
             self.cum_reward_dict[r_dict] += r
             cum_reward += r
 
+        self.reward_dict["total"] = cum_reward
+        self.cum_reward_dict["total"] += cum_reward
         return cum_reward
 
     ################################################################################
@@ -177,28 +180,6 @@ class NavigateLandAviary(BaseSingleAgentAviary):
 
         return False
 
-        # state = self._getDroneStateVector(0)
-        # position = state[0:3]
-        # velocity = state[10:13]
-        # target_position = [3.5, 3.5, 0.125]
-        # target_velocity = [0, 0, 0]
-        # max_dist = 5
-        # pos_dist = np.linalg.norm(np.asarray(position) - np.asarray(target_position))
-        # vel_dist = np.linalg.norm(np.asarray(velocity) - np.asarray(target_velocity))
-        # max_dist = 5
-
-        # if pos_dist < 0.1 and vel_dist < 0.1 and self.landing_frames > 10:
-        #     return True
-        # elif pos_dist > max_dist:
-        #     return True
-        # elif state[0] > 4 or state[1] > 4 or state[2] > 1:
-        #     return True
-        # elif state[0] < -0.1 or state[1] < -0.1 or state[2] < 0.1:
-        #     return True
-        # elif self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
-        #     return True
-        # else:
-        #     return False
 
     ################################################################################
 
