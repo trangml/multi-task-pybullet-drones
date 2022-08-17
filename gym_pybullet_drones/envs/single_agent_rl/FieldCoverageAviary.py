@@ -12,15 +12,19 @@ from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
 
 from gym_pybullet_drones.envs.single_agent_rl.obstacles.LandingZone import LandingZone
 from gym_pybullet_drones.envs.single_agent_rl.obstacles.Field import Field
-from gym_pybullet_drones.envs.single_agent_rl.rewards.DenseRewards import (
+from gym_pybullet_drones.envs.single_agent_rl.rewards.Rewards import (
+    Reward,
+    getRewardDict,
     DenseReward,
     SlowdownReward,
     DistanceReward,
-    FieldCoverageReward,
+    DeltaDistanceReward,
+    SparseReward,
+    LandingReward,
+    BoundsReward,
+    SpeedReward,
 )
-from gym_pybullet_drones.envs.single_agent_rl.rewards.SparseRewards import (
-    SparseReward, LandingReward, BoundsReward
-    )
+import gym_pybullet_drones.envs.single_agent_rl.rewards as rewards
 
 
 class FieldCoverageAviary(BaseSingleAgentAviary):

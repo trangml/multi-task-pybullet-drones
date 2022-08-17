@@ -66,9 +66,23 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--record",
-        default=False,
-        type=bool,
-        help="Whether or not to record the video of the simulation (default: False)",
+        action="store_true",
+        help="if included, a video of the simulation is recorded",
+    )
+    parser.add_argument(
+        "--latest",
+        action="store_true",
+        help="if included, a video of the simulation is recorded",
+    )
+    parser.add_argument(
+        "--early_done",
+        action="store_true",
+        help="if included, the render will finish on done in the sim",
+    )
+    parser.add_argument(
+        "--override_path",
+        type=str,
+        help="The specific zip file to run. This bypasses the logic of selecting either the best of the success",
         metavar="",
     )
     ARGS = parser.parse_args()
@@ -83,13 +97,27 @@ if __name__ == "__main__":
     #### Load the model from file ##############################
     algo = ARGS.algo
 
-
-    if os.path.isfile(ARGS.exp + "/success_model.zip"):
-        path = ARGS.exp + "/success_model.zip"
-    elif os.path.isfile(ARGS.exp + "/best_model.zip"):
-        path = ARGS.exp + "/best_model.zip"
+    if ARGS.override_path is not None:
+        path = ARGS.override_path
     else:
-        print("[ERROR]: no model under the specified path", ARGS.exp)
+        if ARGS.latest:
+            logs = os.listdir(ARGS.exp + "/logs")
+            if len(logs) < 1:
+                print("[ERROR]: no latest model under the specified path", ARGS.exp)
+            else:
+                path = ARGS.exp + "/logs/" + logs[-1]
+            if os.path.isfile(ARGS.exp + "/success_model.zip"):
+                path = ARGS.exp + "/success_model.zip"
+        else:
+            # if we aren't using the latest model, then we want to use either the success_model or the
+            # current best_model
+            if os.path.isfile(ARGS.exp + "/success_model.zip"):
+                path = ARGS.exp + "/success_model.zip"
+            elif os.path.isfile(ARGS.exp + "/best_model.zip"):
+                path = ARGS.exp + "/best_model.zip"
+            else:
+                print("[ERROR]: no model under the specified path", ARGS.exp)
+
     if algo == "a2c":
         model = A2C.load(path)
     if algo == "ppo":
@@ -151,9 +179,10 @@ if __name__ == "__main__":
             logger.log(
                 drone=0,
                 timestamp=i / test_env.SIM_FREQ,
-                state=np.hstack(
-                    [obs[0:3], np.zeros(4), obs[3:15], np.resize(action, (4))]
-                ),
+                state=test_env.env._getDroneStateVector(0),
+                # state=np.hstack(
+                #     [obs[0:3], np.zeros(4), obs[3:15], np.resize(action, (4))]
+                # ),
                 control=np.zeros(12),
                 reward=list(test_env.reward_dict.values()),
                 done=done,
@@ -161,10 +190,11 @@ if __name__ == "__main__":
         sync(np.floor(i * test_env.AGGR_PHY_STEPS), start, test_env.TIMESTEP)
         # if done:
         #     obs = test_env.reset()  # OPTIONAL EPISODE HALT
-        # if done:
-        #     break  # OPTIONAL EPISODE Break
+        if ARGS.early_done and done:
+            break  # OPTIONAL EPISODE Break
     test_env.close()
     # logger.save_as_csv("sa")  # Optional CSV save
+    print("\n\n\nMean reward ", mean_reward, " +- ", std_reward, "\n\n")
     logger.plot()
     logger.plot_rewards()
 

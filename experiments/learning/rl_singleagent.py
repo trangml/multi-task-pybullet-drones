@@ -20,24 +20,18 @@ To check the tensorboard results at:
 
 """
 import os
-import time
 from datetime import datetime
-import argparse
-import subprocess
 import numpy as np
 import gym
 import torch
-import yaml
 import hydra
 import pprint
 from omegaconf import DictConfig
 from omegaconf import OmegaConf
-from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.env_util import (
     make_vec_env,
 )  # Module cmd_util will be renamed to env_util https://github.com/DLR-RM/stable-baselines3/pull/197
-from stable_baselines3.common.vec_env import SubprocVecEnv, VecTransposeImage
-from stable_baselines3.common.utils import set_random_seed
+from stable_baselines3.common.vec_env import VecTransposeImage
 from stable_baselines3 import A2C
 from stable_baselines3 import PPO
 from stable_baselines3 import SAC
@@ -79,7 +73,10 @@ from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
 )
 
 from gym_pybullet_drones.envs.single_agent_rl.LandVisionAviary import LandVisionAviary
-from gym_pybullet_drones.envs.single_agent_rl.callbacks import (RewardCallback,)
+from gym_pybullet_drones.envs.single_agent_rl.callbacks import RewardCallback
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCallback import (
+    CustomCallback,
+)
 
 import shared_constants
 
@@ -90,9 +87,10 @@ EPISODE_REWARD_THRESHOLD = (
 
 MAX_EPISODES = 10000  # Upperbound: number of episodes
 
-@hydra.main(version_base=None, config_path="config", config_name="rl_singleagent" )
-def train_loop(cfg:DictConfig=None):
-    #cfg = OmegaConf.load(ARGS.config)
+
+@hydra.main(version_base=None, config_path="config", config_name="rl_singleagent")
+def train_loop(cfg: DictConfig = None):
+    # cfg = OmegaConf.load(ARGS.config)
     cli = OmegaConf.from_cli()
     cfg = OmegaConf.merge(cfg, cli)
     pprint.pprint(cfg)
@@ -132,7 +130,7 @@ def train_loop(cfg:DictConfig=None):
         act=ActionType[cfg.act],
         **cfg.env_kwargs,
     )
-
+    n_envs = cfg.cpu
 
     # train_env = gym.make(env_name, aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ObservationType[cfg.obs], act=ActionType[cfg.act]) # single environment instead of a vectorized one
     if env_name == "hover-aviary-v0":
@@ -173,12 +171,15 @@ def train_loop(cfg:DictConfig=None):
     if cfg.exp != "none":
         #### Load the model from file ##############################
         # algo = cfg.exp.split("-")[2]
+        # NOTE: if the model is loaded, then the number of cpus must be the same
         algo = cfg.algo
 
         if os.path.isfile(cfg.exp + "/success_model.zip"):
             path = cfg.exp + "/success_model.zip"
+            print("Loading success model")
         elif os.path.isfile(cfg.exp + "/best_model.zip"):
             path = cfg.exp + "/best_model.zip"
+            print("Loading the best training model")
         else:
             print("[ERROR]: no model under the specified path", cfg.exp)
         if algo == "a2c":
@@ -291,11 +292,9 @@ def train_loop(cfg:DictConfig=None):
 
     #### Create evaluation environment #########################
     if ObservationType[cfg.obs] == ObservationType.KIN:
-        eval_env = gym.make(
-            env_name,
-            **sa_env_kwargs
-        )
+        eval_env = gym.make(env_name, **sa_env_kwargs)
     elif ObservationType[cfg.obs] == ObservationType.RGB:
+        n_envs = 1
         if env_name == "takeoff-aviary-v0":
             eval_env = make_vec_env(
                 TakeoffAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
@@ -318,7 +317,7 @@ def train_loop(cfg:DictConfig=None):
             )
         if env_name == "obstacle-aviary-v0":
             eval_env = make_vec_env(
-                NavigateObstacleAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
+                NavigateObstaclesAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
             )
         if env_name == "field-aviary-v0":
             eval_env = make_vec_env(
@@ -332,7 +331,10 @@ def train_loop(cfg:DictConfig=None):
 
     #### Train the model #######################################
     checkpoint_callback = CheckpointCallback(
-        save_freq=10000, save_path=filename + "-logs/", name_prefix="rl_model"
+        save_freq=max(100000 // n_envs, 1),
+        save_path=filename + "/logs/",
+        name_prefix="rl_model",
+        verbose=2,
     )
     callback_on_best = StopTrainingOnRewardThreshold(
         reward_threshold=EPISODE_REWARD_THRESHOLD, verbose=1
@@ -347,16 +349,13 @@ def train_loop(cfg:DictConfig=None):
         deterministic=True,
         render=False,
     )
-    max_episode_callback = StopTrainingOnMaxEpisodes(max_episodes=MAX_EPISODES)
-    reward_callback = RewardCallback()
-    combo_callback = CallbackList([checkpoint_callback, eval_callback, reward_callback])
-    acombo_callback = CallbackList([eval_callback, reward_callback])
+    custom_callback = CustomCallback()
+    training_callback = CallbackList(
+        [checkpoint_callback, eval_callback, custom_callback]
+    )
+
     model.learn(
-        total_timesteps=int(cfg.n_steps),
-        callback=acombo_callback,
-        #callback=eval_callback,
-        # callback=checkpoint_callback,
-        log_interval=1000,
+        total_timesteps=int(cfg.n_steps), callback=training_callback, log_interval=1000,
     )
     reward = eval_callback.last_mean_reward
 
@@ -372,6 +371,7 @@ def train_loop(cfg:DictConfig=None):
             except:
                 print("oops")
     return reward
+
 
 if __name__ == "__main__":
     #### Define and parse (optional) arguments for the script ##

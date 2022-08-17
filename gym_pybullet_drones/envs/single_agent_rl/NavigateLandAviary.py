@@ -13,23 +13,21 @@ from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
 )
 
 from gym_pybullet_drones.envs.single_agent_rl.obstacles.LandingZone import LandingZone
-from gym_pybullet_drones.envs.single_agent_rl.rewards.Reward import (
+from gym_pybullet_drones.envs.single_agent_rl.rewards.Rewards import (
     Reward,
     getRewardDict,
-)
-from gym_pybullet_drones.envs.single_agent_rl.rewards.DenseRewards import (
     DenseReward,
     SlowdownReward,
     DistanceReward,
     DeltaDistanceReward,
-)
-from gym_pybullet_drones.envs.single_agent_rl.rewards.SparseRewards import (
     SparseReward,
     LandingReward,
     BoundsReward,
     SpeedReward,
 )
 import gym_pybullet_drones.envs.single_agent_rl.rewards as rewards
+import gym_pybullet_drones.envs.single_agent_rl.terminations as terminations
+from gym_pybullet_drones.envs.single_agent_rl.terminations import getTermDict
 
 
 class NavigateLandAviary(BaseSingleAgentAviary):
@@ -53,8 +51,8 @@ class NavigateLandAviary(BaseSingleAgentAviary):
         landing_zone_wlh: np.ndarray =np.asarray([0.25, 0.25, 0.125]),
         random_landing_zone: bool =False,
         reward_components: List =[],
+        term_components: List =[],
         bounds: List = [[5, 5, 1], [-1, -1, 0.1]],
-        early_stop: bool = False,
         **kwargs
     ):
         """Initialization of a single agent RL environment.
@@ -93,20 +91,21 @@ class NavigateLandAviary(BaseSingleAgentAviary):
         self.landing_zone_wlh = landing_zone_wlh
         self.obstacles = []
         self.rewardComponents = []
-        # self.rewardComponents.append(
-        #     BoundsReward(240, self.bounds, useTimeScaling=False)
-        # )
-        # self.rewardComponents.append(LandingReward(1, self.landing_zone_xyz))
-        # self.rewardComponents.append(DistanceReward(1, self.landing_zone_xyz))
-        # self.rewardComponents.append(
-        #     DeltaDistanceReward(2, self.landing_zone_xyz)
-        # )
-        # self.rewardComponents.append(SlowdownReward(3, self.landing_zone_xyz, 2))
-        # self.rewardComponents.append(SpeedReward(25, 3))
-
+        #TODO: consider normalizing total reward between 1 and -1
         for ix, reward_name in enumerate(reward_components):
             r_class = getattr(rewards, reward_name)
             self.rewardComponents.append(r_class(**reward_components[reward_name]))
+
+
+        self.termComponents = []
+        for ix, term_name in enumerate(term_components):
+            t_class = getattr(terminations, term_name)
+            args = term_components[term_name]
+            if args is not None:
+                self.termComponents.append(t_class(**args))
+            else:
+                self.termComponents.append(t_class())
+
         super().__init__(
             drone_model=drone_model,
             initial_xyzs=initial_xyzs,
@@ -125,6 +124,7 @@ class NavigateLandAviary(BaseSingleAgentAviary):
             LandingZone(self.landing_zone_xyz, self.landing_zone_wlh, self.CLIENT)
         )
         self.reward_dict = getRewardDict(self.rewardComponents)
+        self.term_dict = getTermDict(self.termComponents)
         self.cum_reward_dict = getRewardDict(self.rewardComponents)
 
     ################################################################################
@@ -177,8 +177,14 @@ class NavigateLandAviary(BaseSingleAgentAviary):
             return True
         elif self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
             return True
-
-        return False
+        else:
+            state = self._getDroneStateVector(0)
+            done = False
+            for term_component, t_dict in zip(self.termComponents, self.term_dict):
+                t = term_component.calculateTerm(state)
+                self.term_dict[t_dict] = t
+                done = done or t
+            return done
 
 
     ################################################################################

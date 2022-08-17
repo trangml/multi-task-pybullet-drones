@@ -18,12 +18,12 @@ class RewardCallback(BaseCallback):
         cum_reward_dict = self.training_env.envs[0].env.cum_reward_dict
         for reward in reward_dict:
             self.logger.record(
-                "reward/Per_Step_{}".format(reward), reward_dict[reward]
+                "reward/{}".format(reward), reward_dict[reward] # this reward is per step
             )
             self.logger.record(
-                "reward/Total_Episode_{}".format(reward), cum_reward_dict[reward]
+                "total_reward/{}".format(reward), cum_reward_dict[reward] # reward per episode
             )
             self.logger.record(
-                "reward/Average_Episode_{}".format(reward), cum_reward_dict[reward] /  self.training_env.envs[0].total_steps
+                "avg_reward/{}".format(reward), cum_reward_dict[reward] /  self.training_env.envs[0].total_steps # Average reward per episode
             )
         return True
