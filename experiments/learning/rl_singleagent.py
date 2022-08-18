@@ -20,63 +20,40 @@ To check the tensorboard results at:
 
 """
 import os
-from datetime import datetime
-import numpy as np
-import gym
-import torch
-import hydra
 import pprint
-from omegaconf import DictConfig
-from omegaconf import OmegaConf
-from stable_baselines3.common.env_util import (
-    make_vec_env,
-)  # Module cmd_util will be renamed to env_util https://github.com/DLR-RM/stable-baselines3/pull/197
-from stable_baselines3.common.vec_env import VecTransposeImage
-from stable_baselines3 import A2C
-from stable_baselines3 import PPO
-from stable_baselines3 import SAC
-from stable_baselines3 import TD3
-from stable_baselines3 import DDPG
-from stable_baselines3.common.policies import ActorCriticPolicy as a2cppoMlpPolicy
-from stable_baselines3.common.policies import ActorCriticCnnPolicy as a2cppoCnnPolicy
-from stable_baselines3.sac.policies import SACPolicy as sacMlpPolicy
-from stable_baselines3.sac import CnnPolicy as sacCnnPolicy
-from stable_baselines3.td3 import MlpPolicy as td3ddpgMlpPolicy
-from stable_baselines3.td3 import CnnPolicy as td3ddpgCnnPolicy
-from stable_baselines3.common.callbacks import (
-    CheckpointCallback,
-    CallbackList,
-    EvalCallback,
-    StopTrainingOnRewardThreshold,
-    StopTrainingOnMaxEpisodes,
-)
+from datetime import datetime
 
-from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
-from gym_pybullet_drones.envs.single_agent_rl.HoverAviary import HoverAviary
-from gym_pybullet_drones.envs.single_agent_rl.FlyThruGateAviary import FlyThruGateAviary
-from gym_pybullet_drones.envs.single_agent_rl.NavigateMazeAviary import (
-    NavigateMazeAviary,
-)
-from gym_pybullet_drones.envs.single_agent_rl.NavigateObstaclesAviary import (
-    NavigateObstaclesAviary,
-)
-from gym_pybullet_drones.envs.single_agent_rl.NavigateLandAviary import (
-    NavigateLandAviary,
-)
-from gym_pybullet_drones.envs.single_agent_rl.FieldCoverageAviary import (
-    FieldCoverageAviary,
-)
-from gym_pybullet_drones.envs.single_agent_rl.TuneAviary import TuneAviary
+import gym
+import hydra
+import numpy as np
+import torch
+from experiments.learning.utils.load_config import load_config
+from gym_pybullet_drones.envs.single_agent_rl import map_name_to_env
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
     ActionType,
     ObservationType,
 )
-
-from gym_pybullet_drones.envs.single_agent_rl.LandVisionAviary import LandVisionAviary
-from gym_pybullet_drones.envs.single_agent_rl.callbacks import RewardCallback
 from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCallback import (
     CustomCallback,
 )
+from omegaconf import DictConfig, OmegaConf
+from stable_baselines3 import A2C, DDPG, PPO, SAC, TD3
+from stable_baselines3.common.callbacks import (  # StopTrainingOnMaxEpisodes,
+    CallbackList,
+    CheckpointCallback,
+    EvalCallback,
+    StopTrainingOnRewardThreshold,
+)
+from stable_baselines3.common.env_util import (
+    make_vec_env,
+)  # Module cmd_util will be renamed to env_util https://github.com/DLR-RM/stable-baselines3/pull/197
+from stable_baselines3.common.policies import ActorCriticCnnPolicy as a2cppoCnnPolicy
+from stable_baselines3.common.policies import ActorCriticPolicy as a2cppoMlpPolicy
+from stable_baselines3.common.vec_env import VecTransposeImage
+from stable_baselines3.sac import CnnPolicy as sacCnnPolicy
+from stable_baselines3.sac.policies import SACPolicy as sacMlpPolicy
+from stable_baselines3.td3 import CnnPolicy as td3ddpgCnnPolicy
+from stable_baselines3.td3 import MlpPolicy as td3ddpgMlpPolicy
 
 import shared_constants
 
@@ -91,8 +68,6 @@ MAX_EPISODES = 10000  # Upperbound: number of episodes
 @hydra.main(version_base=None, config_path="config", config_name="rl_singleagent")
 def train_loop(cfg: DictConfig = None):
     # cfg = OmegaConf.load(ARGS.config)
-    cli = OmegaConf.from_cli()
-    cfg = OmegaConf.merge(cfg, cli)
     pprint.pprint(cfg)
 
     #### Save directory ########################################
@@ -132,31 +107,37 @@ def train_loop(cfg: DictConfig = None):
     )
     n_envs = cfg.cpu
 
-    # train_env = gym.make(env_name, aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ObservationType[cfg.obs], act=ActionType[cfg.act]) # single environment instead of a vectorized one
-    if env_name == "hover-aviary-v0":
-        train_env = make_vec_env(
-            HoverAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
-        )
-    if env_name == "maze-aviary-v0":
-        train_env = make_vec_env(
-            NavigateMazeAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
-        )
-    if env_name == "obstacles-aviary-v0":
-        train_env = make_vec_env(
-            NavigateObstaclesAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
-        )
-    if env_name == "land-aviary-v0":
-        train_env = make_vec_env(
-            NavigateLandAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
-        )
-    if env_name == "field-aviary-v0":
-        train_env = make_vec_env(
-            FieldCoverageAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
-        )
-    if env_name == "land-vision-aviary-v0":
-        train_env = make_vec_env(
-            LandVisionAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
-        )
+    # train_env = gym.make(env_name, aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
+    # obs=ObservationType[cfg.obs], act=ActionType[cfg.act]) # single environment instead of a
+    # vectorized one
+    envAviary = map_name_to_env(env_name)
+    train_env = make_vec_env(
+        envAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
+    )
+    # if env_name == "hover-aviary-v0":
+    #     train_env = make_vec_env(
+    #         HoverAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
+    #     )
+    # if env_name == "maze-aviary-v0":
+    #     train_env = make_vec_env(
+    #         NavigateMazeAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
+    #     )
+    # if env_name == "obstacles-aviary-v0":
+    #     train_env = make_vec_env(
+    #         NavigateObstaclesAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
+    #     )
+    # if env_name == "land-aviary-v0":
+    #     train_env = make_vec_env(
+    #         NavigateLandAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
+    #     )
+    # if env_name == "field-aviary-v0":
+    #     train_env = make_vec_env(
+    #         FieldCoverageAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
+    #     )
+    # if env_name == "land-vision-aviary-v0":
+    #     train_env = make_vec_env(
+    #         LandVisionAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
+    #     )
     print("[INFO] Action space:", train_env.action_space)
     print("[INFO] Observation space:", train_env.observation_space)
     # check_env(train_env, warn=True, skip_render_check=True)
@@ -295,38 +276,8 @@ def train_loop(cfg: DictConfig = None):
         eval_env = gym.make(env_name, **sa_env_kwargs)
     elif ObservationType[cfg.obs] == ObservationType.RGB:
         n_envs = 1
-        if env_name == "takeoff-aviary-v0":
-            eval_env = make_vec_env(
-                TakeoffAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
-            )
-        if env_name == "hover-aviary-v0":
-            eval_env = make_vec_env(
-                HoverAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
-            )
-        if env_name == "flythrugate-aviary-v0":
-            eval_env = make_vec_env(
-                FlyThruGateAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
-            )
-        if env_name == "tune-aviary-v0":
-            eval_env = make_vec_env(
-                TuneAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
-            )
-        if env_name == "maze-aviary-v0":
-            eval_env = make_vec_env(
-                NavigateMazeAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
-            )
-        if env_name == "obstacle-aviary-v0":
-            eval_env = make_vec_env(
-                NavigateObstaclesAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
-            )
-        if env_name == "field-aviary-v0":
-            eval_env = make_vec_env(
-                FieldCoverageAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
-            )
-        if env_name == "land-aviary-v0":
-            eval_env = make_vec_env(
-                NavigateLandAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
-            )
+        evalAviary = map_name_to_env(env_name)
+        eval_env = make_vec_env(evalAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0)
         eval_env = VecTransposeImage(eval_env)
 
     #### Train the model #######################################
@@ -368,26 +319,12 @@ def train_loop(cfg: DictConfig = None):
         for j in range(data["timesteps"].shape[0]):
             try:
                 print(str(data["timesteps"][j]) + "," + str(data["results"][j][0]))
-            except:
+            except Exception as ex:
                 print("oops")
+                raise ValueError("Could not print training progression") from ex
     return reward
 
 
 if __name__ == "__main__":
-    #### Define and parse (optional) arguments for the script ##
-    # parser = argparse.ArgumentParser(
-    #     description="Single agent reinforcement learning experiments script"
-    # )
-    # parser.add_argument(
-    #     "--config",
-    #     default=None,
-    #     type=str,
-    #     help="Path to yaml config file (default: False)",
-    #     metavar="",
-    # )
-    # parser.add_argument('--obs', default='kin',type=ObservationType, help='Observation space (default: kin)', metavar='')
-    # parser.add_argument('--act', default='rpm',  type=ActionType, help='Action space (default: one_d_rpm)', metavar='')
-
-    # ARGS = parser.parse_args()
     train_loop()
 

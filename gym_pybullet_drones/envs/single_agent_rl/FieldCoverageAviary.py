@@ -1,30 +1,20 @@
-import os
-import numpy as np
-from gym import spaces
-import pybullet as p
+from typing import List
 
-from gym_pybullet_drones.envs.BaseAviary import DroneModel, Physics, BaseAviary
+import numpy as np
+import gym_pybullet_drones.envs.single_agent_rl.rewards as rewards
+import gym_pybullet_drones.envs.single_agent_rl.terminations as terminations
+import pybullet as p
+from gym_pybullet_drones.envs.BaseAviary import BaseAviary, DroneModel, Physics
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
     ActionType,
-    ObservationType,
     BaseSingleAgentAviary,
+    ObservationType,
 )
-
 from gym_pybullet_drones.envs.single_agent_rl.obstacles.LandingZone import LandingZone
 from gym_pybullet_drones.envs.single_agent_rl.obstacles.Field import Field
-from gym_pybullet_drones.envs.single_agent_rl.rewards.Rewards import (
-    Reward,
-    getRewardDict,
-    DenseReward,
-    SlowdownReward,
-    DistanceReward,
-    DeltaDistanceReward,
-    SparseReward,
-    LandingReward,
-    BoundsReward,
-    SpeedReward,
-)
-import gym_pybullet_drones.envs.single_agent_rl.rewards as rewards
+from gym_pybullet_drones.envs.single_agent_rl.rewards import getRewardDict
+from gym_pybullet_drones.envs.single_agent_rl.rewards import FieldCoverageReward
+from gym_pybullet_drones.envs.single_agent_rl.terminations import getTermDict
 
 
 class FieldCoverageAviary(BaseSingleAgentAviary):
@@ -46,6 +36,9 @@ class FieldCoverageAviary(BaseSingleAgentAviary):
         act: ActionType = ActionType.RPM,
         landing_zone_xyz=np.asarray([3.5, 3.5, 0.0625]),
         landing_zone_wlh=np.asarray([0.25, 0.25, 0.125]),
+        reward_components: List = [],
+        term_components: List = [],
+        bounds: List = [[10, 10, 10], [-10, -10, 0.1]],
     ):
         """Initialization of a single agent RL environment.
 
@@ -75,13 +68,26 @@ class FieldCoverageAviary(BaseSingleAgentAviary):
             The type of action space (1 or 3D; RPMS, thurst and torques, or waypoint with PID control)
 
         """
+        self.bounds = bounds
         self.landing_zone_xyz = landing_zone_xyz
         self.landing_zone_wlh = landing_zone_wlh
-        self.field_xyz = np.asarray([0, 0, 0.0625/2])
+        self.field_xyz = np.asarray([0, 0, 0.0625 / 2])
         self.field_wlh = np.asarray([10, 10, 0.0625])
-        self.bounds = [[10, 10, 10], [-10, -10, 0.1]]
         self.obstacles = []
         self.rewardComponents = []
+        # TODO: consider normalizing total reward between 1 and -1
+        for ix, reward_name in enumerate(reward_components):
+            r_class = getattr(rewards, reward_name)
+            self.rewardComponents.append(r_class(**reward_components[reward_name]))
+
+        self.termComponents = []
+        for ix, term_name in enumerate(term_components):
+            t_class = getattr(terminations, term_name)
+            args = term_components[term_name]
+            if args is not None:
+                self.termComponents.append(t_class(**args))
+            else:
+                self.termComponents.append(t_class())
         super().__init__(
             drone_model=drone_model,
             initial_xyzs=initial_xyzs,
@@ -94,13 +100,14 @@ class FieldCoverageAviary(BaseSingleAgentAviary):
             obs=obs,
             act=act,
         )
-        self.EPISODE_LEN_SEC = 10
+        self.EPISODE_LEN_SEC = 15
 
-        self.obstacles.append(
-            Field(self.field_xyz, self.field_wlh, self.CLIENT)
-        )
-        self.rewardComponents.append(FieldCoverageReward(self, 25, self.obstacles[0]))
-        self.rewardComponents.append(BoundsReward(self, 240, self.bounds))
+        self.obstacles.append(Field(self.field_xyz, self.field_wlh, self.CLIENT))
+        self.rewardComponents.append(FieldCoverageReward(25, self.obstacles[0]))
+        # self.rewardComponents.append(BoundsReward(self, 240, self.bounds))
+        self.reward_dict = getRewardDict(self.rewardComponents)
+        self.term_dict = getTermDict(self.termComponents)
+        self.cum_reward_dict = getRewardDict(self.rewardComponents)
 
     ################################################################################
 
@@ -126,8 +133,15 @@ class FieldCoverageAviary(BaseSingleAgentAviary):
 
         """
         cum_reward = 0
-        for reward_component in self.rewardComponents:
-            cum_reward += reward_component.calculateReward()
+        state = self._getDroneStateVector(0)
+        for reward_component, r_dict in zip(self.rewardComponents, self.reward_dict):
+            r = reward_component.calculateReward(state)
+            self.reward_dict[r_dict] = r
+            self.cum_reward_dict[r_dict] += r
+            cum_reward += r
+
+        self.reward_dict["total"] = cum_reward
+        self.cum_reward_dict["total"] += cum_reward
         return cum_reward
 
     ################################################################################
@@ -143,12 +157,18 @@ class FieldCoverageAviary(BaseSingleAgentAviary):
         """
         if self.obstacles[0].isAllCovered():
             return True
-        elif self.completeEpisode:
+        if self.completeEpisode:
             return True
         elif self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
             return True
         else:
-            return False
+            state = self._getDroneStateVector(0)
+            done = False
+            for term_component, t_dict in zip(self.termComponents, self.term_dict):
+                t = term_component.calculateTerm(state)
+                self.term_dict[t_dict] = t
+                done = done or t
+            return done
 
     ################################################################################
 
@@ -231,9 +251,7 @@ class FieldCoverageAviary(BaseSingleAgentAviary):
                 normalized_ang_vel,
                 state[16:20],
             ]
-        ).reshape(
-            20,
-        )
+        ).reshape(20,)
 
         return norm_and_clipped
 

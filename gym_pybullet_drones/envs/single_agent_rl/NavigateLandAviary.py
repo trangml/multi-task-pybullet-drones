@@ -1,32 +1,17 @@
-import os
-import numpy as np
-from gym import spaces
-import pybullet as p
-import yaml
-
 from typing import List
-from gym_pybullet_drones.envs.BaseAviary import DroneModel, Physics, BaseAviary
-from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
-    ActionType,
-    ObservationType,
-    BaseSingleAgentAviary,
-)
 
-from gym_pybullet_drones.envs.single_agent_rl.obstacles.LandingZone import LandingZone
-from gym_pybullet_drones.envs.single_agent_rl.rewards.Rewards import (
-    Reward,
-    getRewardDict,
-    DenseReward,
-    SlowdownReward,
-    DistanceReward,
-    DeltaDistanceReward,
-    SparseReward,
-    LandingReward,
-    BoundsReward,
-    SpeedReward,
-)
+import numpy as np
 import gym_pybullet_drones.envs.single_agent_rl.rewards as rewards
 import gym_pybullet_drones.envs.single_agent_rl.terminations as terminations
+import pybullet as p
+from gym_pybullet_drones.envs.BaseAviary import BaseAviary, DroneModel, Physics
+from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
+    ActionType,
+    BaseSingleAgentAviary,
+    ObservationType,
+)
+from gym_pybullet_drones.envs.single_agent_rl.obstacles.LandingZone import LandingZone
+from gym_pybullet_drones.envs.single_agent_rl.rewards import getRewardDict
 from gym_pybullet_drones.envs.single_agent_rl.terminations import getTermDict
 
 
@@ -47,11 +32,11 @@ class NavigateLandAviary(BaseSingleAgentAviary):
         record=False,
         obs: ObservationType = ObservationType.KIN,
         act: ActionType = ActionType.RPM,
-        landing_zone_xyz: np.ndarray =np.asarray([3.5, 3.5, 0.0625]),
-        landing_zone_wlh: np.ndarray =np.asarray([0.25, 0.25, 0.125]),
-        random_landing_zone: bool =False,
-        reward_components: List =[],
-        term_components: List =[],
+        landing_zone_xyz: np.ndarray = np.asarray([3.5, 3.5, 0.0625]),
+        landing_zone_wlh: np.ndarray = np.asarray([0.25, 0.25, 0.125]),
+        random_landing_zone: bool = False,
+        reward_components: List = [],
+        term_components: List = [],
         bounds: List = [[5, 5, 1], [-1, -1, 0.1]],
         **kwargs
     ):
@@ -91,11 +76,11 @@ class NavigateLandAviary(BaseSingleAgentAviary):
         self.landing_zone_wlh = landing_zone_wlh
         self.obstacles = []
         self.rewardComponents = []
-        #TODO: consider normalizing total reward between 1 and -1
+        # TODO: consider normalizing total reward between 1 and -1
         for ix, reward_name in enumerate(reward_components):
-            r_class = getattr(rewards, reward_name)
-            self.rewardComponents.append(r_class(**reward_components[reward_name]))
-
+            if reward_components[reward_name]["scale"] != 0:
+                r_class = getattr(rewards, reward_name)
+                self.rewardComponents.append(r_class(**reward_components[reward_name]))
 
         self.termComponents = []
         for ix, term_name in enumerate(term_components):
@@ -128,6 +113,13 @@ class NavigateLandAviary(BaseSingleAgentAviary):
         self.cum_reward_dict = getRewardDict(self.rewardComponents)
 
     ################################################################################
+
+    ################################################################################
+    def reset(self):
+        for rwd in self.rewardComponents:
+            rwd.reset()
+        for term in self.termComponents:
+            term.reset()
 
     def _addObstacles(self):
         """Add obstacles to the environment.
@@ -185,7 +177,6 @@ class NavigateLandAviary(BaseSingleAgentAviary):
                 self.term_dict[t_dict] = t
                 done = done or t
             return done
-
 
     ################################################################################
 
@@ -268,9 +259,7 @@ class NavigateLandAviary(BaseSingleAgentAviary):
                 normalized_ang_vel,
                 state[16:20],
             ]
-        ).reshape(
-            20,
-        )
+        ).reshape(20,)
 
         return norm_and_clipped
 

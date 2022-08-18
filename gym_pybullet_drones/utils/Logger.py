@@ -383,6 +383,8 @@ class Logger(object):
         t = np.arange(
             0, self.timestamps.shape[1] / self.LOGGING_FREQ_HZ, 1 / self.LOGGING_FREQ_HZ
         )
+        while len(t) > len(self.rewards[0, 0, :]):
+            t = t[:-1]
 
         #### Column ################################################
         col = 0
@@ -428,6 +430,8 @@ class Logger(object):
         t = np.arange(
             0, self.timestamps.shape[1] / self.LOGGING_FREQ_HZ, 1 / self.LOGGING_FREQ_HZ
         )
+        while len(t) > len(self.rewards[0, 0, :]):
+            t = t[:-1]
 
         #### Column ################################################
         col = 0
