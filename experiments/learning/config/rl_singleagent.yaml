@@ -1,0 +1,64 @@
+# general script settings
+tag: only_landing_from_pretrained
+env: land
+#choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
+algo: ppo
+#choices=["a2c", "ppo", "sac", "td3", "ddpg"],
+obs: KIN
+# choices=["kin", "rgb"],
+act: RPM
+exp: /home/mtrang/Documents/vt/research/multiagent-pybullet-drones/experiments/learning/results/save-land-ppo-KIN-RPM-equal_delta_drop-08.17.2022_13.46.56/
+cpu: 32
+n_steps: 1e7
+
+# PPO arguments
+
+# Env specific settings
+env_kwargs:
+  initial_xyzs: [[0, 0, 0.75]]
+  landing_zone_xyz: [3.5, 3.5, 0.0625]
+
+  bounds: [[5, 5, 1], [-1, -1, 0.1]]
+
+  # rewards
+  reward_components:
+    LandingRewardV2:
+      scale: 10.0
+      landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
+    DistanceReward:
+      scale: 0.0
+      landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
+    WaypointReward:
+      scale: 0.0
+      waypoints: [[1, 1, 0.4], [2, 2, 0.3], [3.5, 3.5, 0.2], [3.5, 3.5, 0.138]]
+    DistanceRewardV2:
+      scale: 0.0
+      landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
+    DeltaDistanceReward:
+      scale: 0.0
+      landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
+    DeltaDistanceRewardV2:
+      scale: 0.0
+      landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
+    DropAltitudeReward:
+      scale: 0.0
+      landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
+      start_dist: 5
+    BoundsReward:
+      scale: 0.0
+      bounds: ${env_kwargs.bounds}
+    SlowdownReward:
+      scale: 0.0
+      landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
+      slowdown_dist: 1.0
+    SpeedReward:
+      scale: 0.0
+      max_speed: 5.0
+    OrientationReward:
+      scale: 0.0
+
+  # terminals
+  term_components:
+    BoundsTerm:
+      bounds: ${env_kwargs.bounds}
+    OrientationTerm:

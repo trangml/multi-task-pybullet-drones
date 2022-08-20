@@ -10,6 +10,9 @@ examples/test.py
 files/logs/*.npy
 files/videos/*.mp4
 
+# Hydra output logs
+outputs/
+
 # Learning results
 experiments/learning/results/save-*
 

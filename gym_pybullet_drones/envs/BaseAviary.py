@@ -325,7 +325,7 @@ class BaseAviary(gym.Env):
                 .reshape(self.NUM_DRONES, 3)
             )
         elif np.array(initial_xyzs).shape == (self.NUM_DRONES, 3):
-            self.INIT_XYZS = initial_xyzs
+            self.INIT_XYZS = np.array(initial_xyzs)
         else:
             print(
                 "[ERROR] invalid initial_xyzs in BaseAviary.__init__(), try initial_xyzs.reshape(NUM_DRONES,3)"
@@ -697,6 +697,30 @@ class BaseAviary(gym.Env):
             os.makedirs(os.path.dirname(self.IMG_PATH), exist_ok=True)
 
     ################################################################################
+    def getDroneObsLabels(self):
+        names = [
+            "pos_x",
+            "pos_y",
+            "pos_z",
+            "quat_0",
+            "quat_1",
+            "quat_2",
+            "quat_3",
+            "roll",
+            "pitch",
+            "yaw",
+            "x_vel",
+            "y_vel",
+            "z_vel",
+            "roll_vel",
+            "pitch_vel",
+            "yaw_vel",
+            "last_clipped_action_0",
+            "last_clipped_action_1",
+            "last_clipped_action_2",
+            "last_clipped_action_3",
+        ]
+        return names
 
     def _getDroneStateVector(self, nth_drone):
         """Returns the state vector of the n-th drone.
@@ -726,9 +750,7 @@ class BaseAviary(gym.Env):
                 self.last_clipped_action[nth_drone, :],
             ]
         )
-        return state.reshape(
-            20,
-        )
+        return state.reshape(20,)
 
     ################################################################################
 
@@ -1094,15 +1116,17 @@ class BaseAviary(gym.Env):
             (4)-shaped array of ints containing RPMs for the 4 motors in the [0, MAX_RPM] range.
 
         """
-        if np.any(np.abs(action)) > 1:
+        if np.any(np.abs(action) > 1):
             print(
                 "\n[ERROR] it",
                 self.step_counter,
                 "in BaseAviary._normalizedActionToRPM(), out-of-bound action",
             )
         return np.where(
-            action <= 0, (action + 1) * self.HOVER_RPM, action * self.MAX_RPM
-        )  # Non-linear mapping: -1 -> 0, 0 -> HOVER_RPM, 1 -> MAX_RPM
+            action <= 0,
+            (action + 1) * self.HOVER_RPM,
+            self.HOVER_RPM + (self.MAX_RPM - self.HOVER_RPM) * action,
+        )  # Non-linear mapping: -1 -> 0, 0 -> HOVER_RPM, 1 -> MAX_RPM`
 
     ################################################################################
 
@@ -1119,7 +1143,7 @@ class BaseAviary(gym.Env):
             (4)-shaped array of ints (or dictionary of arrays) containing the current RPMs input.
 
         """
-        if isinstance(action, collections.Mapping):
+        if isinstance(action, collections.abc.Mapping):
             for k, v in action.items():
                 res_v = np.resize(
                     v, (1, 4)

@@ -164,6 +164,8 @@ class BaseSingleAgentAviary(BaseAviary):
             exit()
 
     ################################################################################
+    def getFirstDroneState(self):
+        return self._getDroneStateVector(0)
 
     def _addObstacles(self):
         """Add obstacles to the environment.

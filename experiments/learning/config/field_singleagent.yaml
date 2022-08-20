@@ -1,0 +1,38 @@
+# general script settings
+tag: field
+env: field
+#choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
+algo: ppo
+#choices=["a2c", "ppo", "sac", "td3", "ddpg"],
+obs: KIN
+# choices=["kin", "rgb"],
+act: RPM
+exp: none
+cpu: 32
+n_steps: 1e7
+
+# PPO arguments
+
+# Env specific settings
+env_kwargs:
+  initial_xyzs: [[0, 0, 0.75]]
+  landing_zone_xyz: [3.5, 3.5, 0.0625]
+
+  bounds: [[10, 10, 1], [-10, -10, 0.1]]
+
+  # rewards
+  reward_components:
+    BoundsReward:
+      scale: 0.1
+      bounds: ${env_kwargs.bounds}
+    OrientationReward:
+      scale: 0.1
+
+  # terminals
+  term_components:
+    FieldCoverageTerm:
+      interval_sec: 7
+      landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
+    BoundsTerm:
+      bounds: ${env_kwargs.bounds}
+    OrientationTerm:

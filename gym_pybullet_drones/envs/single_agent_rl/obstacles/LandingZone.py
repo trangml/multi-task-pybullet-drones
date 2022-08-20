@@ -9,7 +9,7 @@ import pybullet as p
 class LandingZone:
     """Landing zone for a drone"""
 
-    def __init__(self, xyz, wlh, physics, color):
+    def __init__(self, xyz, wlh, physics, color=[0, 0, 0, 1]):
         """
         Parameters
         ----------
@@ -30,10 +30,14 @@ class LandingZone:
         """Add obstacles to the environment.
 
         Add the landing zone box to the environment."""
-        colBoxId = pybullet.createCollisionShape(
-            pybullet.GEOM_BOX, halfExtents=self.wlh / 2
+        colBoxId = p.createCollisionShape(
+            p.GEOM_BOX, halfExtents=self.wlh / 2, physicsClientId=self.CLIENT
         )
-        pybullet.createMultiBody(self.MASS, colBoxId, -1, self.xyz, [0, 0, 0, 1])
+        box = p.createMultiBody(
+            self.MASS, colBoxId, -1, self.xyz, [0, 0, 0, 1], physicsClientId=self.CLIENT
+        )
+
+        p.changeVisualShape(box ,colBoxId,rgbaColor=[255, 0,0,1])
 
         # self.landing_zone = p.loadURDF(
         #     "cube.urdf",

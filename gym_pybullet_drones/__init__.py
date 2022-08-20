@@ -52,6 +52,11 @@ register(
 )
 
 register(
+    id="field-aviary-v0",
+    entry_point="gym_pybullet_drones.envs.single_agent_rl:FieldCoverageAviary",
+)
+
+register(
     id="land-aviary-v0",
     entry_point="gym_pybullet_drones.envs.single_agent_rl:NavigateLandAviary",
 )

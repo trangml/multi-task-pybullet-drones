@@ -1,14 +1,18 @@
-import os
-import numpy as np
-from gym import spaces
-import pybullet as p
+from typing import List, Optional
 
-from gym_pybullet_drones.envs.BaseAviary import DroneModel, Physics, BaseAviary
+import numpy as np
+import gym_pybullet_drones.envs.single_agent_rl.rewards as rewards
+import gym_pybullet_drones.envs.single_agent_rl.terminations as terminations
+import pybullet as p
+from gym_pybullet_drones.envs.BaseAviary import BaseAviary, DroneModel, Physics
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
     ActionType,
-    ObservationType,
     BaseSingleAgentAviary,
+    ObservationType,
 )
+from gym_pybullet_drones.envs.single_agent_rl.obstacles.LandingZone import LandingZone
+from gym_pybullet_drones.envs.single_agent_rl.rewards import getRewardDict
+from gym_pybullet_drones.envs.single_agent_rl.terminations import getTermDict
 
 
 class NavigateObstaclesAviary(BaseSingleAgentAviary):
@@ -28,6 +32,11 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
         record=False,
         obs: ObservationType = ObservationType.KIN,
         act: ActionType = ActionType.RPM,
+        landing_zone_xyz: np.ndarray = np.asarray([3.5, 3.5, 0.0625]),
+        landing_zone_wlh: np.ndarray = np.asarray([0.25, 0.25, 0.125]),
+        reward_components: List = [],
+        term_components: List = [],
+        bounds: List = [[5, 5, 1], [-1, -1, 0.1]],
     ):
         """Initialization of a single agent RL environment.
 
@@ -57,6 +66,26 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
             The type of action space (1 or 3D; RPMS, thurst and torques, or waypoint with PID control)
 
         """
+        self.bounds = bounds
+        self.landing_zone_wlh = landing_zone_wlh
+        self.landing_zone_xyz = np.asarray(landing_zone_xyz)
+
+        self.obstacles = []
+        self.rewardComponents = []
+        # TODO: consider normalizing total reward between 1 and -1
+        for ix, reward_name in enumerate(reward_components):
+            r_class = getattr(rewards, reward_name)
+            self.rewardComponents.append(r_class(**reward_components[reward_name]))
+
+        self.termComponents = []
+        for ix, term_name in enumerate(term_components):
+            t_class = getattr(terminations, term_name)
+            args = term_components[term_name]
+            if args is not None:
+                self.termComponents.append(t_class(**args))
+            else:
+                self.termComponents.append(t_class())
+
         super().__init__(
             drone_model=drone_model,
             initial_xyzs=initial_xyzs,
@@ -70,6 +99,15 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
             act=act,
         )
 
+        # override base aviary episode length
+        self.EPISODE_LEN_SEC = 10
+        self.obstacles.append(
+            LandingZone(self.landing_zone_xyz, self.landing_zone_wlh, self.CLIENT)
+        )
+        self.reward_dict = getRewardDict(self.rewardComponents)
+        self.term_dict = getTermDict(self.termComponents)
+        self.cum_reward_dict = getRewardDict(self.rewardComponents)
+
     ################################################################################
 
     def _addObstacles(self):
@@ -79,6 +117,9 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
 
         """
         super()._addObstacles()
+        for obstacle in self.obstacles:
+            obstacle._addObstacles()
+
         boxStartOrientation = p.getQuaternionFromEuler([0, 1.57057, 0])
         for i in range(1, 4):
             for j in range(1, 4):
@@ -91,13 +132,6 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
                     useFixedBase=True,
                     globalScaling=10,
                 )
-        landing_zone = p.loadURDF(
-            "cube.urdf",
-            [3.5, 3.5, 0],
-            physicsClientId=self.CLIENT,
-            useFixedBase=True,
-            globalScaling=0.2,
-        )
 
     ################################################################################
     def _computeReward(self):
@@ -109,54 +143,17 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
             The reward.
 
         """
+        cum_reward = 0
         state = self._getDroneStateVector(0)
-        position = state[0:3]
-        velocity = state[10:13]
-        target_position = [3.5, 3.5, 0.125]
-        target_velocity = [0, 0, 0]
-        pos_dist = np.linalg.norm(np.asarray(position) - np.asarray(target_position))
-        vel_dist = np.linalg.norm(np.asarray(velocity) - np.asarray(target_velocity))
-        max_dist = 5
+        for reward_component, r_dict in zip(self.rewardComponents, self.reward_dict):
+            r = reward_component.calculateReward(state)
+            self.reward_dict[r_dict] = r
+            self.cum_reward_dict[r_dict] += r
+            cum_reward += r
 
-        if pos_dist < 0.1 and vel_dist < 0.1:
-            self.landing_frames += 1
-            self.completeEpisode = True
-            print(self.min_dist)
-            if self.landing_frames >= 10:
-                return 2240
-            else:
-                return 80
-        elif pos_dist < 1:
-            self.min_dist = min(self.min_dist, pos_dist)
-            if vel_dist < 1:
-                inv_vel_dist = 2 - vel_dist
-            else:
-                inv_vel_dist = 1 / vel_dist
-
-            velocity_adj = -0.01 * pos_dist - 0.001 * vel_dist
-            # return velocity_adj
-
-            return 2 - inv_vel_dist + 0.85 * inv_vel_dist
-        # Penalize if out of bounds
-        elif pos_dist > max_dist:
-            self.completeEpisode = True
-            return -240
-            return -240 + self.step_counter / self.SIM_FREQ
-        elif state[0] > 4 or state[1] > 4 or state[2] > 1:
-            self.completeEpisode = True
-            return -240
-            return -240 + self.step_counter / self.SIM_FREQ
-        elif state[0] < -0.1 or state[1] < -0.1 or state[2] < 0.1:
-            self.completeEpisode = True
-            return -240
-            return -240 + self.step_counter / self.SIM_FREQ
-        # # penalize if not landed by the end of the episode
-        elif self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
-            self.completeEpisode = True
-            return -240
-            return -240 + self.step_counter / self.SIM_FREQ
-
-        return 1 / pos_dist
+        self.reward_dict["total"] = cum_reward
+        self.cum_reward_dict["total"] += cum_reward
+        return cum_reward
 
     ################################################################################
 
@@ -169,28 +166,18 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
             Whether the current episode is done.
 
         """
-        state = self._getDroneStateVector(0)
-        position = state[0:3]
-        velocity = state[10:13]
-        target_position = [3.5, 3.5, 0.125]
-        target_velocity = [0, 0, 0]
-        max_dist = 5
-        pos_dist = np.linalg.norm(np.asarray(position) - np.asarray(target_position))
-        vel_dist = np.linalg.norm(np.asarray(velocity) - np.asarray(target_velocity))
-        max_dist = 5
-
-        if pos_dist < 0.1 and vel_dist < 0.1 and self.landing_frames > 10:
-            return True
-        elif pos_dist > max_dist:
-            return True
-        elif state[0] > 4 or state[1] > 4 or state[2] > 1:
-            return True
-        elif state[0] < -0.1 or state[1] < -0.1 or state[2] < 0.1:
+        if self.completeEpisode:
             return True
         elif self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
             return True
         else:
-            return False
+            state = self._getDroneStateVector(0)
+            done = False
+            for term_component, t_dict in zip(self.termComponents, self.term_dict):
+                t = term_component.calculateTerm(state)
+                self.term_dict[t_dict] = t
+                done = done or t
+            return done
 
     ################################################################################
 
@@ -273,9 +260,7 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
                 normalized_ang_vel,
                 state[16:20],
             ]
-        ).reshape(
-            20,
-        )
+        ).reshape(20,)
 
         return norm_and_clipped
 

@@ -20,168 +20,124 @@ To check the tensorboard results at:
 
 """
 import os
-import time
+import pprint
 from datetime import datetime
-import argparse
-import subprocess
-import numpy as np
-import gym
-import torch
-from stable_baselines3.common.env_checker import check_env
-from stable_baselines3.common.env_util import (
-    make_vec_env,
-)  # Module cmd_util will be renamed to env_util https://github.com/DLR-RM/stable-baselines3/pull/197
-from stable_baselines3.common.vec_env import SubprocVecEnv, VecTransposeImage
-from stable_baselines3.common.utils import set_random_seed
-from stable_baselines3 import A2C
-from stable_baselines3 import PPO
-from stable_baselines3 import SAC
-from stable_baselines3 import TD3
-from stable_baselines3 import DDPG
-from stable_baselines3.common.policies import ActorCriticPolicy as a2cppoMlpPolicy
-from stable_baselines3.common.policies import ActorCriticCnnPolicy as a2cppoCnnPolicy
-from stable_baselines3.sac.policies import SACPolicy as sacMlpPolicy
-from stable_baselines3.sac import CnnPolicy as sacCnnPolicy
-from stable_baselines3.td3 import MlpPolicy as td3ddpgMlpPolicy
-from stable_baselines3.td3 import CnnPolicy as td3ddpgCnnPolicy
-from stable_baselines3.common.callbacks import (
-    CheckpointCallback,
-    CallbackList,
-    EvalCallback,
-    StopTrainingOnRewardThreshold,
-)
 
-from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
-from gym_pybullet_drones.envs.single_agent_rl.HoverAviary import HoverAviary
-from gym_pybullet_drones.envs.single_agent_rl.FlyThruGateAviary import FlyThruGateAviary
-from gym_pybullet_drones.envs.single_agent_rl.NavigateMazeAviary import (
-    NavigateMazeAviary,
-)
-from gym_pybullet_drones.envs.single_agent_rl.NavigateObstaclesAviary import (
-    NavigateObstaclesAviary,
-)
-from gym_pybullet_drones.envs.single_agent_rl.NavigateLandAviary import (
-    NavigateLandAviary,
-)
-from gym_pybullet_drones.envs.single_agent_rl.TuneAviary import TuneAviary
+import gym
+import hydra
+import numpy as np
+import torch
+from experiments.learning.utils.load_config import load_config
+from gym_pybullet_drones.envs.single_agent_rl import map_name_to_env
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
     ActionType,
     ObservationType,
 )
-
-from gym_pybullet_drones.envs.single_agent_rl.LandVisionAviary import LandVisionAviary
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCallback import (
+    CustomCallback,
+)
+from omegaconf import DictConfig, OmegaConf
+from stable_baselines3 import A2C, DDPG, PPO, SAC, TD3
+from stable_baselines3.common.callbacks import (  # StopTrainingOnMaxEpisodes,
+    CallbackList,
+    CheckpointCallback,
+    EvalCallback,
+    StopTrainingOnRewardThreshold,
+)
+from stable_baselines3.common.env_util import (
+    make_vec_env,
+)  # Module cmd_util will be renamed to env_util https://github.com/DLR-RM/stable-baselines3/pull/197
+from stable_baselines3.common.policies import ActorCriticCnnPolicy as a2cppoCnnPolicy
+from stable_baselines3.common.policies import ActorCriticPolicy as a2cppoMlpPolicy
+from stable_baselines3.common.vec_env import VecTransposeImage
+from stable_baselines3.sac import CnnPolicy as sacCnnPolicy
+from stable_baselines3.sac.policies import SACPolicy as sacMlpPolicy
+from stable_baselines3.td3 import CnnPolicy as td3ddpgCnnPolicy
+from stable_baselines3.td3 import MlpPolicy as td3ddpgMlpPolicy
 
 import shared_constants
 
-EPISODE_REWARD_THRESHOLD = 2000  # Upperbound: rewards are always negative, but non-zero
+EPISODE_REWARD_THRESHOLD = (
+    10000  # Upperbound: rewards are always negative, but non-zero
+)
 """float: Reward threshold to halt the script."""
 
-if __name__ == "__main__":
+MAX_EPISODES = 10000  # Upperbound: number of episodes
 
-    #### Define and parse (optional) arguments for the script ##
-    parser = argparse.ArgumentParser(
-        description="Single agent reinforcement learning experiments script"
-    )
-    parser.add_argument(
-        "--env",
-        default="land",
-        type=str,
-        choices=["maze", "hover", "obstacles", "land", "land-vision"],
-        help="Task (default: hover)",
-        metavar="",
-    )
-    parser.add_argument(
-        "--algo",
-        default="ppo",
-        type=str,
-        choices=["a2c", "ppo", "sac", "td3", "ddpg"],
-        help="RL agent (default: ppo)",
-        metavar="",
-    )
-    parser.add_argument(
-        "--obs",
-        default="kin",
-        type=ObservationType,
-        # choices=["kin", "rgb"],
-        help="Observation space (default: kin)",
-        metavar="",
-    )
-    parser.add_argument(
-        "--act",
-        default="rpm",
-        type=ActionType,
-        help="Action space (default: rpm)",
-        metavar="",
-    )
-    parser.add_argument(
-        "--cpu",
-        default="1",
-        type=int,
-        help="Number of training environments (default: 1)",
-        metavar="",
-    )
-    parser.add_argument(
-        "--exp",
-        default="none",
-        type=str,
-        help="Model path to resume training from (default: none)",
-        metavar="",
-    )
-    ARGS = parser.parse_args()
 
-    # if ARGS.saved_model != "none":
-    #     assert os.path.isfile(ARGS.saved_model)
-    #     filename=ARGS.saved_model
+@hydra.main(version_base=None, config_path="config", config_name="rl_singleagent")
+def train_loop(cfg: DictConfig = None):
+    # cfg = OmegaConf.load(ARGS.config)
+    pprint.pprint(cfg)
 
     #### Save directory ########################################
     filename = (
         os.path.dirname(os.path.abspath(__file__))
         + "/results/save-"
-        + ARGS.env
+        + cfg.env
         + "-"
-        + ARGS.algo
+        + cfg.algo
         + "-"
-        + ARGS.obs.value
+        + cfg.obs
         + "-"
-        + ARGS.act.value
+        + cfg.act
+        + "-"
+        + cfg.tag
         + "-"
         + datetime.now().strftime("%m.%d.%Y_%H.%M.%S")
     )
     if not os.path.exists(filename):
         os.makedirs(filename + "/")
 
-    if ARGS.algo in ["sac", "td3", "ddpg"] and ARGS.cpu != 1:
+    if cfg.algo in ["sac", "td3", "ddpg"] and cfg.cpu != 1:
         print("[ERROR] The selected algorithm does not support multiple environments")
         exit()
 
+    with open(filename + "/config.yaml", "w") as f:
+        OmegaConf.save(cfg, f)
     #### Uncomment to debug slurm scripts ######################
     # exit()
 
-    env_name = ARGS.env + "-aviary-v0"
+    env_name = cfg.env + "-aviary-v0"
     sa_env_kwargs = dict(
-        aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act
+        aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
+        obs=ObservationType[cfg.obs],
+        act=ActionType[cfg.act],
+        **cfg.env_kwargs,
     )
-    # train_env = gym.make(env_name, aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act) # single environment instead of a vectorized one
-    if env_name == "hover-aviary-v0":
-        train_env = make_vec_env(
-            HoverAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0
-        )
-    if env_name == "maze-aviary-v0":
-        train_env = make_vec_env(
-            NavigateMazeAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0
-        )
-    if env_name == "obstacles-aviary-v0":
-        train_env = make_vec_env(
-            NavigateObstaclesAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0
-        )
-    if env_name == "land-aviary-v0":
-        train_env = make_vec_env(
-            NavigateLandAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0
-        )
-    if env_name == "land-vision-aviary-v0":
-        train_env = make_vec_env(
-            LandVisionAviary, env_kwargs=sa_env_kwargs, n_envs=ARGS.cpu, seed=0
-        )
+    n_envs = cfg.cpu
+
+    # train_env = gym.make(env_name, aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
+    # obs=ObservationType[cfg.obs], act=ActionType[cfg.act]) # single environment instead of a
+    # vectorized one
+    envAviary = map_name_to_env(env_name)
+    train_env = make_vec_env(
+        envAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
+    )
+    # if env_name == "hover-aviary-v0":
+    #     train_env = make_vec_env(
+    #         HoverAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
+    #     )
+    # if env_name == "maze-aviary-v0":
+    #     train_env = make_vec_env(
+    #         NavigateMazeAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
+    #     )
+    # if env_name == "obstacles-aviary-v0":
+    #     train_env = make_vec_env(
+    #         NavigateObstaclesAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
+    #     )
+    # if env_name == "land-aviary-v0":
+    #     train_env = make_vec_env(
+    #         NavigateLandAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
+    #     )
+    # if env_name == "field-aviary-v0":
+    #     train_env = make_vec_env(
+    #         FieldCoverageAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
+    #     )
+    # if env_name == "land-vision-aviary-v0":
+    #     train_env = make_vec_env(
+    #         LandVisionAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
+    #     )
     print("[INFO] Action space:", train_env.action_space)
     print("[INFO] Observation space:", train_env.observation_space)
     # check_env(train_env, warn=True, skip_render_check=True)
@@ -189,21 +145,24 @@ if __name__ == "__main__":
     #### On-policy algorithms ##################################
     onpolicy_kwargs = dict(
         activation_fn=torch.nn.ReLU,
-        net_arch=[512, 512, dict(vf=[256, 128], pi=[256, 128])],
+        net_arch=[512, 512, 256, dict(vf=[256, 128], pi=[256, 128])],
     )  # or None
 
     ### Load the saved model if specified #################
-    if ARGS.exp != "none":
+    if cfg.exp != "none":
         #### Load the model from file ##############################
-        # algo = ARGS.exp.split("-")[2]
-        algo = ARGS.algo
+        # algo = cfg.exp.split("-")[2]
+        # NOTE: if the model is loaded, then the number of cpus must be the same
+        algo = cfg.algo
 
-        if os.path.isfile(ARGS.exp + "/success_model.zip"):
-            path = ARGS.exp + "/success_model.zip"
-        elif os.path.isfile(ARGS.exp + "/best_model.zip"):
-            path = ARGS.exp + "/best_model.zip"
+        if os.path.isfile(cfg.exp + "/success_model.zip"):
+            path = cfg.exp + "/success_model.zip"
+            print("Loading success model")
+        elif os.path.isfile(cfg.exp + "/best_model.zip"):
+            path = cfg.exp + "/best_model.zip"
+            print("Loading the best training model")
         else:
-            print("[ERROR]: no model under the specified path", ARGS.exp)
+            print("[ERROR]: no model under the specified path", cfg.exp)
         if algo == "a2c":
             model = A2C.load(path, tensorboard_log=filename + "/tb_log")
         if algo == "ppo":
@@ -216,7 +175,7 @@ if __name__ == "__main__":
             model = DDPG.load(path, tensorboard_log=filename + "/tb_log")
         model.set_env(train_env)
     else:
-        if ARGS.algo == "a2c":
+        if cfg.algo == "a2c":
             model = (
                 A2C(
                     a2cppoMlpPolicy,
@@ -225,7 +184,7 @@ if __name__ == "__main__":
                     tensorboard_log=filename + "/tb/",
                     verbose=1,
                 )
-                if ARGS.obs == ObservationType.KIN
+                if cfg.obs == ObservationType.KIN
                 else A2C(
                     a2cppoCnnPolicy,
                     train_env,
@@ -234,7 +193,7 @@ if __name__ == "__main__":
                     verbose=1,
                 )
             )
-        if ARGS.algo == "ppo":
+        if cfg.algo == "ppo":
             model = (
                 PPO(
                     a2cppoMlpPolicy,
@@ -243,7 +202,7 @@ if __name__ == "__main__":
                     tensorboard_log=filename + "/tb/",
                     verbose=1,
                 )
-                if ARGS.obs == ObservationType.KIN
+                if ObservationType[cfg.obs] == ObservationType.KIN
                 else PPO(
                     a2cppoCnnPolicy,
                     train_env,
@@ -257,7 +216,7 @@ if __name__ == "__main__":
         offpolicy_kwargs = dict(
             activation_fn=torch.nn.ReLU, net_arch=[512, 512, 256, 128]
         )  # or None # or dict(net_arch=dict(qf=[256, 128, 64, 32], pi=[256, 128, 64, 32]))
-        if ARGS.algo == "sac":
+        if cfg.algo == "sac":
             model = (
                 SAC(
                     sacMlpPolicy,
@@ -266,7 +225,7 @@ if __name__ == "__main__":
                     tensorboard_log=filename + "/tb/",
                     verbose=1,
                 )
-                if ARGS.obs == ObservationType.KIN
+                if ObservationType[cfg.obs] == ObservationType.KIN
                 else SAC(
                     sacCnnPolicy,
                     train_env,
@@ -275,7 +234,7 @@ if __name__ == "__main__":
                     verbose=1,
                 )
             )
-        if ARGS.algo == "td3":
+        if cfg.algo == "td3":
             model = (
                 TD3(
                     td3ddpgMlpPolicy,
@@ -284,7 +243,7 @@ if __name__ == "__main__":
                     tensorboard_log=filename + "/tb/",
                     verbose=1,
                 )
-                if ARGS.obs == ObservationType.KIN
+                if ObservationType[cfg.obs] == ObservationType.KIN
                 else TD3(
                     td3ddpgCnnPolicy,
                     train_env,
@@ -293,7 +252,7 @@ if __name__ == "__main__":
                     verbose=1,
                 )
             )
-        if ARGS.algo == "ddpg":
+        if cfg.algo == "ddpg":
             model = (
                 DDPG(
                     td3ddpgMlpPolicy,
@@ -302,7 +261,7 @@ if __name__ == "__main__":
                     tensorboard_log=filename + "/tb/",
                     verbose=1,
                 )
-                if ARGS.obs == ObservationType.KIN
+                if ObservationType[cfg.obs] == ObservationType.KIN
                 else DDPG(
                     td3ddpgCnnPolicy,
                     train_env,
@@ -313,47 +272,20 @@ if __name__ == "__main__":
             )
 
     #### Create evaluation environment #########################
-    if ARGS.obs == ObservationType.KIN:
-        eval_env = gym.make(
-            env_name,
-            aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
-            obs=ARGS.obs,
-            act=ARGS.act,
-        )
-    elif ARGS.obs == ObservationType.RGB:
-        if env_name == "takeoff-aviary-v0":
-            eval_env = make_vec_env(
-                TakeoffAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
-            )
-        if env_name == "hover-aviary-v0":
-            eval_env = make_vec_env(
-                HoverAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
-            )
-        if env_name == "flythrugate-aviary-v0":
-            eval_env = make_vec_env(
-                FlyThruGateAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
-            )
-        if env_name == "tune-aviary-v0":
-            eval_env = make_vec_env(
-                TuneAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
-            )
-        if env_name == "maze-aviary-v0":
-            eval_env = make_vec_env(
-                NavigateMazeAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
-            )
-        if env_name == "obstacle-aviary-v0":
-            eval_env = make_vec_env(
-                NavigateObstacleAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
-            )
-        if env_name == "land-aviary-v0":
-            eval_env = make_vec_env(
-                NavigateLandAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
-            )
+    if ObservationType[cfg.obs] == ObservationType.KIN:
+        eval_env = gym.make(env_name, **sa_env_kwargs)
+    elif ObservationType[cfg.obs] == ObservationType.RGB:
+        n_envs = 1
+        evalAviary = map_name_to_env(env_name)
+        eval_env = make_vec_env(evalAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0)
         eval_env = VecTransposeImage(eval_env)
 
     #### Train the model #######################################
     checkpoint_callback = CheckpointCallback(
-        save_freq=10000, save_path=filename + "-logs/", name_prefix="rl_model"
+        save_freq=max(100000 // n_envs, 1),
+        save_path=filename + "/logs/",
+        name_prefix="rl_model",
+        verbose=2,
     )
     callback_on_best = StopTrainingOnRewardThreshold(
         reward_threshold=EPISODE_REWARD_THRESHOLD, verbose=1
@@ -364,18 +296,19 @@ if __name__ == "__main__":
         verbose=1,
         best_model_save_path=filename + "/",
         log_path=filename + "/",
-        eval_freq=int(2000 / ARGS.cpu),
+        eval_freq=int(2000 / cfg.cpu),
         deterministic=True,
         render=False,
     )
-    combo_callback = CallbackList([checkpoint_callback, eval_callback])
-    model.learn(
-        total_timesteps=int(1e9),
-        # callback=combo_callback,
-        callback=eval_callback,
-        # callback=checkpoint_callback,
-        log_interval=1000,
+    custom_callback = CustomCallback()
+    training_callback = CallbackList(
+        [checkpoint_callback, eval_callback, custom_callback]
     )
+
+    model.learn(
+        total_timesteps=int(cfg.n_steps), callback=training_callback, log_interval=1000,
+    )
+    reward = eval_callback.last_mean_reward
 
     #### Save the model ########################################
     model.save(filename + "/success_model.zip")
@@ -386,5 +319,12 @@ if __name__ == "__main__":
         for j in range(data["timesteps"].shape[0]):
             try:
                 print(str(data["timesteps"][j]) + "," + str(data["results"][j][0]))
-            except:
+            except Exception as ex:
                 print("oops")
+                raise ValueError("Could not print training progression") from ex
+    return reward
+
+
+if __name__ == "__main__":
+    train_loop()
+
