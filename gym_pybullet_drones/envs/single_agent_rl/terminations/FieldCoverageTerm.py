@@ -7,7 +7,10 @@ from gym_pybullet_drones.envs.single_agent_rl.terminations import Terminations
 
 
 class FieldCoverageTerm(Terminations):
-    """Checks terminals for field coverage"""
+    """Checks terminals for field coverage
+
+    The agent should return to the landing zone for x times.
+    """
 
     def __init__(self, interval_sec, landing_zone_xyz):
         super().__init__()

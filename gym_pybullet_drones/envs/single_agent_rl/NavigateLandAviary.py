@@ -73,6 +73,9 @@ class NavigateLandAviary(BaseSingleAgentAviary):
             self.landing_zone_xyz = np.append(np.random.rand(2) * 5, 0.0625)
         else:
             self.landing_zone_xyz = np.asarray(landing_zone_xyz)
+
+        self._r_components = reward_components
+        self._t_components = term_components
         self.landing_zone_wlh = landing_zone_wlh
         self.obstacles = []
         self.rewardComponents = []
@@ -114,7 +117,23 @@ class NavigateLandAviary(BaseSingleAgentAviary):
 
     ################################################################################
 
+    def _resetComponents(self):
+        self.rewardComponents = []
+        for ix, reward_name in enumerate(self._r_components):
+            r_class = getattr(rewards, reward_name)
+            self.rewardComponents.append(r_class(**self._r_components[reward_name]))
+
+        self.termComponents = []
+        for ix, term_name in enumerate(self._t_components):
+            t_class = getattr(terminations, term_name)
+            args = self._t_components[term_name]
+            if args is not None:
+                self.termComponents.append(t_class(**args))
+            else:
+                self.termComponents.append(t_class())
+
     ################################################################################
+
     def reset(self):
         for rwd in self.rewardComponents:
             rwd.reset()

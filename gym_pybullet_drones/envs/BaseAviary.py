@@ -583,10 +583,16 @@ class BaseAviary(gym.Env):
         return self.DRONE_IDS
 
     ################################################################################
+
+    def _resetComponents(self):
+        """Resets the reward and terminal components"""
+        pass
+
+    ################################################################################
     def _clean_rl_variables(self):
-        self.completeEpisode = False
-        self.min_dist = 100
-        self.landing_frames = 0
+        self._resetComponents()
+
+    ################################################################################
 
     def _housekeeping(self):
         """Housekeeping function.

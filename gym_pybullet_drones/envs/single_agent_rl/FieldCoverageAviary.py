@@ -71,6 +71,8 @@ class FieldCoverageAviary(BaseSingleAgentAviary):
         self.bounds = bounds
         self.landing_zone_xyz = landing_zone_xyz
         self.landing_zone_wlh = landing_zone_wlh
+        self._r_components = reward_components
+        self._t_components = term_components
         self.field_xyz = np.asarray([0, 0, 0.0625 / 2])
         self.field_wlh = np.asarray([10, 10, 0.0625])
         self.obstacles = []
@@ -100,16 +102,35 @@ class FieldCoverageAviary(BaseSingleAgentAviary):
             obs=obs,
             act=act,
         )
-        self.EPISODE_LEN_SEC = 15
+        self.EPISODE_LEN_SEC = 30
 
+        self.obstacles.append(
+            LandingZone(self.landing_zone_xyz, self.landing_zone_wlh, self.CLIENT)
+        )
         self.obstacles.append(Field(self.field_xyz, self.field_wlh, self.CLIENT))
-        self.rewardComponents.append(FieldCoverageReward(25, self.obstacles[0]))
+        self.rewardComponents.append(FieldCoverageReward(25, self.obstacles[-1]))
         # self.rewardComponents.append(BoundsReward(self, 240, self.bounds))
         self.reward_dict = getRewardDict(self.rewardComponents)
         self.term_dict = getTermDict(self.termComponents)
         self.cum_reward_dict = getRewardDict(self.rewardComponents)
 
     ################################################################################
+    def _resetComponents(self):
+        self.rewardComponents = []
+        for ix, reward_name in enumerate(self._r_components):
+            r_class = getattr(rewards, reward_name)
+            self.rewardComponents.append(r_class(**self._r_components[reward_name]))
+
+        self.termComponents = []
+        for ix, term_name in enumerate(self._t_components):
+            t_class = getattr(terminations, term_name)
+            args = self._t_components[term_name]
+            if args is not None:
+                self.termComponents.append(t_class(**args))
+            else:
+                self.termComponents.append(t_class())
+
+        self.rewardComponents.append(FieldCoverageReward(25, self.obstacles[-1]))
 
     def _addObstacles(self):
         """Add obstacles to the environment.
@@ -155,7 +176,7 @@ class FieldCoverageAviary(BaseSingleAgentAviary):
             Whether the current episode is done.
 
         """
-        if self.obstacles[0].isAllCovered():
+        if self.obstacles[-1].isAllCovered():
             return True
         if self.completeEpisode:
             return True
