@@ -25,6 +25,9 @@ class BoundsReward(SparseReward):
         self.use_time_scaling = use_time_scaling
         self.step = 0
 
+    def reset(self):
+        self.step = 0
+
     def _calculateReward(self, state):
         self.step += 1
         position = state[0:3]

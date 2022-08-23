@@ -43,9 +43,9 @@ env_kwargs:
     DropAltitudeReward:
       scale: 0.0
       landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
-      start_dist: 5
+      start_dist: 1
     BoundsReward:
-      scale: 0.0
+      scale: 10.0
       bounds: ${env_kwargs.bounds}
     SlowdownReward:
       scale: 0.0
@@ -55,7 +55,7 @@ env_kwargs:
       scale: 0.0
       max_speed: 5.0
     OrientationReward:
-      scale: 0.0
+      scale: 0.1
 
   # terminals
   term_components:

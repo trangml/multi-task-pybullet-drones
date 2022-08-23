@@ -24,13 +24,19 @@ class Field:
         self.CLIENT = physics
         self.color = color
         self.MASS = 100000
-        self.grid_dim = 0.25
+        self.grid_dim = 1
         # grid is represented as (x, y)
         self.covered_area = np.zeros(
-            (int(wlh[0] * self.grid_dim), int(wlh[1] * self.grid_dim))
+            (int(self.wlh[0] / self.grid_dim), int(self.wlh[1] / self.grid_dim))
         )
         self.total_covered_area = 0
         self.total_possible_area = self.covered_area.size
+
+    def reset(self):
+        self.covered_area = np.zeros(
+            (int(self.wlh[0] / self.grid_dim), int(self.wlh[1] / self.grid_dim))
+        )
+        self.total_covered_area = 0
 
     def _addObstacles(self):
         """Add obstacles to the environment.
@@ -98,11 +104,11 @@ class Field:
             and y < self.covered_area.shape[1]
         ):
             if self.covered_area[x, y] == 0:
-                self.updateCoveredArea(new_spot)
+                self.updateCoveredArea(x, y)
                 return True
         return False
 
-    def updateCoveredArea(self, new_spot):
+    def updateCoveredArea(self, x, y):
         """Update the covered area of the field.
 
         Parameters
@@ -111,8 +117,6 @@ class Field:
             x, y, z position
 
         """
-        x = int(new_spot[0] + self.xyz[0])
-        y = int(new_spot[1] + self.xyz[1])
         self.covered_area[x, y] = 1
         self.total_covered_area += 1
 

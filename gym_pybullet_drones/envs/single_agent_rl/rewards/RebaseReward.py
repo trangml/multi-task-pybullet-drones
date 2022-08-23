@@ -22,7 +22,10 @@ class RebaseReward(DenseReward):
         self.landing_zone_xyz = landing_zone_xyz
         self.interval_secs = interval_secs
         self.step_counter = 0
-        self.SIM_FREQ = 240 #TODO: may have to change this
+        self.SIM_FREQ = 240  # TODO: may have to change this
+
+    def reset(self):
+        self.step_counter = 0
 
     def _calculateReward(self, state):
         position = state[0:3]

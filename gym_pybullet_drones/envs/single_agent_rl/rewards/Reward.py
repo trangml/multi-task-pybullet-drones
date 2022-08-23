@@ -22,6 +22,10 @@ class Reward:
     def calculateReward(self):
         return 0
 
+    def reset(self):
+        """Reset the reward"""
+        pass
+
 
 def getRewardDict(rewards):
     rewardDict = {}

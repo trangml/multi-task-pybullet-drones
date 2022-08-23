@@ -139,6 +139,7 @@ class NavigateLandAviary(BaseSingleAgentAviary):
             rwd.reset()
         for term in self.termComponents:
             term.reset()
+        return super().reset()
 
     def _addObstacles(self):
         """Add obstacles to the environment.

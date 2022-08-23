@@ -31,7 +31,7 @@ env_kwargs:
   # terminals
   term_components:
     FieldCoverageTerm:
-      interval_sec: 7
+      interval_sec: 4
       landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
     BoundsTerm:
       bounds: ${env_kwargs.bounds}

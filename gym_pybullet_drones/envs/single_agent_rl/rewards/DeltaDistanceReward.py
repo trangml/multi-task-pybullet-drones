@@ -1,3 +1,4 @@
+import copy
 import math
 import numpy as np
 
@@ -10,7 +11,6 @@ from gym_pybullet_drones.envs.single_agent_rl.rewards.utils import (
 )
 from gym_pybullet_drones.envs.single_agent_rl.rewards.Reward import (
     DenseReward,
-    SparseReward,
 )
 
 
@@ -25,11 +25,15 @@ class DeltaDistanceReward(DenseReward):
 
     def __init__(self, scale, landing_zone_xyz):
         super().__init__(scale)
-        self.landing_zone_xyz = landing_zone_xyz
         self._initial_step = True
-        self.target_position = self.landing_zone_xyz
+        self.landing_zone_xyz = np.array(landing_zone_xyz)
+        self.target_position = copy.deepcopy(self.landing_zone_xyz)
         DRONE_MID_Z = 0.01347
         self.target_position[2] = 2 * self.target_position[2] + DRONE_MID_Z
+        self.last_pos_dist = 0
+
+    def reset(self):
+        self._initial_step = True
         self.last_pos_dist = 0
 
     def _calculateReward(self, state):
@@ -63,11 +67,15 @@ class DeltaDistanceRewardV2(DenseReward):
 
     def __init__(self, scale, landing_zone_xyz):
         super().__init__(scale)
-        self.landing_zone_xyz = landing_zone_xyz
         self._initial_step = True
-        self.target_position = self.landing_zone_xyz
+        self.landing_zone_xyz = np.array(landing_zone_xyz)
+        self.target_position = copy.deepcopy(self.landing_zone_xyz)
         DRONE_MID_Z = 0.01347
         self.target_position[2] = 2 * self.target_position[2] + DRONE_MID_Z
+        self.last_pos_dist = 0
+
+    def reset(self):
+        self._initial_step = True
         self.last_pos_dist = 0
 
     def _calculateReward(self, state):

@@ -27,6 +27,12 @@ class WaypointReward(DenseReward):
         self.max_dist_to_waypoint = 0
         self._new_point = True
 
+    def reset(self):
+        self.is_landed = False
+        self.max_dist_to_waypoint = 0
+        self._new_point = True
+        self.curr_waypoint = 0
+
     def _calculateReward(self, state):
         position = state[0:3]
         target_position = self.waypoints[self.curr_waypoint]

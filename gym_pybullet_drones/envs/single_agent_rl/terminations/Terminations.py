@@ -13,6 +13,10 @@ class Terminations:
     def __init__(self):
         pass
 
+    def reset(self):
+        """Resets the terminal function"""
+        pass
+
     def _calculateTerm(self, state):
         return False
 
@@ -39,8 +43,6 @@ class BoundsTerm(Terminations):
         self.XYZ_IDX = [0, 1, 2]
 
     def _calculateTerm(self, state):
-        position = state[0:3]
-
         for dim_idx in self.XYZ_IDX:
             if (
                 state[dim_idx] > self.bounds[0][dim_idx]
