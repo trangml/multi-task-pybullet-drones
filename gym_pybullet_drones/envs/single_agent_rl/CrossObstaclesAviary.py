@@ -182,9 +182,7 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
             Whether the current episode is done.
 
         """
-        if self.completeEpisode:
-            return True
-        elif self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
+        if self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
             return True
         else:
             state = self._getDroneStateVector(0)

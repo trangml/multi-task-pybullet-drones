@@ -81,7 +81,11 @@ if __name__ == "__main__":
         help="The specific zip file to run. This bypasses the logic of selecting either the best of the success",
         metavar="",
     )
+    parser.add_argument(
+        "--seed", type=int, default=0, help="The random seed to use", metavar="",
+    )
     ARGS = parser.parse_args()
+    np.random.seed(ARGS.seed)
 
     if os.path.isfile(ARGS.exp + "/config.yaml"):
         with open(ARGS.exp + "/config.yaml", "r") as f:
@@ -159,7 +163,7 @@ if __name__ == "__main__":
         num_drones=1,
         num_rewards=len(test_env.reward_dict),
         rewards_names=list(test_env.reward_dict.keys()),
-        #done_names=list(test_env.term_dict.keys()),
+        # done_names=list(test_env.term_dict.keys()),
     )
     obs = test_env.reset()
     start = time.time()

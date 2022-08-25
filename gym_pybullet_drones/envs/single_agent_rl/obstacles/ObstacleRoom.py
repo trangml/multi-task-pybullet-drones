@@ -33,7 +33,8 @@ class ObstacleRoom:
 
         Add the landing zone box to the environment."""
         p.loadURDF(
-            os.path.dirname(os.path.abspath(__file__)) + "/../../../assets/room.urdf",
+            os.path.dirname(os.path.abspath(__file__))
+            + "/../../../assets/room_w_pad.urdf",
             [5, -1, 0],
             p.getQuaternionFromEuler([0, 0, 0]),
             physicsClientId=self.CLIENT,
