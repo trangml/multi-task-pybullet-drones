@@ -159,6 +159,7 @@ if __name__ == "__main__":
         num_drones=1,
         num_rewards=len(test_env.reward_dict),
         rewards_names=list(test_env.reward_dict.keys()),
+        #done_names=list(test_env.term_dict.keys()),
     )
     obs = test_env.reset()
     start = time.time()
@@ -175,6 +176,19 @@ if __name__ == "__main__":
             logger.log(
                 drone=0,
                 timestamp=i / test_env.SIM_FREQ,
+                state=test_env.env._getDroneStateVector(0),
+                # state=np.hstack(
+                #     [obs[0:3], np.zeros(4), obs[3:15], np.resize(action, (4))]
+                # ),
+                control=np.zeros(12),
+                reward=list(test_env.reward_dict.values()),
+                done=done,
+            )
+        if OBS == ObservationType.RGB:
+            logger.log(
+                drone=0,
+                timestamp=i / test_env.SIM_FREQ,
+                # TODO: figure out how to log the camera images
                 state=test_env.env._getDroneStateVector(0),
                 # state=np.hstack(
                 #     [obs[0:3], np.zeros(4), obs[3:15], np.resize(action, (4))]

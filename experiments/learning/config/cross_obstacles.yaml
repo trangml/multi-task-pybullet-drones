@@ -1,0 +1,36 @@
+# general script settings
+tag: vis_difficulty_0
+env: cross-obstacles
+#choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
+algo: ppo
+#choices=["a2c", "ppo", "sac", "td3", "ddpg"],
+obs: RGB
+# choices=["kin", "rgb"],
+act: RPM
+exp: none
+cpu: 1
+n_steps: 1e7
+
+# PPO arguments
+
+# Env specific settings
+env_kwargs:
+  initial_xyzs: [[-0.5, 0, 0.5]]
+
+  bounds: [[5, 1, 1], [-1, -1, 0.1]]
+  difficulty: 0
+
+  # rewards
+  reward_components:
+    EnterAreaReward:
+      scale: 100.0
+      area: [[4, 5], [-1, 1]]
+    OrientationReward:
+      scale: 0.1
+    IncreaseXReward:
+      scale: 0.1
+  # terminals
+  term_components:
+    EnterAreaTerm:
+      area: [[4, 5], [-1, 1]]
+    OrientationTerm:

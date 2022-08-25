@@ -1,5 +1,5 @@
 # general script settings
-tag: only_landing_from_pretrained
+tag: deltadistanceV2
 env: land
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
@@ -38,7 +38,7 @@ env_kwargs:
       scale: 0.0
       landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
     DeltaDistanceRewardV2:
-      scale: 0.0
+      scale: 1.0
       landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
     DropAltitudeReward:
       scale: 0.0

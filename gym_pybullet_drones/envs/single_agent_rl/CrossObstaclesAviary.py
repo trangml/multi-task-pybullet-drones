@@ -1,5 +1,5 @@
 from typing import List, Optional
-
+import os
 import numpy as np
 import gym_pybullet_drones.envs.single_agent_rl.rewards as rewards
 import gym_pybullet_drones.envs.single_agent_rl.terminations as terminations
@@ -10,13 +10,13 @@ from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
     BaseSingleAgentAviary,
     ObservationType,
 )
-from gym_pybullet_drones.envs.single_agent_rl.obstacles.LandingZone import LandingZone
 from gym_pybullet_drones.envs.single_agent_rl.rewards import getRewardDict
 from gym_pybullet_drones.envs.single_agent_rl.terminations import getTermDict
+from gym_pybullet_drones.envs.single_agent_rl.obstacles.ObstacleRoom import ObstacleRoom
 
 
-class NavigateObstaclesAviary(BaseSingleAgentAviary):
-    """Single agent RL problem: navigate through a obstacles."""
+class CrossObstaclesAviary(BaseSingleAgentAviary):
+    """Single agent RL problem: cross a room with obstacles"""
 
     ################################################################################
 
@@ -32,11 +32,10 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
         record=False,
         obs: ObservationType = ObservationType.KIN,
         act: ActionType = ActionType.RPM,
-        landing_zone_xyz: np.ndarray = np.asarray([3.5, 3.5, 0.0625]),
-        landing_zone_wlh: np.ndarray = np.asarray([0.25, 0.25, 0.125]),
+        difficulty: int = 0,
         reward_components: List = [],
         term_components: List = [],
-        bounds: List = [[5, 5, 1], [-1, -1, 0.1]],
+        bounds: List = [[5, 1, 1], [-1, -1, 0.1]],
     ):
         """Initialization of a single agent RL environment.
 
@@ -67,8 +66,6 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
 
         """
         self.bounds = bounds
-        self.landing_zone_wlh = landing_zone_wlh
-        self.landing_zone_xyz = np.asarray(landing_zone_xyz)
 
         self.obstacles = []
         self.reward_components = []
@@ -101,14 +98,16 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
 
         # override base aviary episode length
         self.EPISODE_LEN_SEC = 10
+        self.difficulty = difficulty
         self.obstacles.append(
-            LandingZone(self.landing_zone_xyz, self.landing_zone_wlh, self.CLIENT)
+            ObstacleRoom(xyz=[0, 0, 0], physics=self.CLIENT, difficulty=self.difficulty)
         )
         self.reward_dict = getRewardDict(self.reward_components)
         self.term_dict = getTermDict(self.term_components)
         self.cum_reward_dict = getRewardDict(self.reward_components)
 
     ################################################################################
+
     def reset(self):
         for rwd in self.reward_components:
             rwd.reset()
@@ -128,18 +127,27 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
         for obstacle in self.obstacles:
             obstacle._addObstacles()
 
-        boxStartOrientation = p.getQuaternionFromEuler([0, 1.57057, 0])
-        for i in range(1, 4):
-            for j in range(1, 4):
-                boxStartPos = [i, j, 0.5]
-                p.loadURDF(
-                    "block.urdf",
-                    boxStartPos,
-                    boxStartOrientation,
-                    physicsClientId=self.CLIENT,
-                    useFixedBase=True,
-                    globalScaling=10,
-                )
+        # box_q = p.getQuaternionFromEuler([0, 1.57057, 0])
+        # for i in np.arange(1, 4, 1):
+        #     for j in np.arange(-0.5, 1, 0.5):
+        #         box_pos = [i, j, 0.5]
+        #         p.loadURDF(
+        #             "block.urdf",
+        #             box_pos,
+        #             box_q,
+        #             physicsClientId=self.CLIENT,
+        #             useFixedBase=True,
+        #             globalScaling=10,
+        #         )
+
+        # p.loadURDF(
+        #     os.path.dirname(os.path.abspath(__file__)) + "/../../assets/room.urdf",
+        #     [5, -1, 0],
+        #     p.getQuaternionFromEuler([0, 0, 0]),
+        #     physicsClientId=self.CLIENT,
+        #     globalScaling=1,
+        #     useFixedBase=True,
+        # )
 
     ################################################################################
     def _computeReward(self):
@@ -328,3 +336,4 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
                     state[12]
                 ),
             )
+

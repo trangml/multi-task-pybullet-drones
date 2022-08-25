@@ -9,3 +9,5 @@ from .OrientationReward import *
 from .SlowdownReward import *
 from .SpeedReward import *
 from .WaypointReward import *
+from .cross_obstacles.EnterAreaReward import *
+from .cross_obstacles.IncreaseXReward import *

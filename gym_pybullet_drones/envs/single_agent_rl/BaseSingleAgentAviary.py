@@ -363,6 +363,7 @@ class BaseSingleAgentAviary(BaseAviary):
             # return spaces.Box( low=obs_lower_bound, high=obs_upper_bound, dtype=np.float32 )
             ############################################################
             #### OBS SPACE OF SIZE 12 + 1
+            # TODO: make this work
             return spaces.Box(
                 low=np.array([-1, -1, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0]),
                 high=np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 255]),

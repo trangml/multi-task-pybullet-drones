@@ -27,7 +27,6 @@ import gym
 import hydra
 import numpy as np
 import torch
-from experiments.learning.utils.load_config import load_config
 from gym_pybullet_drones.envs.single_agent_rl import map_name_to_env
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
     ActionType,

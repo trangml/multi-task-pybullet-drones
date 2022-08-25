@@ -363,7 +363,6 @@ class BaseAviary(gym.Env):
         p.resetSimulation(physicsClientId=self.CLIENT)
         #### Housekeeping ##########################################
         self._housekeeping()
-        self._clean_rl_variables()
         #### Update and store the drones kinematic information #####
         self._updateAndStoreKinematicInformation()
         #### Start video recording #################################
@@ -587,10 +586,6 @@ class BaseAviary(gym.Env):
     def _resetComponents(self):
         """Resets the reward and terminal components"""
         pass
-
-    ################################################################################
-    def _clean_rl_variables(self):
-        self._resetComponents()
 
     ################################################################################
 

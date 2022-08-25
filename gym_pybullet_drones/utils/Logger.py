@@ -25,6 +25,7 @@ class Logger(object):
         duration_sec: int = 0,
         num_rewards: int = 1,
         rewards_names: list = ["r"],
+        #done_names: list = ["d"],
     ):
         """Logger class __init__ method.
 

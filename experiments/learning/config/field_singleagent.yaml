@@ -1,5 +1,5 @@
 # general script settings
-tag: field
+tag: field_from_land
 env: field
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
@@ -7,7 +7,7 @@ algo: ppo
 obs: KIN
 # choices=["kin", "rgb"],
 act: RPM
-exp: none
+exp: /home/mtrang/Documents/vt/research/multiagent-pybullet-drones/experiments/learning/results/save-land-ppo-KIN-RPM-equal_delta_drop-08.17.2022_13.46.56/
 cpu: 32
 n_steps: 1e7
 
