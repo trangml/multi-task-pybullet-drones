@@ -13,23 +13,15 @@ import os
 import time
 from datetime import datetime
 import argparse
-import re
 import numpy as np
 import gym
 import torch
 from omegaconf import OmegaConf
-from stable_baselines3.common.env_checker import check_env
 from stable_baselines3 import A2C
 from stable_baselines3 import PPO
 from stable_baselines3 import SAC
 from stable_baselines3 import TD3
 from stable_baselines3 import DDPG
-from stable_baselines3.common.policies import ActorCriticPolicy as a2cppoMlpPolicy
-from stable_baselines3.common.policies import ActorCriticCnnPolicy as a2cppoCnnPolicy
-from stable_baselines3.sac.policies import SACPolicy as sacMlpPolicy
-from stable_baselines3.sac import CnnPolicy as sacCnnPolicy
-from stable_baselines3.td3 import MlpPolicy as td3ddpgMlpPolicy
-from stable_baselines3.td3 import CnnPolicy as td3ddpgCnnPolicy
 from stable_baselines3.common.evaluation import evaluate_policy
 
 from gym_pybullet_drones.utils.utils import sync
@@ -38,60 +30,43 @@ from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
     ActionType,
     ObservationType,
 )
+from gym_pybullet_drones.utils.utils import sync, str2bool
 
 import shared_constants
 
-if __name__ == "__main__":
+DEFAULT_GUI = True
+DEFAULT_PLOT = True
+DEFAULT_OUTPUT_FOLDER = "results"
 
-    #### Define and parse (optional) arguments for the script ##
-    parser = argparse.ArgumentParser(
-        description="Single agent reinforcement learning example script using TakeoffAviary"
-    )
-    parser.add_argument(
-        "--exp",
-        type=str,
-        help="The experiment folder written as ./results/save-<env>-<algo>-<obs>-<act>-<time_date>",
-        metavar="",
-    )
-    parser.add_argument(
-        "--landing_zone",
-        default="3.5, 3.5, 0.0625",
-        type=str,
-        help="Landing Zone XYZ location, comma separated (default: 3.5, 3.5, 0.0625)",
-        metavar="",
-    )
-    parser.add_argument(
-        "--record",
-        action="store_true",
-        help="if included, a video of the simulation is recorded",
-    )
-    parser.add_argument(
-        "--latest",
-        action="store_true",
-        help="if included, a video of the simulation is recorded",
-    )
-    parser.add_argument(
-        "--early_done",
-        action="store_true",
-        help="if included, the render will finish on done in the sim",
-    )
-    parser.add_argument(
-        "--override_path",
-        type=str,
-        help="The specific zip file to run. This bypasses the logic of selecting either the best of the success",
-        metavar="",
-    )
-    parser.add_argument(
-        "--seed", type=int, default=0, help="The random seed to use", metavar="",
-    )
-    ARGS = parser.parse_args()
-    np.random.seed(ARGS.seed)
 
-    if os.path.isfile(ARGS.exp + "/config.yaml"):
-        with open(ARGS.exp + "/config.yaml", "r") as f:
-            exp = ARGS.exp
+def run(
+    exp,
+    gui=DEFAULT_GUI,
+    plot=DEFAULT_PLOT,
+    output_folder=DEFAULT_OUTPUT_FOLDER,
+    **ARGS,
+):
+    """
+    Runs testing for a single agent RL problem.
+
+    Parameters
+    ----------
+    exp : _type_
+        _description_
+    gui : _type_, optional
+        _description_, by default DEFAULT_GUI
+    plot : _type_, optional
+        _description_, by default DEFAULT_PLOT
+    output_folder : _type_, optional
+        _description_, by default DEFAULT_OUTPUT_FOLDER
+    """
+    #### Load the model from file ##############################
+    algo = exp.split("-")[2]
+
+    if os.path.isfile(exp + "/config.yaml"):
+        with open(exp + "/config.yaml", "r") as f:
             additional_args = OmegaConf.load(f)
-            ARGS.__dict__ = {**ARGS.__dict__, **additional_args}
+            ARGS = {**ARGS, **additional_args}
             ARGS.exp = exp
     print(ARGS)
     #### Load the model from file ##############################
@@ -111,12 +86,12 @@ if __name__ == "__main__":
         else:
             # if we aren't using the latest model, then we want to use either the success_model or the
             # current best_model
-            if os.path.isfile(ARGS.exp + "/success_model.zip"):
-                path = ARGS.exp + "/success_model.zip"
-            elif os.path.isfile(ARGS.exp + "/best_model.zip"):
-                path = ARGS.exp + "/best_model.zip"
+            if os.path.isfile(exp + "/success_model.zip"):
+                path = exp + "/success_model.zip"
+            elif os.path.isfile(exp + "/best_model.zip"):
+                path = exp + "/best_model.zip"
             else:
-                print("[ERROR]: no model under the specified path", ARGS.exp)
+                print("[ERROR]: no model under the specified path", exp)
 
     if algo == "a2c":
         model = A2C.load(path)
@@ -135,7 +110,6 @@ if __name__ == "__main__":
     ACT = ActionType[ARGS.act]
 
     #### Evaluate the model ####################################
-    print(ARGS.landing_zone)
     eval_env = gym.make(
         env_name,
         aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
@@ -164,7 +138,9 @@ if __name__ == "__main__":
         num_rewards=len(test_env.reward_dict),
         rewards_names=list(test_env.reward_dict.keys()),
         # done_names=list(test_env.term_dict.keys()),
+        output_folder=output_folder,
     )
+
     obs = test_env.reset()
     start = time.time()
     for i in range(
@@ -209,11 +185,75 @@ if __name__ == "__main__":
     test_env.close()
     # logger.save_as_csv("sa")  # Optional CSV save
     print("\n\n\nMean reward ", mean_reward, " +- ", std_reward, "\n\n")
-    logger.plot()
-    logger.plot_rewards()
+    logger.save_as_csv("sa")  # Optional CSV save
+    if plot:
+        logger.plot()
+        logger.plot_rewards()
 
-    # with np.load(ARGS.exp+'/evaluations.npz') as data:
-    #     print(data.files)
-    #     print(data['timesteps'])
-    #     print(data['results'])
-    #     print(data['ep_lengths'])
+
+if __name__ == "__main__":
+    #### Define and parse (optional) arguments for the script ##
+    parser = argparse.ArgumentParser(
+        description="Single agent reinforcement learning example script using TakeoffAviary"
+    )
+    parser.add_argument(
+        "--exp",
+        type=str,
+        help="The experiment folder written as ./results/save-<env>-<algo>-<obs>-<act>-<time_date>",
+        metavar="",
+    )
+    parser.add_argument(
+        "--gui",
+        default=DEFAULT_GUI,
+        type=str2bool,
+        help="Whether to use PyBullet GUI (default: False)",
+        metavar="",
+    )
+    parser.add_argument(
+        "--plot",
+        default=DEFAULT_PLOT,
+        type=str2bool,
+        help="Whether to plot the simulation results (default: True)",
+        metavar="",
+    )
+    parser.add_argument(
+        "--output_folder",
+        default=DEFAULT_OUTPUT_FOLDER,
+        type=str,
+        help='Folder where to save logs (default: "results")',
+        metavar="",
+    )
+    parser.add_argument(
+        "--landing_zone",
+        default="3.5, 3.5, 0.0625",
+        type=str,
+        help="Landing Zone XYZ location, comma separated (default: 3.5, 3.5, 0.0625)",
+        metavar="",
+    )
+    parser.add_argument(
+        "--record",
+        action="store_true",
+        help="if included, a video of the simulation is recorded",
+    )
+    parser.add_argument(
+        "--latest",
+        action="store_true",
+        help="if included, a video of the simulation is recorded",
+    )
+    parser.add_argument(
+        "--early_done",
+        action="store_true",
+        help="if included, the render will finish on done in the sim",
+    )
+    parser.add_argument(
+        "--override_path",
+        type=str,
+        help="The specific zip file to run. This bypasses the logic of selecting either the best of the success",
+        metavar="",
+    )
+    parser.add_argument(
+        "--seed", type=int, default=0, help="The random seed to use", metavar="",
+    )
+    ARGS = parser.parse_args()
+
+    run(**vars(ARGS))

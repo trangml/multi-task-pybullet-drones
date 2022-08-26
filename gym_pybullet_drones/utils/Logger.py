@@ -1,5 +1,4 @@
 import os
-import time
 from datetime import datetime
 from cycler import cycler
 import numpy as np
@@ -21,11 +20,13 @@ class Logger(object):
     def __init__(
         self,
         logging_freq_hz: int,
+        output_folder: str = "results",
         num_drones: int = 1,
         duration_sec: int = 0,
         num_rewards: int = 1,
         rewards_names: list = ["r"],
-        #done_names: list = ["d"],
+        # done_names: list = ["d"],
+        colab: bool = False,
     ):
         """Logger class __init__ method.
 
@@ -42,6 +43,10 @@ class Logger(object):
             Used to preallocate the log arrays (improves performance).
 
         """
+        self.COLAB = colab
+        self.OUTPUT_FOLDER = output_folder
+        if not os.path.exists(self.OUTPUT_FOLDER):
+            os.mkdir(self.OUTPUT_FOLDER)
         self.LOGGING_FREQ_HZ = logging_freq_hz
         self.NUM_DRONES = num_drones
         self.PREALLOCATED_ARRAYS = False if duration_sec == 0 else True
@@ -160,12 +165,13 @@ class Logger(object):
     ################################################################################
 
     def save(self):
-        """Save the logs to file."""
+        """Save the logs to file.
+        """
         with open(
-            os.path.dirname(os.path.abspath(__file__))
-            + "/../../files/logs/save-flight-"
-            + datetime.now().strftime("%m.%d.%Y_%H.%M.%S")
-            + ".npy",
+            os.path.join(
+                self.OUTPUT_FOLDER,
+                "save-flight-" + datetime.now().strftime("%m.%d.%Y_%H.%M.%S") + ".npy",
+            ),
             "wb",
         ) as out_file:
             np.savez(
@@ -173,7 +179,6 @@ class Logger(object):
                 timestamps=self.timestamps,
                 states=self.states,
                 controls=self.controls,
-                rewards=self.rewards,
             )
 
     ################################################################################
@@ -187,12 +192,12 @@ class Logger(object):
             Added to the foldername.
 
         """
-        csv_dir = (
-            os.environ.get("HOME")
-            + "/Desktop/save-flight-"
+        csv_dir = os.path.join(
+            self.OUTPUT_FOLDER,
+            "save-flight-"
             + comment
             + "-"
-            + datetime.now().strftime("%m.%d.%Y_%H.%M.%S")
+            + datetime.now().strftime("%m.%d.%Y_%H.%M.%S"),
         )
         if not os.path.exists(csv_dir):
             os.makedirs(csv_dir + "/")
@@ -603,5 +608,7 @@ class Logger(object):
         fig.subplots_adjust(
             left=0.06, bottom=0.05, right=0.99, top=0.98, wspace=0.15, hspace=0.0
         )
-        # plt.interactive(True)
-        plt.show(block=False)
+        if self.COLAB:
+            plt.savefig(os.path.join("results", "output_figure.png"))
+        else:
+            plt.show()

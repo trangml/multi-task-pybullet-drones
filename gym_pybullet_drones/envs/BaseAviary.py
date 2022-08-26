@@ -3,8 +3,8 @@ from sys import platform
 import time
 import collections
 from datetime import datetime
-from enum import Enum
 import xml.etree.ElementTree as etxml
+import pkg_resources
 from PIL import Image
 
 # import pkgutil
@@ -13,43 +13,7 @@ import numpy as np
 import pybullet as p
 import pybullet_data
 import gym
-
-
-class DroneModel(Enum):
-    """Drone models enumeration class."""
-
-    CF2X = "cf2x"  # Bitcraze Craziflie 2.0 in the X configuration
-    CF2P = "cf2p"  # Bitcraze Craziflie 2.0 in the + configuration
-    HB = "hb"  # Generic quadrotor (with AscTec Hummingbird inertial properties)
-
-
-################################################################################
-
-
-class Physics(Enum):
-    """Physics implementations enumeration class."""
-
-    PYB = "pyb"  # Base PyBullet physics update
-    DYN = "dyn"  # Update with an explicit model of the dynamics
-    PYB_GND = "pyb_gnd"  # PyBullet physics update with ground effect
-    PYB_DRAG = "pyb_drag"  # PyBullet physics update with drag
-    PYB_DW = "pyb_dw"  # PyBullet physics update with downwash
-    PYB_GND_DRAG_DW = "pyb_gnd_drag_dw"  # PyBullet physics update with ground effect, drag, and downwash
-
-
-################################################################################
-
-
-class ImageType(Enum):
-    """Camera capture image type enumeration class."""
-
-    RGB = 0  # Red, green, blue (and alpha)
-    DEP = 1  # Depth
-    SEG = 2  # Segmentation by object id
-    BW = 3  # Black and white
-
-
-################################################################################
+from gym_pybullet_drones.utils.enums import DroneModel, Physics, ImageType
 
 
 class BaseAviary(gym.Env):
@@ -75,6 +39,7 @@ class BaseAviary(gym.Env):
         user_debug_gui=True,
         vision_attributes=False,
         dynamics_attributes=False,
+        output_folder="results",
     ):
         """Initialization of a generic aviary environment.
 
@@ -128,6 +93,7 @@ class BaseAviary(gym.Env):
         self.OBSTACLES = obstacles
         self.USER_DEBUG = user_debug_gui
         self.URDF = self.DRONE_MODEL.value + ".urdf"
+        self.OUTPUT_FOLDER = output_folder
         #### Load the drone properties from the .urdf file #########
         (
             self.M,
@@ -207,11 +173,10 @@ class BaseAviary(gym.Env):
                 )
                 exit()
             if self.RECORD:
-                self.ONBOARD_IMG_PATH = (
-                    os.path.dirname(os.path.abspath(__file__))
-                    + "/../../files/videos/onboard-"
-                    + datetime.now().strftime("%m.%d.%Y_%H.%M.%S")
-                    + "/"
+                # TODO: This doesn't appear to work in general
+                self.ONBOARD_IMG_PATH = os.path.join(
+                    self.OUTPUT_FOLDER,
+                    "recording_" + datetime.now().strftime("%m.%d.%Y_%H.%M.%S"),
                 )
                 os.makedirs(os.path.dirname(self.ONBOARD_IMG_PATH), exist_ok=True)
         #### Create attributes for dynamics control inputs #########
@@ -410,7 +375,7 @@ class BaseAviary(gym.Env):
                 physicsClientId=self.CLIENT,
             )
             (Image.fromarray(np.reshape(rgb, (h, w, 4)), "RGBA")).save(
-                self.IMG_PATH + "frame_" + str(self.FRAME_NUM) + ".png"
+                os.path.join(self.IMG_PATH, "frame_" + str(self.FRAME_NUM) + ".png")
             )
             #### Save the depth or segmentation view instead #######
             # dep = ((dep-np.min(dep)) * 255 / (np.max(dep)-np.min(dep))).astype('uint8')
@@ -629,9 +594,9 @@ class BaseAviary(gym.Env):
         self.DRONE_IDS = np.array(
             [
                 p.loadURDF(
-                    os.path.dirname(os.path.abspath(__file__))
-                    + "/../assets/"
-                    + self.URDF,
+                    pkg_resources.resource_filename(
+                        "gym_pybullet_drones", "assets/" + self.URDF
+                    ),
                     self.INIT_XYZS[i, :],
                     p.getQuaternionFromEuler(self.INIT_RPYS[i, :]),
                     flags=p.URDF_USE_INERTIA_FROM_FILE,
@@ -640,6 +605,9 @@ class BaseAviary(gym.Env):
                 for i in range(self.NUM_DRONES)
             ]
         )
+        #### Remove default damping #################################
+        # for i in range(self.NUM_DRONES):
+        #     p.changeDynamics(self.DRONE_IDS[i], -1, linearDamping=0, angularDamping=0)
         for i in range(self.NUM_DRONES):
             #### Show the frame of reference of the drone, note that ###
             #### It severly slows down the GUI #########################
@@ -681,19 +649,19 @@ class BaseAviary(gym.Env):
         if self.RECORD and self.GUI:
             self.VIDEO_ID = p.startStateLogging(
                 loggingType=p.STATE_LOGGING_VIDEO_MP4,
-                fileName=os.path.dirname(os.path.abspath(__file__))
-                + "/../../files/videos/video-"
-                + datetime.now().strftime("%m.%d.%Y_%H.%M.%S")
-                + ".mp4",
+                fileName=os.path.join(
+                    self.OUTPUT_FOLDER,
+                    "recording_" + datetime.now().strftime("%m.%d.%Y_%H.%M.%S"),
+                    "output.mp4",
+                ),
                 physicsClientId=self.CLIENT,
             )
         if self.RECORD and not self.GUI:
             self.FRAME_NUM = 0
-            self.IMG_PATH = (
-                os.path.dirname(os.path.abspath(__file__))
-                + "/../../files/videos/video-"
-                + datetime.now().strftime("%m.%d.%Y_%H.%M.%S")
-                + "/"
+            self.IMG_PATH = os.path.join(
+                self.OUTPUT_FOLDER,
+                "recording_" + datetime.now().strftime("%m.%d.%Y_%H.%M.%S"),
+                "",
             )
             os.makedirs(os.path.dirname(self.IMG_PATH), exist_ok=True)
 
@@ -838,7 +806,7 @@ class BaseAviary(gym.Env):
         """
         if img_type == ImageType.RGB:
             (Image.fromarray(img_input.astype("uint8"), "RGBA")).save(
-                path + "frame_" + str(frame_num) + ".png"
+                os.path.join(path, "frame_" + str(frame_num) + ".png")
             )
         elif img_type == ImageType.DEP:
             temp = (
@@ -858,7 +826,9 @@ class BaseAviary(gym.Env):
             print("[ERROR] in BaseAviary._exportImage(), unknown ImageType")
             exit()
         if img_type != ImageType.RGB:
-            (Image.fromarray(temp)).save(path + "frame_" + str(frame_num) + ".png")
+            (Image.fromarray(temp)).save(
+                os.path.join(path, "frame_" + str(frame_num) + ".png")
+            )
 
     ################################################################################
 
@@ -1235,7 +1205,9 @@ class BaseAviary(gym.Env):
 
         """
         URDF_TREE = etxml.parse(
-            os.path.dirname(os.path.abspath(__file__)) + "/../assets/" + self.URDF
+            pkg_resources.resource_filename(
+                "gym_pybullet_drones", "assets/" + self.URDF
+            )
         ).getroot()
         M = float(URDF_TREE[1][0][1].attrib["value"])
         L = float(URDF_TREE[0].attrib["arm"])

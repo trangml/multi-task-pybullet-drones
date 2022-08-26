@@ -70,7 +70,7 @@ Simulation **speed-up with respect to the wall-clock** when using
 
 
 ## Requirements and Installation
-The repo was written using *Python 3.7* with [`conda`](https://github.com/JacopoPan/a-minimalist-guide#install-conda) on *macOS 10.15* and tested on *macOS 11*, *Ubuntu 18.04*
+The repo was written using *Python 3.7* with [`conda`](https://github.com/JacopoPan/a-minimalist-guide#install-conda) on *macOS 10.15* and tested with *Python 3.8* on *macOS 12*, *Ubuntu 20.04*
 
 
 
@@ -78,21 +78,28 @@ The repo was written using *Python 3.7* with [`conda`](https://github.com/Jacopo
 ### On *macOS* and *Ubuntu*
 Major dependencies are [`gym`](https://gym.openai.com/docs/),  [`pybullet`](https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/edit#), 
 [`stable-baselines3`](https://stable-baselines3.readthedocs.io/en/master/guide/quickstart.html), and [`rllib`](https://docs.ray.io/en/master/rllib.html)
-```
-pip3 install --upgrade numpy Pillow matplotlib cycler 
-pip3 install --upgrade gym pybullet stable_baselines3 'ray[rllib]'
-```
+
 Video recording requires to have [`ffmpeg`](https://ffmpeg.org) installed, on *macOS*
-```
+```bash
 $ brew install ffmpeg
 ```
 On *Ubuntu*
-```
+```bash
 $ sudo apt install ffmpeg
 ```
+
+*macOS* with Apple Silicon (like the M1 Air) can only install grpc with a minimum Python version of 3.9 and these two environment variables set:
+```bash
+$ export GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=1
+$ export GRPC_PYTHON_BUILD_SYSTEM_ZLIB=1
+```
+
 The repo is structured as a [Gym Environment](https://github.com/openai/gym/blob/master/docs/creating-environments.md)
 and can be installed with `pip install --editable`
 ```
+$ conda create -n drones python=3.8 # or 3.9 on Apple Silicon, see the comment on grpc above
+$ conda activate drones
+$ pip3 install --upgrade pip
 $ git clone https://github.com/utiasDSL/gym-pybullet-drones.git
 $ cd gym-pybullet-drones/
 $ pip3 install -e .
@@ -105,49 +112,55 @@ On Ubuntu and with a GPU available, optionally uncomment [line 203](https://gith
 Check these step-by-step [instructions](https://github.com/utiasDSL/gym-pybullet-drones/tree/master/assignments#on-windows) written by Dr. Karime Pereida for *Windows 10*
 
 
+### On *Colab*
+Try the example scritps: 
+[`fly.py`](https://colab.research.google.com/drive/1hJlJElUuveD4U_GDGuNsX8NqDcl3jUGz?usp=sharing),
+[`learn.py`](https://colab.research.google.com/drive/1lLGAET4xx-7gGznanfGe0bQy4H7O9ScL?usp=sharing),
+[`downwash.py`](https://colab.research.google.com/drive/1Oj_RzJ5M_g4KrKFRJvcAhh62GJo78m9F?usp=sharing),
+[`compare.py`](https://colab.research.google.com/drive/1RzY6jG5F7ddknuyssI486TdMnOfq9Cjf?usp=sharing),
+[`ground_effect`](https://colab.research.google.com/drive/1BpLqPXnfk6lKiQ6YSNW74UQJ2MB4KwYJ?usp=sharing), and [`velocity`](https://colab.research.google.com/drive/1KN-fgwF3qjOCSIexHyQKBZ-rirtpt6ng?usp=sharing) contributed by [Spencer Teetaert](https://github.com/spencerteetaert)
+
 
 
 
 ## Examples
-There are 2 basic template scripts in `examples/`: `fly.py` and `learn.py`
+There are 2 basic template scripts in [`gym_pybullet_drones/examples/`](https://github.com/utiasDSL/gym-pybullet-drones/tree/master/gym_pybullet_drones/examples): `fly.py` and `learn.py`
 
-- `fly.py` runs an independent flight **using PID control** implemented in class [`DSLPIDControl`](https://github.com/utiasDSL/gym-pybullet-drones/tree/master/gym_pybullet_drones/control/DSLPIDControl.py)
+- `fly.py` [[try it on Colab](https://colab.research.google.com/drive/1hJlJElUuveD4U_GDGuNsX8NqDcl3jUGz?usp=sharing)] runs an independent flight **using PID control** implemented in class [`DSLPIDControl`](https://github.com/utiasDSL/gym-pybullet-drones/tree/master/gym_pybullet_drones/control/DSLPIDControl.py)
 ```
-$ cd gym-pybullet-drones/examples/
+$ cd gym-pybullet-drones/gym_pybullet_drones/examples/
 $ python3 fly.py                             # Try 'python3 fly.py -h' to show the script's customizable parameters
-```
+``` 
 > Tip: use the GUI's sliders and button `Use GUI RPM` to override the control with interactive inputs
 
 <img src="files/readme_images/wp.gif" alt="sparse way points flight" width="350"> <img src="files/readme_images/wp.png" alt="control info" width="450">
 
 <img src="files/readme_images/crash.gif" alt="yaw saturation" width="350"> <img src="files/readme_images/crash.png" alt="control info" width="450">
 
-- `learn.py` is an **RL example** to learn take-off using `stable-baselines3`'s [A2C](https://stable-baselines3.readthedocs.io/en/master/modules/a2c.html) or `rllib`'s [PPO](https://docs.ray.io/en/master/rllib-algorithms.html#ppo)
+- `learn.py` [[try it on Colab](https://colab.research.google.com/drive/1lLGAET4xx-7gGznanfGe0bQy4H7O9ScL?usp=sharing)] is an **RL example** to take-off using `stable-baselines3`'s [A2C](https://stable-baselines3.readthedocs.io/en/master/modules/a2c.html) or `rllib`'s [PPO](https://docs.ray.io/en/master/rllib-algorithms.html#ppo)
 ```
-$ cd gym-pybullet-drones/examples/
+$ cd gym-pybullet-drones/gym_pybullet_drones/examples/
 $ python3 learn.py                           # Try 'python3 learn.py -h' to show the script's customizable parameters
 ```
 <img src="files/readme_images/learn1.gif" alt="learning 1" width="400"> <img src="files/readme_images/learn2.gif" alt="learning 2" width="400">
 <img src="files/readme_images/learn3.gif" alt="learning 3" width="400"> <img src="files/readme_images/learn4.gif" alt="learning 4" width="400">
 
-Other scripts in folder `examples/` are
+Other scripts in folder [`gym_pybullet_drones/examples/`](https://github.com/utiasDSL/gym-pybullet-drones/tree/master/gym_pybullet_drones/examples) are
 
-- `downwash.py` is a flight script with only 2 drones, to test the downwash model
+- `downwash.py` [[try it on Colab](https://colab.research.google.com/drive/1Oj_RzJ5M_g4KrKFRJvcAhh62GJo78m9F?usp=sharing)] is a flight script with only 2 drones, to test the downwash model
 ```
-$ cd gym-pybullet-drones/examples/
+$ cd gym-pybullet-drones/gym_pybullet_drones/examples/
 $ python3 downwash.py                        # Try 'python3 downwash.py -h' to show the script's customizable parameters
 ```
 
 <img src="files/readme_images/downwash.gif" alt="downwash example" width="350"> <img src="files/readme_images/downwash.png" alt="control info" width="450">
 
-- `compare.py` which replays and compare to a trace saved in [`example_trace.pkl`](https://github.com/utiasDSL/gym-pybullet-drones/tree/master/files/example_trace.pkl)
+- `compare.py` [[try it on Colab](https://colab.research.google.com/drive/1RzY6jG5F7ddknuyssI486TdMnOfq9Cjf?usp=sharing)] which replays and compare to a trace saved in [`example_trace.pkl`](https://github.com/utiasDSL/gym-pybullet-drones/tree/master/files/example_trace.pkl)
 ```
-$ cd gym-pybullet-drones/examples/
+$ cd gym-pybullet-drones/gym_pybullet_drones/examples/
 $ python3 compare.py                         # Try 'python3 compare.py -h' to show the script's customizable parameters
 ```
 <img src="files/readme_images/trace_comparison.gif" alt="pid flight on sine trajectroy" width="350"> <img src="files/readme_images/trace_comparison.png" alt="control info" width="450">
-
-
 
 
 ## Experiments
@@ -372,6 +385,7 @@ With ROS2 installed (on either macOS or Ubuntu, edit `ros2_and_pkg_setups.(zsh/b
 ```
 $ cd gym-pybullet-drones/ros2/
 $ source ros2_and_pkg_setups.zsh            # On macOS, on Ubuntu use $ source ros2_and_pkg_setups.bash
+                                            # Note that the second line in the script will throw an error (until you run calcon) that you can ignore
 $ colcon build --packages-select ros2_gym_pybullet_drones
 $ source ros2_and_pkg_setups.zsh            # On macOS, on Ubuntu use $ source ros2_and_pkg_setups.bash
 $ ros2 run ros2_gym_pybullet_drones aviary_wrapper
@@ -386,10 +400,9 @@ $ ros2 run ros2_gym_pybullet_drones random_control
 
 
 
-## Desiderata/WIP
-- Template scripts using [PyMARL](https://github.com/oxwhirl/pymarl)
-- Google [Colaboratory](https://colab.research.google.com/notebooks/intro.ipynb) example
-- Alternative multi-contribution downwash effect
+## TODOs (August 2022)
+- Test and update ROS 2 instrucitons for [Humble Hawksbill](https://docs.ros.org/en/foxy/Releases/Release-Humble-Hawksbill.html)
+- Create a list of FAQs from [Issues tagged as questions](https://github.com/utiasDSL/gym-pybullet-drones/issues?q=is%3Aissue+is%3Aopen+label%3Aquestion)
 
 
 

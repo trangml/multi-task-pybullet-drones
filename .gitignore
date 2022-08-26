@@ -9,6 +9,8 @@ examples/test.py
 # NumPy saves and videos
 files/logs/*.npy
 files/videos/*.mp4
+results/
+tmp/
 
 # Hydra output logs
 outputs/
@@ -47,6 +49,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+.vscode/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

@@ -22,6 +22,8 @@ To check the tensorboard results at:
 import os
 import pprint
 from datetime import datetime
+from sys import platform
+import subprocess
 
 import gym
 import hydra
@@ -63,6 +65,8 @@ EPISODE_REWARD_THRESHOLD = (
 
 MAX_EPISODES = 10000  # Upperbound: number of episodes
 
+DEFAULT_OUTPUT_FOLDER = "results"
+
 
 @hydra.main(version_base=None, config_path="config", config_name="rl_singleagent")
 def train_loop(cfg: DictConfig = None):
@@ -87,6 +91,14 @@ def train_loop(cfg: DictConfig = None):
     )
     if not os.path.exists(filename):
         os.makedirs(filename + "/")
+
+    #### Print out current git commit hash #####################
+    if (platform == "linux" or platform == "darwin") and (
+        "GITHUB_ACTIONS" not in os.environ.keys()
+    ):
+        git_commit = subprocess.check_output(["git", "describe", "--tags"]).strip()
+        with open(filename + "/git_commit.txt", "w+") as f:
+            f.write(str(git_commit))
 
     if cfg.algo in ["sac", "td3", "ddpg"] and cfg.cpu != 1:
         print("[ERROR] The selected algorithm does not support multiple environments")
@@ -113,40 +125,9 @@ def train_loop(cfg: DictConfig = None):
     train_env = make_vec_env(
         envAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
     )
-    # if env_name == "hover-aviary-v0":
-    #     train_env = make_vec_env(
-    #         HoverAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
-    #     )
-    # if env_name == "maze-aviary-v0":
-    #     train_env = make_vec_env(
-    #         NavigateMazeAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
-    #     )
-    # if env_name == "obstacles-aviary-v0":
-    #     train_env = make_vec_env(
-    #         NavigateObstaclesAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
-    #     )
-    # if env_name == "land-aviary-v0":
-    #     train_env = make_vec_env(
-    #         NavigateLandAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
-    #     )
-    # if env_name == "field-aviary-v0":
-    #     train_env = make_vec_env(
-    #         FieldCoverageAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
-    #     )
-    # if env_name == "land-vision-aviary-v0":
-    #     train_env = make_vec_env(
-    #         LandVisionAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
-    #     )
     print("[INFO] Action space:", train_env.action_space)
     print("[INFO] Observation space:", train_env.observation_space)
     # check_env(train_env, warn=True, skip_render_check=True)
-
-    #### On-policy algorithms ##################################
-    onpolicy_kwargs = dict(
-        activation_fn=torch.nn.ReLU,
-        net_arch=[512, 512, 256, dict(vf=[256, 128], pi=[256, 128])],
-    )  # or None
-    #onpolicy_kwargs = cfg.policy_kwargs if cfg.policy_kwargs else onpolicy_kwargs
 
     ### Load the saved model if specified #################
     if cfg.exp != "none":
@@ -175,6 +156,12 @@ def train_loop(cfg: DictConfig = None):
             model = DDPG.load(path, tensorboard_log=filename + "/tb_log")
         model.set_env(train_env)
     else:
+        #### On-policy algorithms ##################################
+        onpolicy_kwargs = dict(
+            activation_fn=torch.nn.ReLU,
+            net_arch=[512, 512, 256, dict(vf=[256, 128], pi=[256, 128])],
+        )  # or None
+        # onpolicy_kwargs = cfg.policy_kwargs if cfg.policy_kwargs else onpolicy_kwargs
         if cfg.algo == "a2c":
             model = (
                 A2C(
