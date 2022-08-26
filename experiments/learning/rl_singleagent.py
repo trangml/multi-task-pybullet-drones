@@ -146,6 +146,7 @@ def train_loop(cfg: DictConfig = None):
         activation_fn=torch.nn.ReLU,
         net_arch=[512, 512, 256, dict(vf=[256, 128], pi=[256, 128])],
     )  # or None
+    #onpolicy_kwargs = cfg.policy_kwargs if cfg.policy_kwargs else onpolicy_kwargs
 
     ### Load the saved model if specified #################
     if cfg.exp != "none":
@@ -197,9 +198,10 @@ def train_loop(cfg: DictConfig = None):
                 PPO(
                     a2cppoMlpPolicy,
                     train_env,
-                    policy_kwargs=onpolicy_kwargs,
+                    # policy_kwargs=onpolicy_kwargs,
                     tensorboard_log=filename + "/tb/",
                     verbose=1,
+                    **cfg.ppo,
                 )
                 if ObservationType[cfg.obs] == ObservationType.KIN
                 else PPO(
@@ -208,6 +210,7 @@ def train_loop(cfg: DictConfig = None):
                     policy_kwargs=onpolicy_kwargs,
                     tensorboard_log=filename + "/tb/",
                     verbose=1,
+                    **cfg.ppo,
                 )
             )
 
