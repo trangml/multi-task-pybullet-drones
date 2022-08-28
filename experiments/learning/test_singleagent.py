@@ -66,8 +66,10 @@ def run(
     if os.path.isfile(exp + "/config.yaml"):
         with open(exp + "/config.yaml", "r") as f:
             additional_args = OmegaConf.load(f)
-            ARGS = {**ARGS, **additional_args}
+            ARGS = OmegaConf.create({**ARGS, **additional_args})
             ARGS.exp = exp
+    else:
+        raise ValueError("No config.yaml found in {}".format(exp))
     print(ARGS)
     #### Load the model from file ##############################
     algo = ARGS.algo
@@ -124,7 +126,7 @@ def run(
     #### Show, record a video, and log the model's performance #
     test_env = gym.make(
         env_name,
-        gui=True,
+        gui=gui,
         record=ARGS.record,
         aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
         obs=OBS,
@@ -164,7 +166,7 @@ def run(
                 reward=list(test_env.reward_dict.values()),
                 done=done,
             )
-        if OBS == ObservationType.RGB:
+        else:
             logger.log(
                 drone=0,
                 timestamp=i / test_env.SIM_FREQ,
@@ -185,7 +187,7 @@ def run(
     test_env.close()
     # logger.save_as_csv("sa")  # Optional CSV save
     print("\n\n\nMean reward ", mean_reward, " +- ", std_reward, "\n\n")
-    logger.save_as_csv("sa")  # Optional CSV save
+    # logger.save_as_csv("sa")  # Optional CSV save
     if plot:
         logger.plot()
         logger.plot_rewards()
@@ -221,13 +223,6 @@ if __name__ == "__main__":
         default=DEFAULT_OUTPUT_FOLDER,
         type=str,
         help='Folder where to save logs (default: "results")',
-        metavar="",
-    )
-    parser.add_argument(
-        "--landing_zone",
-        default="3.5, 3.5, 0.0625",
-        type=str,
-        help="Landing Zone XYZ location, comma separated (default: 3.5, 3.5, 0.0625)",
         metavar="",
     )
     parser.add_argument(

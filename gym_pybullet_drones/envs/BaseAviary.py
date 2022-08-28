@@ -178,7 +178,7 @@ class BaseAviary(gym.Env):
                     self.OUTPUT_FOLDER,
                     "recording_" + datetime.now().strftime("%m.%d.%Y_%H.%M.%S"),
                 )
-                os.makedirs(os.path.dirname(self.ONBOARD_IMG_PATH), exist_ok=True)
+                os.makedirs(self.ONBOARD_IMG_PATH, exist_ok=True)
         #### Create attributes for dynamics control inputs #########
         self.DYNAMICS_ATTR = dynamics_attributes
         if self.DYNAMICS_ATTR:

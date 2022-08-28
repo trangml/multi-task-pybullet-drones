@@ -204,6 +204,8 @@ class Logger(object):
         t = np.arange(
             0, self.timestamps.shape[1] / self.LOGGING_FREQ_HZ, 1 / self.LOGGING_FREQ_HZ
         )
+        while len(t) > len(self.rewards[0, 0, :]):
+            t = t[:-1]
         for i in range(self.NUM_DRONES):
             with open(csv_dir + "/x" + str(i) + ".csv", "wb") as out_file:
                 np.savetxt(
@@ -611,4 +613,4 @@ class Logger(object):
         if self.COLAB:
             plt.savefig(os.path.join("results", "output_figure.png"))
         else:
-            plt.show()
+            plt.show(block=False)

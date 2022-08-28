@@ -38,6 +38,8 @@ class IncreaseXReward(DenseReward):
     def _calculateReward(self, state):
         # For now, reward based on just x position
         position = state[0]
-        return position / 10
+        if position > 0:
+            return position / 10
+        return ZERO_REWARD
 
     ################################################################################

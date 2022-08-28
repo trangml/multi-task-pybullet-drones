@@ -1,14 +1,14 @@
 # general script settings
-tag: kin_difficulty_1_pretrained
+tag: difficulty_0_both_bigger_net
 env: cross-obstacles
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
 #choices=["a2c", "ppo", "sac", "td3", "ddpg"],
-obs: KIN
-# choices=["kin", "rgb"],
+obs: BOTH
+# choices=["kin", "rgb", "both"],
 act: RPM
-exp: /home/mtrang/Documents/vt/research/multiagent-pybullet-drones/experiments/learning/results/save-cross-obstacles-ppo-KIN-RPM-kin_difficulty_0-08.25.2022_16.08.31
-cpu: 1
+exp: none
+cpu: 8
 n_steps: 1e7
 
 # PPO arguments
@@ -19,19 +19,28 @@ ppo:
   gamma: 0.99
   ent_coef: 0.0
   learning_rate: 2.5e-4
-  clip_rate: 0.2
-  policy_kwargs: "dict(log_std_init=-1,
-    ortho_init=False,
-    activation_fn=nn.ReLU,
-    net_arch=[dict(pi=[256, 256], vf=[256, 256])]
-    )"
+  #clip_rate: 0.2
+  # policy_kwargs: dict(log_std_init=-1,
+  #   ortho_init=False,
+  #   activation_fn=nn.LeakyReLU,
+  #   net_arch=[512, 256, dict(pi=[256, 256], vf=[256, 256])]
+  #   )
+  policy_kwargs:
+    log_std_init: -1
+    ortho_init: False
+    #activation_fn: ${torch.nn.ReLU}
+    # net_arch:
+    #   - 512
+    #   - 256
+    #   - pi: [256, 256]
+    #   - vf: [256, 256]
 
 # Env specific settings
 env_kwargs:
   initial_xyzs: [[-0.5, 0, 0.5]]
 
   bounds: [[5, 1, 1], [-1, -1, 0.1]]
-  difficulty: 1
+  difficulty: 0
 
   # rewards
   reward_components:
@@ -40,8 +49,8 @@ env_kwargs:
       area: [[4, 5], [-1, 1]]
     OrientationReward:
       scale: 0.01
-    # IncreaseXReward:
-    #   scale: 0.1
+    IncreaseXReward:
+      scale: 0.1
     BoundsReward:
       scale: 10.0
       bounds: ${env_kwargs.bounds}

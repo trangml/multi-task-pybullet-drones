@@ -21,9 +21,9 @@ To check the tensorboard results at:
 """
 import os
 import pprint
+import subprocess
 from datetime import datetime
 from sys import platform
-import subprocess
 
 import gym
 import hydra
@@ -50,6 +50,9 @@ from stable_baselines3.common.env_util import (
 )  # Module cmd_util will be renamed to env_util https://github.com/DLR-RM/stable-baselines3/pull/197
 from stable_baselines3.common.policies import ActorCriticCnnPolicy as a2cppoCnnPolicy
 from stable_baselines3.common.policies import ActorCriticPolicy as a2cppoMlpPolicy
+from stable_baselines3.common.policies import (
+    MultiInputActorCriticPolicy as a2cppoMultiInputPolicy,
+)
 from stable_baselines3.common.vec_env import VecTransposeImage
 from stable_baselines3.sac import CnnPolicy as sacCnnPolicy
 from stable_baselines3.sac.policies import SACPolicy as sacMlpPolicy
@@ -181,8 +184,8 @@ def train_loop(cfg: DictConfig = None):
                 )
             )
         if cfg.algo == "ppo":
-            model = (
-                PPO(
+            if cfg.obs == ObservationType.KIN:
+                model = PPO(
                     a2cppoMlpPolicy,
                     train_env,
                     # policy_kwargs=onpolicy_kwargs,
@@ -190,16 +193,24 @@ def train_loop(cfg: DictConfig = None):
                     verbose=1,
                     **cfg.ppo,
                 )
-                if ObservationType[cfg.obs] == ObservationType.KIN
-                else PPO(
+            elif cfg.obs == ObservationType.RGB:
+                model = PPO(
                     a2cppoCnnPolicy,
                     train_env,
-                    policy_kwargs=onpolicy_kwargs,
+                    # policy_kwargs=onpolicy_kwargs,
                     tensorboard_log=filename + "/tb/",
                     verbose=1,
                     **cfg.ppo,
                 )
-            )
+            else:
+                model = PPO(
+                    a2cppoMultiInputPolicy,
+                    train_env,
+                    # policy_kwargs=onpolicy_kwargs,
+                    tensorboard_log=filename + "/tb/",
+                    verbose=1,
+                    **cfg.ppo,
+                )
 
         #### Off-policy algorithms #################################
         offpolicy_kwargs = dict(
@@ -268,6 +279,11 @@ def train_loop(cfg: DictConfig = None):
         evalAviary = map_name_to_env(env_name)
         eval_env = make_vec_env(evalAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0)
         eval_env = VecTransposeImage(eval_env)
+    elif ObservationType[cfg.obs] == ObservationType.BOTH:
+        n_envs = 1
+        evalAviary = map_name_to_env(env_name)
+        eval_env = make_vec_env(evalAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0)
+        eval_env = VecTransposeImage(eval_env)
 
     #### Train the model #######################################
     checkpoint_callback = CheckpointCallback(
@@ -316,4 +332,3 @@ def train_loop(cfg: DictConfig = None):
 
 if __name__ == "__main__":
     train_loop()
-
