@@ -1,5 +1,5 @@
 # general script settings
-tag: difficulty_0_both_bigger_net
+tag: difficulty_2_from_1_default
 env: cross-obstacles
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
@@ -7,7 +7,7 @@ algo: ppo
 obs: BOTH
 # choices=["kin", "rgb", "both"],
 act: RPM
-exp: none
+exp: /home/mtrang/Documents/vt/research/multiagent-pybullet-drones/experiments/learning/results/save-cross-obstacles-ppo-BOTH-RPM-difficulty_1_default-08.27.2022_20.13.44
 cpu: 8
 n_steps: 1e7
 
@@ -20,32 +20,31 @@ ppo:
   ent_coef: 0.0
   learning_rate: 2.5e-4
   #clip_rate: 0.2
-  # policy_kwargs: dict(log_std_init=-1,
-  #   ortho_init=False,
-  #   activation_fn=nn.LeakyReLU,
-  #   net_arch=[512, 256, dict(pi=[256, 256], vf=[256, 256])]
-  #   )
   policy_kwargs:
     log_std_init: -1
     ortho_init: False
-    #activation_fn: ${torch.nn.ReLU}
+    activation_fn:
+      _partial_: true
+      _target_: torch.nn.ReLU
+    #net_arch: [512, 256, { "pi": [256, 256], "vf": [256, 256] }]
+    # Agents do better with the default net_arch
     # net_arch:
     #   - 512
     #   - 256
-    #   - pi: [256, 256]
-    #   - vf: [256, 256]
+    #   - "pi": [256, 256]
+    #     "vf": [256, 256]
 
 # Env specific settings
 env_kwargs:
   initial_xyzs: [[-0.5, 0, 0.5]]
 
   bounds: [[5, 1, 1], [-1, -1, 0.1]]
-  difficulty: 0
+  difficulty: 2
 
   # rewards
   reward_components:
     EnterAreaReward:
-      scale: 10.0
+      scale: 20.0
       area: [[4, 5], [-1, 1]]
     OrientationReward:
       scale: 0.01

@@ -160,10 +160,12 @@ def train_loop(cfg: DictConfig = None):
         model.set_env(train_env)
     else:
         #### On-policy algorithms ##################################
-        onpolicy_kwargs = dict(
-            activation_fn=torch.nn.ReLU,
-            net_arch=[512, 512, 256, dict(vf=[256, 128], pi=[256, 128])],
-        )  # or None
+        p_kwargs = {
+            "onpolicy_kwargs": dict(
+                activation_fn=torch.nn.ReLU,
+                net_arch=[512, 512, 256, dict(vf=[256, 128], pi=[256, 128])],
+            )  # or None
+        }
         # onpolicy_kwargs = cfg.policy_kwargs if cfg.policy_kwargs else onpolicy_kwargs
         if cfg.algo == "a2c":
             model = (
@@ -184,6 +186,8 @@ def train_loop(cfg: DictConfig = None):
                 )
             )
         if cfg.algo == "ppo":
+            if cfg.ppo != None:
+                p_kwargs = hydra.utils.instantiate(cfg.ppo, _convert_="partial")
             if cfg.obs == ObservationType.KIN:
                 model = PPO(
                     a2cppoMlpPolicy,
@@ -191,7 +195,7 @@ def train_loop(cfg: DictConfig = None):
                     # policy_kwargs=onpolicy_kwargs,
                     tensorboard_log=filename + "/tb/",
                     verbose=1,
-                    **cfg.ppo,
+                    **p_kwargs,
                 )
             elif cfg.obs == ObservationType.RGB:
                 model = PPO(
@@ -200,7 +204,7 @@ def train_loop(cfg: DictConfig = None):
                     # policy_kwargs=onpolicy_kwargs,
                     tensorboard_log=filename + "/tb/",
                     verbose=1,
-                    **cfg.ppo,
+                    **p_kwargs,
                 )
             else:
                 model = PPO(
@@ -209,7 +213,7 @@ def train_loop(cfg: DictConfig = None):
                     # policy_kwargs=onpolicy_kwargs,
                     tensorboard_log=filename + "/tb/",
                     verbose=1,
-                    **cfg.ppo,
+                    **p_kwargs,
                 )
 
         #### Off-policy algorithms #################################
