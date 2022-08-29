@@ -19,7 +19,7 @@ class ObstacleRoom:
         wlh : np.array
             width, length, height of the field
         """
-        self.xyz = xyz  # TODO: make this actually do something
+        self.xyz = xyz
         self.CLIENT = physics
         self.color = color
         self.difficulty = difficulty
@@ -35,7 +35,7 @@ class ObstacleRoom:
         p.loadURDF(
             os.path.dirname(os.path.abspath(__file__))
             + "/../../../assets/room_w_pad.urdf",
-            [5, -1, 0],
+            [5 + self.xyz[0], -1 + self.xyz[1], 0 + self.xyz[2]],
             p.getQuaternionFromEuler([0, 0, 0]),
             physicsClientId=self.CLIENT,
             globalScaling=1,
@@ -50,7 +50,7 @@ class ObstacleRoom:
             box_q = p.getQuaternionFromEuler([0, 1.57057, 0])
             for i in np.arange(1, 4, 2):
                 for j in np.arange(-0.5, 1, 0.5):
-                    box_pos = [i, j, 0.5]
+                    box_pos = [i + self.xyz[0], j + self.xyz[1], 0.5 + self.xyz[2]]
                     p.loadURDF(
                         "block.urdf",
                         box_pos,
@@ -64,7 +64,7 @@ class ObstacleRoom:
             box_q = p.getQuaternionFromEuler([0, 1.57057, 0])
             for i in np.arange(0.5, 4.5, 0.5):
                 for j in np.arange(-0.7, 0.7, 0.33):
-                    box_pos = [i, j, 0.5]
+                    box_pos = [i + self.xyz[0], j + self.xyz[1], 0.5 + self.xyz[2]]
                     p.loadURDF(
                         "block.urdf",
                         box_pos,
@@ -79,7 +79,7 @@ class ObstacleRoom:
             box_q = p.getQuaternionFromEuler([0, 1.57057, 0])
             for i in np.arange(1, 4, 1):
                 for j in np.arange(-0.5, 1, 0.5):
-                    box_pos = [i, j, 0.5]
+                    box_pos = [i + self.xyz[0], j + self.xyz[1], 0.5 + self.xyz[2]]
                     p.loadURDF(
                         "block.urdf",
                         box_pos,
@@ -90,7 +90,7 @@ class ObstacleRoom:
                     )
             for i in np.arange(0.5, 4.5, 1):
                 for j in np.arange(-0.75, 1, 0.5):
-                    box_pos = [i, j, 0.5]
+                    box_pos = [i + self.xyz[0], j + self.xyz[1], 0.5 + self.xyz[2]]
                     p.loadURDF(
                         "block.urdf",
                         box_pos,

@@ -88,7 +88,7 @@ class BaseSingleAgentAviary(BaseAviary):
 
         """
         vision_attributes = (
-            True if obs == ObservationType.RGB or obs == ObservationType.BOTH else False
+            True if (obs == ObservationType.RGB or obs == ObservationType.BOTH) else False
         )
         dynamics_attributes = (
             True if act in [ActionType.DYN, ActionType.ONE_D_DYN] else False

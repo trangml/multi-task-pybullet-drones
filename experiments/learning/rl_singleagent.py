@@ -53,7 +53,11 @@ from stable_baselines3.common.policies import ActorCriticPolicy as a2cppoMlpPoli
 from stable_baselines3.common.policies import (
     MultiInputActorCriticPolicy as a2cppoMultiInputPolicy,
 )
-from stable_baselines3.common.vec_env import VecTransposeImage
+from stable_baselines3.common.vec_env import (
+    VecTransposeImage,
+    VecFrameStack,
+    VecNormalize,
+)
 from stable_baselines3.sac import CnnPolicy as sacCnnPolicy
 from stable_baselines3.sac.policies import SACPolicy as sacMlpPolicy
 from stable_baselines3.td3 import CnnPolicy as td3ddpgCnnPolicy
@@ -128,6 +132,13 @@ def train_loop(cfg: DictConfig = None):
     train_env = make_vec_env(
         envAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
     )
+    if (
+        ObservationType[cfg.obs] == ObservationType.RGB
+        or ObservationType[cfg.obs] == ObservationType.BOTH
+    ):
+        train_env = VecTransposeImage(train_env)
+        train_env = VecFrameStack(train_env, n_stack=4)
+        train_env = VecNormalize(train_env)
     print("[INFO] Action space:", train_env.action_space)
     print("[INFO] Observation space:", train_env.observation_space)
     # check_env(train_env, warn=True, skip_render_check=True)
@@ -168,53 +179,42 @@ def train_loop(cfg: DictConfig = None):
         }
         # onpolicy_kwargs = cfg.policy_kwargs if cfg.policy_kwargs else onpolicy_kwargs
         if cfg.algo == "a2c":
-            model = (
-                A2C(
-                    a2cppoMlpPolicy,
-                    train_env,
-                    policy_kwargs=onpolicy_kwargs,
-                    tensorboard_log=filename + "/tb/",
-                    verbose=1,
-                )
-                if cfg.obs == ObservationType.KIN
-                else A2C(
-                    a2cppoCnnPolicy,
-                    train_env,
-                    policy_kwargs=onpolicy_kwargs,
-                    tensorboard_log=filename + "/tb/",
-                    verbose=1,
-                )
+            if cfg.a2c != None:
+                p_kwargs = hydra.utils.instantiate(cfg.a2c, _convert_="partial")
+            if cfg.obs == ObservationType.KIN:
+                policy = a2cppoMlpPolicy
+            elif cfg.obs == ObservationType.RGB:
+                policy = a2cppoCnnPolicy
+            else:
+                policy = a2cppoMultiInputPolicy
+
+            model = PPO(
+                policy,
+                train_env,
+                # policy_kwargs=onpolicy_kwargs,
+                tensorboard_log=filename + "/tb/",
+                verbose=1,
+                **p_kwargs,
             )
+
         if cfg.algo == "ppo":
             if cfg.ppo != None:
                 p_kwargs = hydra.utils.instantiate(cfg.ppo, _convert_="partial")
             if cfg.obs == ObservationType.KIN:
-                model = PPO(
-                    a2cppoMlpPolicy,
-                    train_env,
-                    # policy_kwargs=onpolicy_kwargs,
-                    tensorboard_log=filename + "/tb/",
-                    verbose=1,
-                    **p_kwargs,
-                )
+                policy = a2cppoMlpPolicy
             elif cfg.obs == ObservationType.RGB:
-                model = PPO(
-                    a2cppoCnnPolicy,
-                    train_env,
-                    # policy_kwargs=onpolicy_kwargs,
-                    tensorboard_log=filename + "/tb/",
-                    verbose=1,
-                    **p_kwargs,
-                )
+                policy = a2cppoCnnPolicy
             else:
-                model = PPO(
-                    a2cppoMultiInputPolicy,
-                    train_env,
-                    # policy_kwargs=onpolicy_kwargs,
-                    tensorboard_log=filename + "/tb/",
-                    verbose=1,
-                    **p_kwargs,
-                )
+                policy = a2cppoMultiInputPolicy
+
+            model = PPO(
+                policy,
+                train_env,
+                # policy_kwargs=onpolicy_kwargs,
+                tensorboard_log=filename + "/tb/",
+                verbose=1,
+                **p_kwargs,
+            )
 
         #### Off-policy algorithms #################################
         offpolicy_kwargs = dict(
@@ -283,11 +283,15 @@ def train_loop(cfg: DictConfig = None):
         evalAviary = map_name_to_env(env_name)
         eval_env = make_vec_env(evalAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0)
         eval_env = VecTransposeImage(eval_env)
+        eval_env = VecFrameStack(eval_env, n_stack=4)
+        eval_env = VecNormalize(eval_env)
     elif ObservationType[cfg.obs] == ObservationType.BOTH:
         n_envs = 1
         evalAviary = map_name_to_env(env_name)
         eval_env = make_vec_env(evalAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0)
         eval_env = VecTransposeImage(eval_env)
+        eval_env = VecFrameStack(eval_env, n_stack=4)
+        eval_env = VecNormalize(eval_env)
 
     #### Train the model #######################################
     checkpoint_callback = CheckpointCallback(

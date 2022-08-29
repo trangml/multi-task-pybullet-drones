@@ -1,29 +1,38 @@
 from typing import List, Optional
-import os
 import numpy as np
+
 import gym_pybullet_drones.envs.single_agent_rl.rewards as rewards
+from gym_pybullet_drones.envs.single_agent_rl.rewards.cross_obstacles.EnterAreaReward import (
+    EnterAreaReward,
+)
 import gym_pybullet_drones.envs.single_agent_rl.terminations as terminations
-import pybullet as p
-from gym_pybullet_drones.envs.BaseAviary import BaseAviary, DroneModel, Physics
+from gym_pybullet_drones.envs.single_agent_rl.terminations.Terminations import (
+    OrientationTerm,
+)
+from gym_pybullet_drones.utils.enums import DroneModel, Physics
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
     ActionType,
-    BaseSingleAgentAviary,
     ObservationType,
+)
+from gym_pybullet_drones.envs.multi_agent_rl.BaseMultiagentAviary import (
+    BaseMultiagentAviary,
 )
 from gym_pybullet_drones.envs.single_agent_rl.rewards import getRewardDict
 from gym_pybullet_drones.envs.single_agent_rl.terminations import getTermDict
 from gym_pybullet_drones.envs.single_agent_rl.obstacles.ObstacleRoom import ObstacleRoom
 
 
-class CrossObstaclesAviary(BaseSingleAgentAviary):
-    """Single agent RL problem: cross a room with obstacles"""
+class MultiCrossObstaclesAviary(BaseMultiagentAviary):
+    """Multi-agent RL problem: leader-follower."""
 
     ################################################################################
 
     def __init__(
         self,
         drone_model: DroneModel = DroneModel.CF2X,
-        initial_xyzs=None,
+        num_drones: int = 2,
+        neighbourhood_radius: float = np.inf,
+        initial_xyzs=[[-0.5, 0, 0.5], [-0.5, 2, 0.5]],
         initial_rpys=None,
         physics: Physics = Physics.PYB,
         freq: int = 240,
@@ -32,19 +41,22 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
         record=False,
         obs: ObservationType = ObservationType.KIN,
         act: ActionType = ActionType.RPM,
-        difficulty: int = 0,
         reward_components: List = [],
         term_components: List = [],
         bounds: List = [[5, 1, 1], [-1, -1, 0.1]],
     ):
-        """Initialization of a single agent RL environment.
+        """Initialization of a multi-agent RL environment.
 
-        Using the generic single agent RL superclass.
+        Using the generic multi-agent RL superclass.
 
         Parameters
         ----------
         drone_model : DroneModel, optional
             The desired drone type (detailed in an .urdf file in folder `assets`).
+        num_drones : int, optional
+            The desired number of drones in the aviary.
+        neighbourhood_radius : float, optional
+            Radius used to compute the drones' adjacency matrix, in meters.
         initial_xyzs: ndarray | None, optional
             (NUM_DRONES, 3)-shaped array containing the initial XYZ position of the drones.
         initial_rpys: ndarray | None, optional
@@ -83,8 +95,12 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
             else:
                 self.term_components.append(t_class())
 
+        self.reward_components.append(EnterAreaReward(scale=20, area=[[4, 5], [-1, 5]]))
+        self.term_components.append(OrientationTerm())
         super().__init__(
             drone_model=drone_model,
+            num_drones=num_drones,
+            neighbourhood_radius=neighbourhood_radius,
             initial_xyzs=initial_xyzs,
             initial_rpys=initial_rpys,
             physics=physics,
@@ -98,17 +114,28 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
 
         # override base aviary episode length
         self.EPISODE_LEN_SEC = 10
-        self.difficulty = difficulty
         self.obstacles.append(
-            ObstacleRoom(xyz=[0, 0, 0], physics=self.CLIENT, difficulty=self.difficulty)
+            ObstacleRoom(xyz=[0, 0, 0], physics=self.CLIENT, difficulty=0)
+        )
+        self.obstacles.append(
+            ObstacleRoom(xyz=[0, 2, 0], physics=self.CLIENT, difficulty=1)
+        )
+        self.obstacles.append(
+            ObstacleRoom(xyz=[0, 4, 0], physics=self.CLIENT, difficulty=2)
         )
         self.reward_dict = getRewardDict(self.reward_components)
         self.term_dict = getTermDict(self.term_components)
         self.cum_reward_dict = getRewardDict(self.reward_components)
+        self.NUM_DRONES = num_drones
 
     ################################################################################
 
     def reset(self):
+        """Resets the environment reward components and termination components.
+
+        Returns: obs
+
+        """
         for rwd in self.reward_components:
             rwd.reset()
         for term in self.term_components:
@@ -117,60 +144,66 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
 
     ################################################################################
 
-    def _addObstacles(self):
-        """Add obstacles to the environment.
-
-        Extends the superclass method and add the obstacles to the environment.
-
-        """
-        super()._addObstacles()
-        for obstacle in self.obstacles:
-            obstacle._addObstacles()
-
-    ################################################################################
     def _computeReward(self):
-        """Computes the current reward value.
+        """Computes the current reward value(s).
 
         Returns
         -------
-        float
-            The reward.
+        dict[int, float]
+            The reward value for each drone.
 
         """
-        cum_reward = 0
-        state = self._getDroneStateVector(0)
-        for reward_component, r_dict in zip(self.reward_components, self.reward_dict):
-            r = reward_component.calculateReward(state)
-            self.reward_dict[r_dict] = r
-            self.cum_reward_dict[r_dict] += r
-            cum_reward += r
+        rewards = {}
+        states = np.array(
+            [self._getDroneStateVector(i) for i in range(self.NUM_DRONES)]
+        )
 
-        self.reward_dict["total"] = cum_reward
-        self.cum_reward_dict["total"] += cum_reward
-        return cum_reward
+        for ix, state in enumerate(states):
+            cum_reward = 0
+            for reward_component, r_dict in zip(
+                self.reward_components, self.reward_dict
+            ):
+                r = reward_component.calculateReward(state)
+                self.reward_dict[r_dict] = r
+                self.cum_reward_dict[r_dict] += r
+                cum_reward += r
+            self.reward_dict["total"] = cum_reward
+            self.cum_reward_dict["total"] += cum_reward
+            rewards[ix] = cum_reward
+
+        return rewards
 
     ################################################################################
 
     def _computeDone(self):
-        """Computes the current done value.
+        """Computes the current done value(s).
 
         Returns
         -------
-        bool
-            Whether the current episode is done.
+        dict[int | "__all__", bool]
+            Dictionary with the done value of each drone and
+            one additional boolean value for key "__all__".
 
         """
-        if self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
-            # TODO: add to info if we timeout
-            return True
-        else:
-            state = self._getDroneStateVector(0)
-            done = False
+        bool_val = (
+            True if self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC else False
+        )
+        done = {i: bool_val for i in range(self.NUM_DRONES)}
+
+        states = np.array(
+            [self._getDroneStateVector(i) for i in range(self.NUM_DRONES)]
+        )
+        all_done = True
+        for ix, state in enumerate(states):
+            i_done = False
             for term_component, t_dict in zip(self.term_components, self.term_dict):
                 t = term_component.calculateTerm(state)
                 self.term_dict[t_dict] = t
-                done = done or t
-            return done
+                i_done = i_done or t
+            all_done = all_done and i_done
+            done[ix] = done[ix] or i_done
+        done["__all__"] = bool_val or i_done  # True if True in done.values() else False
+        return done
 
     ################################################################################
 
@@ -181,13 +214,11 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
 
         Returns
         -------
-        dict[str, int]
-            Dummy value.
+        dict[int, dict[]]
+            Dictionary of empty dictionaries.
 
         """
-        return {
-            "answer": 42
-        }  #### Calculated by the Deep Thought supercomputer in 7.5M years
+        return {i: {} for i in range(self.NUM_DRONES)}
 
     ################################################################################
 
@@ -277,7 +308,7 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
             print(
                 "[WARNING] it",
                 self.step_counter,
-                "in NavigateMazeAviary._clipAndNormalizeState(), clipped xy position [{:.2f} {:.2f}]".format(
+                "in LeaderFollowerAviary._clipAndNormalizeState(), clipped xy position [{:.2f} {:.2f}]".format(
                     state[0], state[1]
                 ),
             )
@@ -285,7 +316,7 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
             print(
                 "[WARNING] it",
                 self.step_counter,
-                "in NavigateMazeAviary._clipAndNormalizeState(), clipped z position [{:.2f}]".format(
+                "in LeaderFollowerAviary._clipAndNormalizeState(), clipped z position [{:.2f}]".format(
                     state[2]
                 ),
             )
@@ -293,7 +324,7 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
             print(
                 "[WARNING] it",
                 self.step_counter,
-                "in NavigateMazeAviary._clipAndNormalizeState(), clipped roll/pitch [{:.2f} {:.2f}]".format(
+                "in LeaderFollowerAviary._clipAndNormalizeState(), clipped roll/pitch [{:.2f} {:.2f}]".format(
                     state[7], state[8]
                 ),
             )
@@ -301,7 +332,7 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
             print(
                 "[WARNING] it",
                 self.step_counter,
-                "in NavigateMazeAviary._clipAndNormalizeState(), clipped xy velocity [{:.2f} {:.2f}]".format(
+                "in LeaderFollowerAviary._clipAndNormalizeState(), clipped xy velocity [{:.2f} {:.2f}]".format(
                     state[10], state[11]
                 ),
             )
@@ -309,7 +340,7 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
             print(
                 "[WARNING] it",
                 self.step_counter,
-                "in NavigateMazeAviary._clipAndNormalizeState(), clipped z velocity [{:.2f}]".format(
+                "in LeaderFollowerAviary._clipAndNormalizeState(), clipped z velocity [{:.2f}]".format(
                     state[12]
                 ),
             )

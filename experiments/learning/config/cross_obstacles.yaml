@@ -1,5 +1,5 @@
 # general script settings
-tag: difficulty_2_from_1_default
+tag: difficulty_1_default_with_frame_wrappers
 env: cross-obstacles
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
@@ -7,7 +7,7 @@ algo: ppo
 obs: BOTH
 # choices=["kin", "rgb", "both"],
 act: RPM
-exp: /home/mtrang/Documents/vt/research/multiagent-pybullet-drones/experiments/learning/results/save-cross-obstacles-ppo-BOTH-RPM-difficulty_1_default-08.27.2022_20.13.44
+exp: none
 cpu: 8
 n_steps: 1e7
 
