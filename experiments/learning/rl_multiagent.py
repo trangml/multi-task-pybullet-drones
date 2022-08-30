@@ -382,7 +382,7 @@ if __name__ == "__main__":
     config = (
         ppo.DEFAULT_CONFIG.copy()
     )  # For the default config, see github.com/ray-project/ray/blob/master/rllib/agents/trainer.py
-    config = {
+    new_config = {
         "env": temp_env_name,
         "num_workers": 0 + ARGS.workers,
         "num_gpus": int(
@@ -391,7 +391,9 @@ if __name__ == "__main__":
         "batch_mode": "complete_episodes",
         "callbacks": FillInActions,
         "framework": "torch",
+        "no_done_at_end": True,
     }
+    config = {**config, **new_config}
 
     #### Set up the model parameters of the trainer's config ###
     config["model"] = {
@@ -412,7 +414,7 @@ if __name__ == "__main__":
 
     #### Ray Tune stopping conditions ##########################
     stop = {
-        "timesteps_total": 120000,  # 100000 ~= 10'
+        "timesteps_total": 1e7,  # 100000 ~= 10'
         # "episode_reward_mean": 0,
         # "training_iteration": 0,
     }

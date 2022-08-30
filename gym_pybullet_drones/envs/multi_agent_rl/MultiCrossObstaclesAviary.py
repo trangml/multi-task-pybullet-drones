@@ -2,9 +2,11 @@ from typing import List, Optional
 import numpy as np
 
 import gym_pybullet_drones.envs.single_agent_rl.rewards as rewards
+from gym_pybullet_drones.envs.single_agent_rl.rewards.OrientationReward import OrientationReward
 from gym_pybullet_drones.envs.single_agent_rl.rewards.cross_obstacles.EnterAreaReward import (
     EnterAreaReward,
 )
+from gym_pybullet_drones.envs.single_agent_rl.rewards.cross_obstacles.IncreaseXReward import IncreaseXReward
 import gym_pybullet_drones.envs.single_agent_rl.terminations as terminations
 from gym_pybullet_drones.envs.single_agent_rl.terminations.Terminations import (
     OrientationTerm,
@@ -32,7 +34,7 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
         drone_model: DroneModel = DroneModel.CF2X,
         num_drones: int = 2,
         neighbourhood_radius: float = np.inf,
-        initial_xyzs=[[-0.5, 0, 0.5], [-0.5, 2, 0.5]],
+        initial_xyzs=[[-0.5, 0, 0.5], [-0.5, 2.5, 0.5]],
         initial_rpys=None,
         physics: Physics = Physics.PYB,
         freq: int = 240,
@@ -95,7 +97,10 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
             else:
                 self.term_components.append(t_class())
 
-        self.reward_components.append(EnterAreaReward(scale=20, area=[[4, 5], [-1, 5]]))
+        self.reward_components.append(EnterAreaReward(scale=20, area=[[4, 5], [-1, 6]]))
+        self.reward_components.append(OrientationReward(scale=0.01))
+        self.reward_components.append(IncreaseXReward(scale=0.1))
+
         self.term_components.append(OrientationTerm())
         super().__init__(
             drone_model=drone_model,
@@ -118,10 +123,10 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
             ObstacleRoom(xyz=[0, 0, 0], physics=self.CLIENT, difficulty=0)
         )
         self.obstacles.append(
-            ObstacleRoom(xyz=[0, 2, 0], physics=self.CLIENT, difficulty=1)
+            ObstacleRoom(xyz=[0, 2.5, 0], physics=self.CLIENT, difficulty=1)
         )
         self.obstacles.append(
-            ObstacleRoom(xyz=[0, 4, 0], physics=self.CLIENT, difficulty=2)
+            ObstacleRoom(xyz=[0, 5, 0], physics=self.CLIENT, difficulty=2)
         )
         self.reward_dict = getRewardDict(self.reward_components)
         self.term_dict = getTermDict(self.term_components)
@@ -143,6 +148,16 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
         return super().reset()
 
     ################################################################################
+
+    def _addObstacles(self):
+        """Add obstacles to the environment.
+
+        Extends the superclass method and add the obstacles to the environment.
+
+        """
+        super()._addObstacles()
+        for obstacle in self.obstacles:
+            obstacle._addObstacles()
 
     def _computeReward(self):
         """Computes the current reward value(s).

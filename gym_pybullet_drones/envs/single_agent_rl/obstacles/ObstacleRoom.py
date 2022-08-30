@@ -59,11 +59,12 @@ class ObstacleRoom:
                         useFixedBase=True,
                         globalScaling=10,
                     )
+
         elif self.difficulty == 2:
             # difficulty of 2 is many rows of obstacles
             box_q = p.getQuaternionFromEuler([0, 1.57057, 0])
             for i in np.arange(0.5, 4.5, 0.5):
-                for j in np.arange(-0.7, 0.7, 0.33):
+                for j in np.arange(-0.67, 0.7, 0.33):
                     box_pos = [i + self.xyz[0], j + self.xyz[1], 0.5 + self.xyz[2]]
                     p.loadURDF(
                         "block.urdf",
