@@ -41,8 +41,8 @@ class WaypointReward(DenseReward):
             self.max_dist_to_waypoint = pos_dist
             self._new_point = False
 
-        if math.isclose(pos_dist, 0, abs_tol=1e-01):
-            if self.max_waypoint > self.curr_waypoint:
+        if math.isclose(pos_dist, 0, abs_tol=0.707):
+            if self.max_waypoint > self.curr_waypoint + 1:
                 self._new_point = True
                 self.curr_waypoint += 1
             return POSITIVE_REWARD

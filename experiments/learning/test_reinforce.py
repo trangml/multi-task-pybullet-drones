@@ -12,12 +12,17 @@ from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
 from gym_pybullet_drones.envs.single_agent_rl.HoverAviary import HoverAviary
 from gym_pybullet_drones.envs.single_agent_rl.FlyThruGateAviary import FlyThruGateAviary
 from gym_pybullet_drones.envs.single_agent_rl.TuneAviary import TuneAviary
-from gym_pybullet_drones.envs.single_agent_rl.NavigateMazeAviary import NavigateMazeAviary
-from gym_pybullet_drones.envs.single_agent_rl.NavigateObstaclesAviary import NavigateObstaclesAviary
+from gym_pybullet_drones.envs.single_agent_rl.NavigateMazeAviary import (
+    NavigateMazeAviary,
+)
+from gym_pybullet_drones.envs.single_agent_rl.NavigateObstaclesAviary import (
+    NavigateObstaclesAviary,
+)
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
     ActionType,
     ObservationType,
 )
+import shared_constants
 
 matplotlib.rcParams["text.usetex"] = True
 import matplotlib.pyplot as plt
@@ -35,20 +40,15 @@ class Policy:
 
         # Define network
         self.network = nn.Sequential(
-            nn.Linear(self.n_inputs, 16),
+            nn.Linear(self.n_inputs, 256),
             nn.ReLU(),
-            nn.Linear(16, self.n_outputs),
-            nn.Tanh(),
+            nn.Linear(256, self.n_outputs),
+            nn.Softmax(dim=-1),
         )
 
     def predict(self, state):
         action_probs = self.network(torch.FloatTensor(state))
         return action_probs
-
-
-# Set random seed
-np.random.seed(42)
-np.set_printoptions(formatter={"float": lambda x: "{0:0.3f}".format(x)})
 
 
 def softmax_param(theta, action, state):
@@ -98,7 +98,7 @@ def discount_rewards(trajectory, gamma=0.99):
     return r - r.mean()
 
 
-def gradient_of_log_policy(state, action):
+def gradient_of_log_policy(state, action, policy, G):
     """
     Calculate the gradient of the log policy.
     """
@@ -106,9 +106,17 @@ def gradient_of_log_policy(state, action):
 
 
 def main():
-    env = gym.make("obstacles-aviary-v0")
+    # r_comp = [ "EnterAreaReward": {"scale": 1,  "area": [[4, 5], [-1, 1]]}, "OrientationReward":{"scale": 0.01}, "IncreaseXReward":{"scale": 0.1}]
+    env = gym.make(
+        "cross-obstacles-aviary-v0",
+        aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
+        obs=ObservationType["KIN"],
+        act=ActionType["RPM"],
+        initial_xyzs=[[-0.5, 0, 0.5]],
+        reward_components=[],
+    )
     # env.GUI = True
-    env = NavigateObstaclesAviary(gui=True, record=False)
+    # env = NavigateObstaclesAviary(gui=True, record=False)
     # num_actions = env.action_space.n
     # num_actions = env.action_space.n
     num_obs = env.observation_space
@@ -118,7 +126,7 @@ def main():
     steps_per_episode = 200
     plotting_freq = 10
     # step size
-    alphas = [0.1, 0.01, 0.001]
+    alphas = [0.1]
     for alpha in alphas:
         # Discount factor
         gamma = 0.9
@@ -137,7 +145,6 @@ def main():
 
         # The environment has 4 rows and 12 columns. Thus, 48 states
         # theta = np.random.random((48, 4))
-        theta = np.zeros((48, 4))
         for episode in range(num_episodes):
             s_0 = env.reset()
             states = []
@@ -174,8 +181,14 @@ def main():
 
                         # Calculate loss
                         logprob = torch.log(policy_estimator.predict(state_tensor))
+                        # selected_logprobs = (
+                        #     reward_tensor
+                        #     * torch.gather(logprob, 1, action_tensor).squeeze()
+                        # )
+
                         selected_logprobs = (
-                            reward_tensor * torch.gather(logprob, 1, action_tensor).squeeze()
+                            reward_tensor
+                            * logprob[np.arange(len(action_tensor)), action_tensor]
                         )
                         loss = -selected_logprobs.mean()
 
@@ -192,7 +205,8 @@ def main():
                     avg_rewards = np.mean(total_rewards[-100:])
                     # Print running average
                     print(
-                        "\rEp: {} Average of last 100:" + "{:.2f}".format(episode + 1, avg_rewards),
+                        "\rEp: {} Average of last 100:"
+                        + "{:.2f}".format(episode + 1, avg_rewards),
                         end="",
                     )
         fig, ax = plt.subplots()

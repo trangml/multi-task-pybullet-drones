@@ -37,17 +37,19 @@ import torch.nn as nn
 from ray.rllib.models.torch.fcnet import FullyConnectedNetwork
 import ray
 from ray import tune
-from ray.tune.logger import DEFAULT_LOGGERS
+
+# from ray.tune.logger import DEFAULT_LOGGERS
 from ray.tune import register_env
 from ray.rllib.agents import ppo
-from ray.rllib.agents.ppo import PPOTrainer, PPOTFPolicy
+from ray.rllib.agents.ppo import PPOTrainer
 from ray.rllib.examples.policy.random_policy import RandomPolicy
 from ray.rllib.utils.test_utils import check_learning_achieved
 from ray.rllib.agents.callbacks import DefaultCallbacks
 from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from ray.rllib.models import ModelCatalog
 from ray.rllib.policy.sample_batch import SampleBatch
-from ray.rllib.env.multi_agent_env import ENV_STATE
+
+# from ray.rllib.env.multi_agent_env import ENV_STATE
 
 from gym_pybullet_drones.utils.enums import DroneModel, Physics
 from gym_pybullet_drones.envs.multi_agent_rl import map_name_to_multi_env
@@ -385,9 +387,10 @@ if __name__ == "__main__":
     new_config = {
         "env": temp_env_name,
         "num_workers": 0 + ARGS.workers,
-        "num_gpus": int(
-            os.environ.get("RLLIB_NUM_GPUS", "0")
-        ),  # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0
+        "num_gpus": 1,
+        # "num_gpus": int(
+        #     os.environ.get("RLLIB_NUM_GPUS", "0")
+        # ),  # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0
         "batch_mode": "complete_episodes",
         "callbacks": FillInActions,
         "framework": "torch",

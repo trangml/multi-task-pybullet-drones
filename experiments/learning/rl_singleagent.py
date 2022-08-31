@@ -181,9 +181,9 @@ def train_loop(cfg: DictConfig = None):
         if cfg.algo == "a2c":
             if cfg.a2c != None:
                 p_kwargs = hydra.utils.instantiate(cfg.a2c, _convert_="partial")
-            if cfg.obs == ObservationType.KIN:
+            if ObservationType[cfg.obs] == ObservationType.KIN:
                 policy = a2cppoMlpPolicy
-            elif cfg.obs == ObservationType.RGB:
+            elif ObservationType[cfg.obs] == ObservationType.RGB:
                 policy = a2cppoCnnPolicy
             else:
                 policy = a2cppoMultiInputPolicy
@@ -200,9 +200,9 @@ def train_loop(cfg: DictConfig = None):
         if cfg.algo == "ppo":
             if cfg.ppo != None:
                 p_kwargs = hydra.utils.instantiate(cfg.ppo, _convert_="partial")
-            if cfg.obs == ObservationType.KIN:
+            if ObservationType[cfg.obs] == ObservationType.KIN:
                 policy = a2cppoMlpPolicy
-            elif cfg.obs == ObservationType.RGB:
+            elif ObservationType[cfg.obs] == ObservationType.RGB:
                 policy = a2cppoCnnPolicy
             else:
                 policy = a2cppoMultiInputPolicy

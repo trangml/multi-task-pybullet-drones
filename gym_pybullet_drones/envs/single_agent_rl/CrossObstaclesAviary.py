@@ -2,6 +2,12 @@ from typing import List, Optional
 import os
 import numpy as np
 import gym_pybullet_drones.envs.single_agent_rl.rewards as rewards
+from gym_pybullet_drones.envs.single_agent_rl.rewards.cross_obstacles.EnterAreaReward import (
+    EnterAreaReward,
+)
+from gym_pybullet_drones.envs.single_agent_rl.rewards.cross_obstacles.IncreaseXReward import (
+    IncreaseXReward,
+)
 import gym_pybullet_drones.envs.single_agent_rl.terminations as terminations
 import pybullet as p
 from gym_pybullet_drones.envs.BaseAviary import BaseAviary, DroneModel, Physics
@@ -13,6 +19,10 @@ from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
 from gym_pybullet_drones.envs.single_agent_rl.rewards import getRewardDict
 from gym_pybullet_drones.envs.single_agent_rl.terminations import getTermDict
 from gym_pybullet_drones.envs.single_agent_rl.obstacles.ObstacleRoom import ObstacleRoom
+from gym_pybullet_drones.envs.single_agent_rl.terminations.Terminations import (
+    BoundsTerm,
+    OrientationTerm,
+)
 
 
 class CrossObstaclesAviary(BaseSingleAgentAviary):
@@ -73,6 +83,11 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
             if reward_components[reward_name]["scale"] != 0:
                 r_class = getattr(rewards, reward_name)
                 self.reward_components.append(r_class(**reward_components[reward_name]))
+        if len(self.reward_components) == 0:
+            self.reward_components.append(
+                EnterAreaReward(scale=10, area=[[4, 5], [-1, 1]])
+            )
+            self.reward_components.append(IncreaseXReward(scale=0.1))
 
         self.term_components = []
         for term_name in term_components:
@@ -82,6 +97,9 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
                 self.term_components.append(t_class(**args))
             else:
                 self.term_components.append(t_class())
+        if len(self.term_components) == 0:
+            self.term_components.append(BoundsTerm(bounds=self.bounds))
+            self.term_components.append(OrientationTerm())
 
         super().__init__(
             drone_model=drone_model,
