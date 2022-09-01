@@ -137,8 +137,8 @@ def train_loop(cfg: DictConfig = None):
         or ObservationType[cfg.obs] == ObservationType.BOTH
     ):
         train_env = VecTransposeImage(train_env)
-        train_env = VecFrameStack(train_env, n_stack=4)
-        train_env = VecNormalize(train_env)
+        # train_env = VecFrameStack(train_env, n_stack=4)
+        # train_env = VecNormalize(train_env)
     print("[INFO] Action space:", train_env.action_space)
     print("[INFO] Observation space:", train_env.observation_space)
     # check_env(train_env, warn=True, skip_render_check=True)
@@ -283,15 +283,15 @@ def train_loop(cfg: DictConfig = None):
         evalAviary = map_name_to_env(env_name)
         eval_env = make_vec_env(evalAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0)
         eval_env = VecTransposeImage(eval_env)
-        eval_env = VecFrameStack(eval_env, n_stack=4)
-        eval_env = VecNormalize(eval_env)
+        # eval_env = VecFrameStack(eval_env, n_stack=4)
+        # eval_env = VecNormalize(eval_env)
     elif ObservationType[cfg.obs] == ObservationType.BOTH:
         n_envs = 1
         evalAviary = map_name_to_env(env_name)
         eval_env = make_vec_env(evalAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0)
         eval_env = VecTransposeImage(eval_env)
-        eval_env = VecFrameStack(eval_env, n_stack=4)
-        eval_env = VecNormalize(eval_env)
+        # eval_env = VecFrameStack(eval_env, n_stack=4)
+        # eval_env = VecNormalize(eval_env)
 
     #### Train the model #######################################
     checkpoint_callback = CheckpointCallback(
