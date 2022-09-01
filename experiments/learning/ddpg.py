@@ -8,6 +8,7 @@ from distutils.util import strtobool
 import gym
 import numpy as np
 import pybullet_envs  # noqa
+import yaml
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -40,6 +41,8 @@ def parse_args():
     # Algorithm specific arguments
     parser.add_argument("--env-id", type=str, default="cross-obstacles-aviary-v0",
         help="the id of the environment")
+    parser.add_argument("--env-config", type=str, default="config/cross-obstacles-aviary.yaml",
+        help="config file for the env")
     parser.add_argument("--total-timesteps", type=int, default=1000000,
         help="total timesteps of the experiments")
     parser.add_argument("--learning-rate", type=float, default=3e-4,
@@ -60,18 +63,26 @@ def parse_args():
         help="the frequency of training policy (delayed)")
     parser.add_argument("--noise-clip", type=float, default=0.5,
         help="noise clip parameter of the Target Policy Smoothing Regularization")
+    parser.add_argument('--num-models', type=int, default=10,
+        help='the number of models saved')
     args = parser.parse_args()
     # fmt: on
+    args.save_frequency = min(
+        args.total_timesteps, int(args.total_timesteps // args.num_models)
+    )  # save either 1 or num_model times
     return args
 
 
-def make_env(env_id, seed, idx, capture_video, run_name):
+def make_env(env_id, seed, idx, capture_video, run_name, env_config):
     def thunk():
-        env = gym.make(env_id)
+        cfg = {"env_kwargs": None}
+        with open(env_config, "r") as f:
+            cfg = yaml.safe_load(f)
+        env = gym.make(env_id, **cfg["env_kwargs"])
         env = gym.wrappers.RecordEpisodeStatistics(env)
         if capture_video:
             if idx == 0:
-                env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
+                env = gym.wrappers.RecordVideo(env, f"results/videos/{run_name}")
         env.seed(seed)
         env.action_space.seed(seed)
         env.observation_space.seed(seed)
@@ -155,7 +166,11 @@ if __name__ == "__main__":
 
     # env setup
     envs = gym.vector.SyncVectorEnv(
-        [make_env(args.env_id, args.seed, 0, args.capture_video, run_name)]
+        [
+            make_env(
+                args.env_id, args.seed, 0, args.capture_video, run_name, args.env_config
+            )
+        ]
     )
     assert isinstance(
         envs.single_action_space, gym.spaces.Box
@@ -277,6 +292,16 @@ if __name__ == "__main__":
                     int(global_step / (time.time() - start_time)),
                     global_step,
                 )
-
+            if global_step % args.save_frequency == 0:
+                if not os.path.exists(f"results/{run_name}"):
+                    os.makedirs(f"results/{run_name}")
+                torch.save(actor.state_dict(), f"results/{run_name}/agent.pt")
+                torch.save(actor.state_dict(), f"results/{run_name}/{global_step}.pt")
+                if args.track:
+                    wandb.save(
+                        f"results/{run_name}/agent.pt",
+                        base_path=f"results/{run_name}",
+                        policy="now",
+                    )
     envs.close()
     writer.close()
