@@ -1,7 +1,7 @@
 # kwargs for crossobsaviary
 env_kwargs:
-  obs: ObservationType.BOTH
-  act: ActionType.RPM
+  # obs: !ObservationType.BOTH
+  # act: !ActionType.RPM
   gui: False
   initial_xyzs: [[-0.5, 0, 0.5]]
 
