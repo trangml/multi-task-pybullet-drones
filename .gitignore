@@ -1,4 +1,4 @@
-# TODOs 
+# TODOs
 TODOs.md
 examples/debug.py
 examples/test.py
@@ -11,6 +11,10 @@ files/logs/*.npy
 files/videos/*.mp4
 results/
 tmp/
+
+#cleanrl stuff
+wandb
+runs
 
 # Hydra output logs
 outputs/
