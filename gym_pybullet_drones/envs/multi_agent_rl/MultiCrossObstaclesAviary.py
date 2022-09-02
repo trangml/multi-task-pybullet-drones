@@ -2,11 +2,15 @@ from typing import List, Optional
 import numpy as np
 
 import gym_pybullet_drones.envs.single_agent_rl.rewards as rewards
-from gym_pybullet_drones.envs.single_agent_rl.rewards.OrientationReward import OrientationReward
+from gym_pybullet_drones.envs.single_agent_rl.rewards.OrientationReward import (
+    OrientationReward,
+)
 from gym_pybullet_drones.envs.single_agent_rl.rewards.cross_obstacles.EnterAreaReward import (
     EnterAreaReward,
 )
-from gym_pybullet_drones.envs.single_agent_rl.rewards.cross_obstacles.IncreaseXReward import IncreaseXReward
+from gym_pybullet_drones.envs.single_agent_rl.rewards.cross_obstacles.IncreaseXReward import (
+    IncreaseXReward,
+)
 import gym_pybullet_drones.envs.single_agent_rl.terminations as terminations
 from gym_pybullet_drones.envs.single_agent_rl.terminations.Terminations import (
     OrientationTerm,
@@ -132,6 +136,7 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
         self.term_dict = getTermDict(self.term_components)
         self.cum_reward_dict = getRewardDict(self.reward_components)
         self.NUM_DRONES = num_drones
+        self.called_done = {i: False for i in range(self.NUM_DRONES)}
 
     ################################################################################
 
@@ -141,6 +146,7 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
         Returns: obs
 
         """
+        self.called_done = {i: False for i in range(self.NUM_DRONES)}
         for rwd in self.reward_components:
             rwd.reset()
         for term in self.term_components:
@@ -217,7 +223,17 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
                 i_done = i_done or t
             all_done = all_done and i_done
             done[ix] = done[ix] or i_done
-        done["__all__"] = bool_val or i_done  # True if True in done.values() else False
+
+            # An agent should only call done once in an episode.
+            if done[ix]:
+                if self.called_done[ix]:
+                    done[ix] = False
+                else:
+                    self.called_done[ix] = True
+
+        done["__all__"] = bool_val or all(
+            self.called_done[ix] for ix in self.called_done
+        )  # True if True in done.values() else False
         return done
 
     ################################################################################

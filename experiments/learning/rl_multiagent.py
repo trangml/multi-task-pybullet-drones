@@ -394,7 +394,7 @@ if __name__ == "__main__":
         "batch_mode": "complete_episodes",
         "callbacks": FillInActions,
         "framework": "torch",
-        "no_done_at_end": True,
+        "no_done_at_end": True,  # not sure what this does
     }
     config = {**config, **new_config}
 

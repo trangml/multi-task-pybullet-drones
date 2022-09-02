@@ -123,10 +123,12 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
         self.reward_dict = getRewardDict(self.reward_components)
         self.term_dict = getTermDict(self.term_components)
         self.cum_reward_dict = getRewardDict(self.reward_components)
+        self.truncated = False
 
     ################################################################################
 
     def reset(self):
+        self.truncated = False
         for rwd in self.reward_components:
             rwd.reset()
         for term in self.term_components:
@@ -180,6 +182,7 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
         """
         if self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
             # TODO: add to info if we timeout
+            self.truncated = True
             return True
         else:
             state = self._getDroneStateVector(0)
@@ -203,6 +206,9 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
             Dummy value.
 
         """
+        info = {}
+        if self.truncated:
+            info["TimeLimit.truncated"] = 1
         return {
             "answer": 42
         }  #### Calculated by the Deep Thought supercomputer in 7.5M years

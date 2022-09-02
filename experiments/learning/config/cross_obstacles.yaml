@@ -1,5 +1,5 @@
 # general script settings
-tag: difficulty_1_default_with_frame_wrappers
+tag: difficulty_1_default_with_vec_norm
 env: cross-obstacles
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
@@ -39,7 +39,7 @@ env_kwargs:
   initial_xyzs: [[-0.5, 0, 0.5]]
 
   bounds: [[5, 1, 1], [-1, -1, 0.1]]
-  difficulty: 2
+  difficulty: 1
 
   # rewards
   reward_components:
