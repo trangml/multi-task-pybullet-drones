@@ -19,6 +19,9 @@ from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
 from gym_pybullet_drones.envs.single_agent_rl.rewards import getRewardDict
 from gym_pybullet_drones.envs.single_agent_rl.terminations import getTermDict
 from gym_pybullet_drones.envs.single_agent_rl.obstacles.ObstacleRoom import ObstacleRoom
+from gym_pybullet_drones.envs.single_agent_rl.obstacles.IncrementalObstacleRoom import (
+    IncrementalObstacleRoom,
+)
 from gym_pybullet_drones.envs.single_agent_rl.terminations.Terminations import (
     BoundsTerm,
     OrientationTerm,
@@ -118,17 +121,21 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
         self.EPISODE_LEN_SEC = 10
         self.difficulty = difficulty
         self.obstacles.append(
-            ObstacleRoom(xyz=[0, 0, 0], physics=self.CLIENT, difficulty=self.difficulty)
+            IncrementalObstacleRoom(
+                xyz=[0, 0, 0], physics=self.CLIENT, difficulty=self.difficulty
+            )
         )
         self.reward_dict = getRewardDict(self.reward_components)
         self.term_dict = getTermDict(self.term_components)
         self.cum_reward_dict = getRewardDict(self.reward_components)
         self.truncated = False
+        self.done = False
 
     ################################################################################
 
     def reset(self):
         self.truncated = False
+        self.done = False
         for rwd in self.reward_components:
             rwd.reset()
         for term in self.term_components:
@@ -183,7 +190,7 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
         if self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
             # TODO: add to info if we timeout
             self.truncated = True
-            return True
+            self.done = True
         else:
             state = self._getDroneStateVector(0)
             done = False
@@ -191,7 +198,8 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
                 t = term_component.calculateTerm(state)
                 self.term_dict[t_dict] = t
                 done = done or t
-            return done
+            self.done = done
+        return self.done
 
     ################################################################################
 
@@ -208,10 +216,10 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
         """
         info = {}
         if self.truncated:
-            info["TimeLimit.truncated"] = 1
-        return {
-            "answer": 42
-        }  #### Calculated by the Deep Thought supercomputer in 7.5M years
+            info["TimeLimit.truncated"] = True
+        if self.done:
+            info["terminal_observation"] = True
+        return info
 
     ################################################################################
 
