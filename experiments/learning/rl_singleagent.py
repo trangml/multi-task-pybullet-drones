@@ -37,6 +37,9 @@ from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
 from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCallback import (
     CustomCallback,
 )
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCheckpointCallback import (
+    CustomCheckpointCallback,
+)
 from omegaconf import DictConfig, OmegaConf
 from stable_baselines3 import A2C, DDPG, PPO, SAC, TD3
 from stable_baselines3.common.callbacks import (  # StopTrainingOnMaxEpisodes,
@@ -47,7 +50,7 @@ from stable_baselines3.common.callbacks import (  # StopTrainingOnMaxEpisodes,
 )
 from stable_baselines3.common.env_util import (
     make_vec_env,
-)  # Module cmd_util will be renamed to env_util https://github.com/DLR-RM/stable-baselines3/pull/197
+)
 from stable_baselines3.common.policies import ActorCriticCnnPolicy as a2cppoCnnPolicy
 from stable_baselines3.common.policies import ActorCriticPolicy as a2cppoMlpPolicy
 from stable_baselines3.common.policies import (
@@ -291,11 +294,12 @@ def train_loop(cfg: DictConfig = None):
         # eval_env = VecNormalize(eval_env)
 
     #### Train the model #######################################
-    checkpoint_callback = CheckpointCallback(
+    checkpoint_callback = CustomCheckpointCallback(
         save_freq=max(100000 // n_envs, 1),
         save_path=filename + "/logs/",
         name_prefix="rl_model",
         verbose=2,
+        save_vecnormalize=True,
     )
     callback_on_best = StopTrainingOnRewardThreshold(
         reward_threshold=EPISODE_REWARD_THRESHOLD, verbose=1

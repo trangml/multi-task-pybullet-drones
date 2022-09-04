@@ -55,6 +55,7 @@ class LongCrossObstaclesAviary(BaseSingleAgentAviary):
         reward_components: List = [],
         term_components: List = [],
         bounds: List = [[5, 1, 1], [-1, -1, 0.1]],
+        collision_detection: bool = True,
     ):
         """Initialization of a single agent RL environment.
 
@@ -132,9 +133,10 @@ class LongCrossObstaclesAviary(BaseSingleAgentAviary):
             )
         )
         self.reward_dict = getRewardDict(self.reward_components)
-        self.term_components.append(
-            CollisionTerm([[11, 12], [-1, 1]], self.DRONE_IDS[0], self.CLIENT)
-        )
+        if collision_detection:
+            self.term_components.append(
+                CollisionTerm([[11, 12], [-1, 1]], self.DRONE_IDS[0], self.CLIENT)
+            )
         self.term_dict = getTermDict(self.term_components)
         self.cum_reward_dict = getRewardDict(self.reward_components)
         self.truncated = False

@@ -1,5 +1,5 @@
 # general script settings
-tag: difficulty_1_default_with_vec_norm
+tag: inc_difficulty_0_no_collision
 env: cross-obstacles
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
@@ -10,36 +10,26 @@ act: RPM
 exp: none
 cpu: 8
 n_steps: 1e7
-
 # PPO arguments
 ppo:
-  #normalize: true
-  #choices=["true", "false"],
   gae_lambda: 0.95
   gamma: 0.99
   ent_coef: 0.0
   learning_rate: 2.5e-4
-  #clip_rate: 0.2
   policy_kwargs:
     log_std_init: -1
     ortho_init: False
     activation_fn:
       _partial_: true
-      _target_: torch.nn.ReLU
+      _target_: torch.nn.LeakyReLU
     #net_arch: [512, 256, { "pi": [256, 256], "vf": [256, 256] }]
     # Agents do better with the default net_arch
-    # net_arch:
-    #   - 512
-    #   - 256
-    #   - "pi": [256, 256]
-    #     "vf": [256, 256]
-
 # Env specific settings
 env_kwargs:
+  difficulty: 0
   initial_xyzs: [[-0.5, 0, 0.5]]
-
   bounds: [[5, 1, 1], [-1, -1, 0.1]]
-  difficulty: 1
+  collision_detection: False
 
   # rewards
   reward_components:
@@ -48,7 +38,7 @@ env_kwargs:
       area: [[4, 5], [-1, 1]]
     OrientationReward:
       scale: 0.01
-    IncreaseXReward:
+    IncreaseXRewardV2:
       scale: 0.1
     BoundsReward:
       scale: 10.0
