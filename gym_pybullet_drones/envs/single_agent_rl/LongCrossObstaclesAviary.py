@@ -25,6 +25,9 @@ from gym_pybullet_drones.envs.single_agent_rl.obstacles.LongObstacleRoom import 
 from gym_pybullet_drones.envs.single_agent_rl.obstacles.IncrementalObstacleRoom import (
     IncrementalObstacleRoom,
 )
+from gym_pybullet_drones.envs.single_agent_rl.terminations.CollisionTerm import (
+    CollisionTerm,
+)
 from gym_pybullet_drones.envs.single_agent_rl.terminations.Terminations import (
     BoundsTerm,
     OrientationTerm,
@@ -129,6 +132,9 @@ class LongCrossObstaclesAviary(BaseSingleAgentAviary):
             )
         )
         self.reward_dict = getRewardDict(self.reward_components)
+        self.term_components.append(
+            CollisionTerm([[11, 12], [-1, 1]], self.DRONE_IDS[0], self.CLIENT)
+        )
         self.term_dict = getTermDict(self.term_components)
         self.cum_reward_dict = getRewardDict(self.reward_components)
         self.truncated = False
@@ -202,6 +208,7 @@ class LongCrossObstaclesAviary(BaseSingleAgentAviary):
                 self.term_dict[t_dict] = t
                 done = done or t
             self.done = done
+
         return self.done
 
     ################################################################################

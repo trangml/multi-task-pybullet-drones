@@ -38,7 +38,7 @@ class LongObstacleRoom:
             p.loadURDF(
                 os.path.dirname(os.path.abspath(__file__))
                 + "/../../../assets/long_room.urdf",
-                [10 + self.xyz[0], -1 + self.xyz[1], 0 + self.xyz[2]],
+                [11 + self.xyz[0], -1 + self.xyz[1], 0 + self.xyz[2]],
                 p.getQuaternionFromEuler([0, 0, 0]),
                 physicsClientId=self.CLIENT,
                 globalScaling=1,
@@ -48,7 +48,7 @@ class LongObstacleRoom:
             p.loadURDF(
                 os.path.dirname(os.path.abspath(__file__))
                 + "/../../../assets/long_room_half_wall.urdf",
-                [10 + self.xyz[0], -1 + self.xyz[1], 0 + self.xyz[2]],
+                [11 + self.xyz[0], -1 + self.xyz[1], 0 + self.xyz[2]],
                 p.getQuaternionFromEuler([0, 0, 0]),
                 physicsClientId=self.CLIENT,
                 globalScaling=1,
@@ -60,7 +60,7 @@ class LongObstacleRoom:
             p.loadURDF(
                 os.path.dirname(os.path.abspath(__file__))
                 + "/../../../assets/long_room_2_half_wall.urdf",
-                [10 + self.xyz[0], -1 + self.xyz[1], 0 + self.xyz[2]],
+                [11 + self.xyz[0], -1 + self.xyz[1], 0 + self.xyz[2]],
                 p.getQuaternionFromEuler([0, 0, 0]),
                 physicsClientId=self.CLIENT,
                 globalScaling=1,
@@ -72,7 +72,7 @@ class LongObstacleRoom:
             p.loadURDF(
                 os.path.dirname(os.path.abspath(__file__))
                 + "/../../../assets/long_room_2_window_wall.urdf",
-                [10 + self.xyz[0], -1 + self.xyz[1], 0 + self.xyz[2]],
+                [11 + self.xyz[0], -1 + self.xyz[1], 0 + self.xyz[2]],
                 p.getQuaternionFromEuler([0, 0, 0]),
                 physicsClientId=self.CLIENT,
                 globalScaling=1,
