@@ -53,6 +53,11 @@ register(
 )
 
 register(
+    id="long-cross-obs-aviary-v0",
+    entry_point="gym_pybullet_drones.envs.single_agent_rl:LongCrossObstaclesAviary",
+)
+
+register(
     id="field-aviary-v0",
     entry_point="gym_pybullet_drones.envs.single_agent_rl:FieldCoverageAviary",
 )

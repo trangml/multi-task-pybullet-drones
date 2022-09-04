@@ -33,6 +33,8 @@ class ObservationType(Enum):
     KIN = "kin"  # Kinematic information (pose, linear and angular velocities)
     RGB = "rgb"  # RGB camera capture in each drone's POV
     BOTH = "both"  # Kinematic and RGB camera capture in each drone's POV
+    DEPTH = "depth"  # Kinematic and depth camera capture in each drone's POV
+    ALL = "all"  # Kinematic, RGB, depth, and segmentation camera capture in each drone's POV
 
 
 ################################################################################
@@ -87,9 +89,7 @@ class BaseSingleAgentAviary(BaseAviary):
             The type of action space (1 or 3D; RPMS, thurst and torques, waypoint or velocity with PID control; etc.)
 
         """
-        vision_attributes = (
-            True if (obs == ObservationType.RGB or obs == ObservationType.BOTH) else False
-        )
+        vision_attributes = False if (obs == ObservationType.KIN) else True
         dynamics_attributes = (
             True if act in [ActionType.DYN, ActionType.ONE_D_DYN] else False
         )
@@ -357,7 +357,6 @@ class BaseSingleAgentAviary(BaseAviary):
             # return spaces.Box( low=obs_lower_bound, high=obs_upper_bound, dtype=np.float32 )
             ############################################################
             #### OBS SPACE OF SIZE 12 + 1
-            # TODO: make this work
             return spaces.Dict(
                 spaces={
                     "vec": spaces.Box(
@@ -370,6 +369,58 @@ class BaseSingleAgentAviary(BaseAviary):
                         high=255,
                         shape=(self.IMG_RES[1], self.IMG_RES[0], 4),
                         dtype=np.uint8,
+                    ),
+                }
+            )
+        elif self.OBS_TYPE == ObservationType.DEPTH:
+            ############################################################
+            #### OBS OF SIZE 20 (WITH QUATERNION AND RPMS)
+            #### Observation vector ### X        Y        Z       Q1   Q2   Q3   Q4   R       P       Y       VX       VY       VZ       WX       WY       WZ       P0            P1            P2            P3
+            # obs_lower_bound = np.array([-1,      -1,      0,      -1,  -1,  -1,  -1,  -1,     -1,     -1,     -1,      -1,      -1,      -1,      -1,      -1,      -1,           -1,           -1,           -1])
+            # obs_upper_bound = np.array([1,       1,       1,      1,   1,   1,   1,   1,      1,      1,      1,       1,       1,       1,       1,       1,       1,            1,            1,            1])
+            # return spaces.Box( low=obs_lower_bound, high=obs_upper_bound, dtype=np.float32 )
+            ############################################################
+            #### OBS SPACE OF SIZE 12 + 1
+            return spaces.Dict(
+                spaces={
+                    "vec": spaces.Box(
+                        low=np.array([-1, -1, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1]),
+                        high=np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]),
+                        dtype=np.float32,
+                    ),
+                    "dep": spaces.Box(
+                        low=0.01,
+                        high=1000.0,
+                        shape=(self.IMG_RES[1], self.IMG_RES[0]),
+                        dtype=np.float32,
+                    ),
+                }
+            )
+        elif self.OBS_TYPE == ObservationType.ALL:
+            return spaces.Dict(
+                spaces={
+                    "vec": spaces.Box(
+                        low=np.array([-1, -1, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1]),
+                        high=np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]),
+                        dtype=np.float32,
+                    ),
+                    "rgb": spaces.Box(
+                        low=0,
+                        high=255,
+                        shape=(self.IMG_RES[1], self.IMG_RES[0], 4),
+                        dtype=np.uint8,
+                    ),
+                    "dep": spaces.Box(
+                        low=0.01,
+                        high=1000.0,
+                        shape=(self.IMG_RES[1], self.IMG_RES[0]),
+                        dtype=np.float32,
+                    ),
+                    "seg": spaces.Box(
+                        low=0,
+                        high=100,
+                        shape=(self.IMG_RES[1], self.IMG_RES[0]),
+                        dtype=np.int,
                     ),
                 }
             )
@@ -432,6 +483,55 @@ class BaseSingleAgentAviary(BaseAviary):
             #### OBS SPACE OF SIZE 12
             ret = np.hstack([obs[0:3], obs[7:10], obs[10:13], obs[13:16]]).reshape(12,)
             return {"vec": ret.astype("float32"), "img": self.rgb[0]}
+            ############################################################
+        elif self.OBS_TYPE == ObservationType.DEPTH:
+            if self.step_counter % self.IMG_CAPTURE_FREQ == 0:
+                self.rgb[0], self.dep[0], self.seg[0] = self._getDroneImages(
+                    0, segmentation=False
+                )
+                #### Printing observation to PNG frames example ############
+                if self.RECORD:
+                    self._exportImage(
+                        img_type=ImageType.DEP,
+                        img_input=self.dep[0],
+                        path=self.ONBOARD_IMG_PATH,
+                        frame_num=int(self.step_counter / self.IMG_CAPTURE_FREQ),
+                    )
+            obs = self._clipAndNormalizeState(self._getDroneStateVector(0))
+            ############################################################
+            #### OBS OF SIZE 20 (WITH QUATERNION AND RPMS)
+            # return obs
+            ############################################################
+            #### OBS SPACE OF SIZE 12
+            ret = np.hstack([obs[0:3], obs[7:10], obs[10:13], obs[13:16]]).reshape(12,)
+            return {"vec": ret.astype("float32"), "dep": self.dep[0]}
+            ############################################################
+        elif self.OBS_TYPE == ObservationType.ALL:
+            if self.step_counter % self.IMG_CAPTURE_FREQ == 0:
+                self.rgb[0], self.dep[0], self.seg[0] = self._getDroneImages(
+                    0, segmentation=False
+                )
+                #### Printing observation to PNG frames example ############
+                if self.RECORD:
+                    self._exportImage(
+                        img_type=ImageType.RGB,
+                        img_input=self.RGB[0],
+                        path=self.ONBOARD_IMG_PATH,
+                        frame_num=int(self.step_counter / self.IMG_CAPTURE_FREQ),
+                    )
+            obs = self._clipAndNormalizeState(self._getDroneStateVector(0))
+            ############################################################
+            #### OBS OF SIZE 20 (WITH QUATERNION AND RPMS)
+            # return obs
+            ############################################################
+            #### OBS SPACE OF SIZE 12
+            ret = np.hstack([obs[0:3], obs[7:10], obs[10:13], obs[13:16]]).reshape(12,)
+            return {
+                "vec": ret.astype("float32"),
+                "rgb": self.rgb[0],
+                "dep": self.dep[0],
+                "seg": self.seg[0],
+            }
             ############################################################
         else:
             print("[ERROR] in BaseSingleAgentAviary._computeObs()")

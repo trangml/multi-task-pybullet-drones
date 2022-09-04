@@ -133,10 +133,7 @@ def train_loop(cfg: DictConfig = None):
         envAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
     )
     train_env = VecNormalize(train_env, norm_obs=True, norm_reward=True, clip_obs=10.0)
-    if (
-        ObservationType[cfg.obs] == ObservationType.RGB
-        or ObservationType[cfg.obs] == ObservationType.BOTH
-    ):
+    if ObservationType[cfg.obs] != ObservationType.KIN:
         train_env = VecTransposeImage(train_env)
         # train_env = VecFrameStack(train_env, n_stack=4)
         # train_env = VecNormalize(train_env)
@@ -282,17 +279,7 @@ def train_loop(cfg: DictConfig = None):
         eval_env = VecNormalize(
             eval_env, norm_obs=True, norm_reward=True, clip_obs=10.0
         )
-    elif ObservationType[cfg.obs] == ObservationType.RGB:
-        n_envs = 1
-        evalAviary = map_name_to_env(env_name)
-        eval_env = make_vec_env(evalAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0)
-        eval_env = VecNormalize(
-            eval_env, norm_obs=True, norm_reward=True, clip_obs=10.0
-        )
-        eval_env = VecTransposeImage(eval_env)
-        # eval_env = VecFrameStack(eval_env, n_stack=4)
-        # eval_env = VecNormalize(eval_env)
-    elif ObservationType[cfg.obs] == ObservationType.BOTH:
+    else:
         n_envs = 1
         evalAviary = map_name_to_env(env_name)
         eval_env = make_vec_env(evalAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0)

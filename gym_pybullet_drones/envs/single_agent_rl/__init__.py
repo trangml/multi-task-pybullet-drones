@@ -17,6 +17,10 @@ from gym_pybullet_drones.envs.single_agent_rl.NavigateLandAviary import (
 from gym_pybullet_drones.envs.single_agent_rl.FieldCoverageAviary import (
     FieldCoverageAviary,
 )
+
+from gym_pybullet_drones.envs.single_agent_rl.LongCrossObstaclesAviary import (
+    LongCrossObstaclesAviary,
+)
 from gym_pybullet_drones.envs.single_agent_rl.CrossObstaclesAviary import (
     CrossObstaclesAviary,
 )
@@ -29,6 +33,7 @@ ENV_MAP = {
     "maze-aviary-v0": NavigateMazeAviary,
     "obstacles-aviary-v0": NavigateObstaclesAviary,
     "cross-obstacles-aviary-v0": CrossObstaclesAviary,
+    "long-cross-obs-aviary-v0": LongCrossObstaclesAviary,
     "land-aviary-v0": NavigateLandAviary,
     "field-aviary-v0": FieldCoverageAviary,
     "land-vision-aviary-v0": LandVisionAviary,
