@@ -1,5 +1,5 @@
 # general script settings
-tag: difficulty_0_collision_term
+tag: difficulty_0_collision_term_increaseV2
 env: long-cross-obs
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
@@ -48,7 +48,7 @@ env_kwargs:
       area: [[11, 12], [-1, 1]]
     OrientationReward:
       scale: 0.01
-    IncreaseXReward:
+    IncreaseXRewardV2:
       scale: 0.1
     BoundsReward:
       scale: 10.0

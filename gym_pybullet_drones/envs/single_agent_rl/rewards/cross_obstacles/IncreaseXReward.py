@@ -60,16 +60,16 @@ class IncreaseXRewardV2(DenseReward):
             x bounds, and y bounds
         """
         super().__init__(scale)
-        self.last_pos = -1000
+        self.max_x = -1000
 
     def reset(self):
-        self.last_pos = -1000
+        self.max_x = -1000
 
     def _calculateReward(self, state):
         # For now, reward based on just x position
         position = state[0]
-        if position > self.last_pos:
-            self.last_pos = position
+        if position > self.max_x:
+            self.max_x = position
             return POSITIVE_REWARD
         return ZERO_REWARD
 

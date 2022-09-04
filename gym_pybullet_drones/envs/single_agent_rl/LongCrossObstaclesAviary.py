@@ -124,7 +124,7 @@ class LongCrossObstaclesAviary(BaseSingleAgentAviary):
         )
 
         # override base aviary episode length
-        self.EPISODE_LEN_SEC = 10
+        self.EPISODE_LEN_SEC = 20
         self.difficulty = difficulty
         self.obstacles.append(
             LongObstacleRoom(
