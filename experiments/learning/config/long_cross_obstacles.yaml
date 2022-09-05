@@ -1,5 +1,5 @@
 # general script settings
-tag: difficulty_0
+tag: difficulty_2_from_1
 env: long-cross-obs
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
@@ -7,19 +7,16 @@ algo: ppo
 obs: DEPTH
 # choices=["kin", "rgb", "both"],
 act: RPM
-exp: none
+exp: /home/mtrang/Documents/vt/research/multiagent-pybullet-drones/experiments/learning/results/save-long-cross-obs-ppo-DEPTH-RPM-difficulty_0-09.04.2022_21.21.01
 cpu: 8
 n_steps: 1e7
 
 # PPO arguments
 ppo:
-  #normalize: true
-  #choices=["true", "false"],
   gae_lambda: 0.95
   gamma: 0.99
   ent_coef: 0.0
   learning_rate: 2.5e-4
-  #clip_rate: 0.2
   policy_kwargs:
     log_std_init: -1
     ortho_init: False
@@ -27,19 +24,11 @@ ppo:
       _partial_: true
       _target_: torch.nn.LeakyReLU
     #net_arch: [512, 256, { "pi": [256, 256], "vf": [256, 256] }]
-    # Agents do better with the default net_arch
-    # net_arch:
-    #   - 512
-    #   - 256
-    #   - "pi": [256, 256]
-    #     "vf": [256, 256]
-
 # Env specific settings
 env_kwargs:
+  difficulty: 2
   initial_xyzs: [[-0.5, 0, 0.5]]
-
   bounds: [[12, 1, 1], [-1, -1, 0.1]]
-  difficulty: 1
   collision_detection: True
 
   # rewards

@@ -22,7 +22,9 @@ from gym_pybullet_drones.envs.single_agent_rl.obstacles.ObstacleRoom import Obst
 from gym_pybullet_drones.envs.single_agent_rl.obstacles.IncrementalObstacleRoom import (
     IncrementalObstacleRoom,
 )
-from gym_pybullet_drones.envs.single_agent_rl.terminations.CollisionTerm import CollisionTerm
+from gym_pybullet_drones.envs.single_agent_rl.terminations.CollisionTerm import (
+    CollisionTerm,
+)
 from gym_pybullet_drones.envs.single_agent_rl.terminations.Terminations import (
     BoundsTerm,
     OrientationTerm,
@@ -129,7 +131,7 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
         )
         if collision_detection:
             self.term_components.append(
-                CollisionTerm([[11, 12], [-1, 1]], self.DRONE_IDS[0], self.CLIENT)
+                CollisionTerm([[4, 5], [-1, 1]], self.DRONE_IDS[0], self.CLIENT)
             )
         self.reward_dict = getRewardDict(self.reward_components)
         self.term_dict = getTermDict(self.term_components)

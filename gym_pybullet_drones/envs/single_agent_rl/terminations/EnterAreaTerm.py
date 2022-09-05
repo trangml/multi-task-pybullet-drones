@@ -31,6 +31,11 @@ class EnterAreaTerm(Terminations):
         """
         super().__init__()
         self.area = (Bounds(area[0][0], area[0][1]), Bounds(area[1][0], area[1][1]))
+        self.steps_in_area = 0
+
+    def reset(self):
+        self.steps_in_area = 0
+        return super().reset()
 
     def _calculateTerm(self, state):
         # For now, ignore height.
@@ -38,7 +43,8 @@ class EnterAreaTerm(Terminations):
         in_area = True
         for bound, pos in zip(self.area, position):
             in_area = in_area and within_bounds(bound, pos)
+            self.steps_in_area += 1
 
-        return in_area
+        return self.steps_in_area > 20
 
     ################################################################################

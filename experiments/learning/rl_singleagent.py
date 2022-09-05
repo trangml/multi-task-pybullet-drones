@@ -50,6 +50,7 @@ from stable_baselines3.common.callbacks import (  # StopTrainingOnMaxEpisodes,
     CheckpointCallback,
     EvalCallback,
     StopTrainingOnRewardThreshold,
+    StopTrainingOnNoModelImprovement,
 )
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.policies import ActorCriticCnnPolicy as a2cppoCnnPolicy
@@ -305,9 +306,13 @@ def train_loop(cfg: DictConfig = None):
     callback_on_best = StopTrainingOnRewardThreshold(
         reward_threshold=EPISODE_REWARD_THRESHOLD, verbose=1
     )
+    stop_callback = StopTrainingOnNoModelImprovement(
+        max_no_improvement_evals=100, min_evals=100, verbose=1
+    )
     eval_callback = CustomEvalCallback(
         eval_env,
         callback_on_new_best=callback_on_best,
+        callback_after_eval=stop_callback,
         verbose=1,
         best_model_save_path=filename + "/",
         log_path=filename + "/",
