@@ -10,6 +10,7 @@ examples/test.py
 files/logs/*.npy
 files/videos/*.mp4
 results/
+experiments/learning/results*
 tmp/
 
 #cleanrl stuff

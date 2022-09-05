@@ -40,6 +40,9 @@ from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCallback import (
 from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCheckpointCallback import (
     CustomCheckpointCallback,
 )
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomEvalCallback import (
+    CustomEvalCallback,
+)
 from omegaconf import DictConfig, OmegaConf
 from stable_baselines3 import A2C, DDPG, PPO, SAC, TD3
 from stable_baselines3.common.callbacks import (  # StopTrainingOnMaxEpisodes,
@@ -48,9 +51,7 @@ from stable_baselines3.common.callbacks import (  # StopTrainingOnMaxEpisodes,
     EvalCallback,
     StopTrainingOnRewardThreshold,
 )
-from stable_baselines3.common.env_util import (
-    make_vec_env,
-)
+from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.policies import ActorCriticCnnPolicy as a2cppoCnnPolicy
 from stable_baselines3.common.policies import ActorCriticPolicy as a2cppoMlpPolicy
 from stable_baselines3.common.policies import (
@@ -304,7 +305,7 @@ def train_loop(cfg: DictConfig = None):
     callback_on_best = StopTrainingOnRewardThreshold(
         reward_threshold=EPISODE_REWARD_THRESHOLD, verbose=1
     )
-    eval_callback = EvalCallback(
+    eval_callback = CustomEvalCallback(
         eval_env,
         callback_on_new_best=callback_on_best,
         verbose=1,
@@ -313,6 +314,7 @@ def train_loop(cfg: DictConfig = None):
         eval_freq=int(2000 / cfg.cpu),
         deterministic=True,
         render=False,
+        save_vecnormalize=True,
     )
     custom_callback = CustomCallback()
     training_callback = CallbackList(
