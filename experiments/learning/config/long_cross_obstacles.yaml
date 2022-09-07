@@ -1,13 +1,13 @@
 # general script settings
-tag: difficulty_2_from_1
+tag: difficulty_3_from_2_success
 env: long-cross-obs
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
 #choices=["a2c", "ppo", "sac", "td3", "ddpg"],
-obs: DEPTH
+obs: BOTH
 # choices=["kin", "rgb", "both"],
 act: RPM
-exp: /home/mtrang/Documents/vt/research/multiagent-pybullet-drones/experiments/learning/results/save-long-cross-obs-ppo-DEPTH-RPM-difficulty_0-09.04.2022_21.21.01
+exp: /home/mtrang/Documents/vt/research/multiagent-pybullet-drones/experiments/learning/results/save-long-cross-obs-ppo-BOTH-RPM-difficulty_2-09.06.2022_11.42.26
 cpu: 8
 n_steps: 1e7
 
@@ -22,11 +22,11 @@ ppo:
     ortho_init: False
     activation_fn:
       _partial_: true
-      _target_: torch.nn.LeakyReLU
+      _target_: torch.nn.ReLU
     #net_arch: [512, 256, { "pi": [256, 256], "vf": [256, 256] }]
 # Env specific settings
 env_kwargs:
-  difficulty: 2
+  difficulty: 3
   initial_xyzs: [[-0.5, 0, 0.5]]
   bounds: [[12, 1, 1], [-1, -1, 0.1]]
   collision_detection: True
@@ -34,12 +34,12 @@ env_kwargs:
   # rewards
   reward_components:
     EnterAreaReward:
-      scale: 40.0
+      scale: 100.0
       area: [[11, 12], [-1, 1]]
     OrientationReward:
       scale: 0.01
     IncreaseXRewardV2:
-      scale: 0.1
+      scale: 1
     BoundsReward:
       scale: 10.0
       bounds: ${env_kwargs.bounds}

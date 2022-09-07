@@ -132,11 +132,12 @@ class LongCrossObstaclesAviary(BaseSingleAgentAviary):
                 xyz=[0, 0, 0], physics=self.CLIENT, difficulty=self.difficulty
             )
         )
-        self.reward_dict = getRewardDict(self.reward_components)
         if collision_detection:
             self.term_components.append(
                 CollisionTerm([[11, 12], [-1, 1]], self.DRONE_IDS[0], self.CLIENT)
             )
+
+        self.reward_dict = getRewardDict(self.reward_components)
         self.term_dict = getTermDict(self.term_components)
         self.cum_reward_dict = getRewardDict(self.reward_components)
         self.truncated = False

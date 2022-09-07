@@ -62,6 +62,7 @@ from stable_baselines3.common.vec_env import (
     VecTransposeImage,
     VecFrameStack,
     VecNormalize,
+    VecCheckNan,
 )
 from stable_baselines3.sac import CnnPolicy as sacCnnPolicy
 from stable_baselines3.sac.policies import SACPolicy as sacMlpPolicy
@@ -137,15 +138,7 @@ def train_loop(cfg: DictConfig = None):
     train_env = make_vec_env(
         envAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
     )
-    train_env = VecNormalize(train_env, norm_obs=True, norm_reward=True, clip_obs=10.0)
-    if ObservationType[cfg.obs] != ObservationType.KIN:
-        train_env = VecTransposeImage(train_env)
-        # train_env = VecFrameStack(train_env, n_stack=4)
-        # train_env = VecNormalize(train_env)
-    print("[INFO] Action space:", train_env.action_space)
-    print("[INFO] Observation space:", train_env.observation_space)
     # check_env(train_env, warn=True, skip_render_check=True)
-
     ### Load the saved model if specified #################
     if cfg.exp != "none":
         #### Load the model from file ##############################
@@ -161,6 +154,11 @@ def train_loop(cfg: DictConfig = None):
             print("Loading the best training model")
         else:
             print("[ERROR]: no model under the specified path", cfg.exp)
+            return 1
+        if os.path.isfile(cfg.exp + "/vecnormalize_best_model.pkl"):
+            vec_norm_path = cfg.exp + "/vecnormalize_best_model.pkl"
+            print("Loading vecnormalize")
+
         if algo == "a2c":
             model = A2C.load(path, tensorboard_log=filename + "/tb_log")
         if algo == "ppo":
@@ -171,8 +169,31 @@ def train_loop(cfg: DictConfig = None):
             model = TD3.load(path, tensorboard_log=filename + "/tb_log")
         if algo == "ddpg":
             model = DDPG.load(path, tensorboard_log=filename + "/tb_log")
+
+        if vec_norm_path is not None:
+            train_env = VecNormalize.load(vec_norm_path, train_env)
+        else:
+            train_env = VecNormalize(
+                train_env, norm_obs=True, norm_reward=True, clip_obs=10.0
+            )
+
+        if ObservationType[cfg.obs] != ObservationType.KIN:
+            train_env = VecTransposeImage(train_env)
+            # train_env = VecCheckNan(train_env, raise_exception=True)
+        print("[INFO] Action space:", train_env.action_space)
+        print("[INFO] Observation space:", train_env.observation_space)
         model.set_env(train_env)
     else:
+        train_env = VecNormalize(
+            train_env, norm_obs=True, norm_reward=True, clip_obs=10.0
+        )
+        if ObservationType[cfg.obs] != ObservationType.KIN:
+            train_env = VecTransposeImage(train_env)
+            # train_env = VecCheckNan(train_env, raise_exception=True)
+            # train_env = VecFrameStack(train_env, n_stack=4)
+            # train_env = VecNormalize(train_env)
+        print("[INFO] Action space:", train_env.action_space)
+        print("[INFO] Observation space:", train_env.observation_space)
         #### On-policy algorithms ##################################
         p_kwargs = {
             "onpolicy_kwargs": dict(
@@ -307,7 +328,13 @@ def train_loop(cfg: DictConfig = None):
         reward_threshold=EPISODE_REWARD_THRESHOLD, verbose=1
     )
     stop_callback = StopTrainingOnNoModelImprovement(
-        max_no_improvement_evals=100, min_evals=100, verbose=1
+        max_no_improvement_evals=(
+            cfg.stop_after_no_improvement
+            if cfg.stop_after_no_improvement is not None
+            else cfg.n_steps
+        ),
+        min_evals=100,
+        verbose=1,
     )
     eval_callback = CustomEvalCallback(
         eval_env,

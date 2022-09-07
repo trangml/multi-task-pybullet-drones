@@ -44,25 +44,89 @@ class IncrementalObstacleRoom:
 
         if self.difficulty == 0:
             # difficulty of 0 is no obstacles
-            pass
-        elif self.difficulty == 1:
-            # difficulty of 1 is placing a column right in front of the drone
-            box_q = p.getQuaternionFromEuler([0, 1.57057, 0])
-            box_pos = [2 + self.xyz[0], self.xyz[1], 0.5 + self.xyz[2]]
-            p.loadURDF(
-                "block.urdf",
-                box_pos,
-                box_q,
-                physicsClientId=self.CLIENT,
-                useFixedBase=True,
-                globalScaling=10,
-            )
+            return
+        # difficulty of 1 is placing a column right in front of the drone
+        box_q = p.getQuaternionFromEuler([0, 1.57057, 0])
+        box_pos = [2 + self.xyz[0], self.xyz[1], 0.5 + self.xyz[2]]
+        p.loadURDF(
+            "block.urdf",
+            box_pos,
+            box_q,
+            physicsClientId=self.CLIENT,
+            useFixedBase=True,
+            globalScaling=10,
+        )
+        if self.difficulty == 1:
+            return
 
-        elif self.difficulty == 2:
-            # difficulty of 2 is many rows of obstacles
-            pass
+        box_q = p.getQuaternionFromEuler([0, 1.57057, 0])
+        box_pos = [2.5 + self.xyz[0], 0.5 + self.xyz[1], 0.5 + self.xyz[2]]
+        p.loadURDF(
+            "block.urdf",
+            box_pos,
+            box_q,
+            physicsClientId=self.CLIENT,
+            useFixedBase=True,
+            globalScaling=10,
+        )
+        if self.difficulty == 2:
+            return
 
-        elif self.difficulty == 3:
-            # difficulty of 3 is many rows of staggered obstacles
-            pass
+        # box to the left, next to wall
+        box_q = p.getQuaternionFromEuler([0, 1.57057, 0])
+        box_pos = [2.5 + self.xyz[0], 0.9 + self.xyz[1], 0.5 + self.xyz[2]]
+        p.loadURDF(
+            "block.urdf",
+            box_pos,
+            box_q,
+            physicsClientId=self.CLIENT,
+            useFixedBase=True,
+            globalScaling=10,
+        )
+        if self.difficulty == 3:
+            return
+        box_q = p.getQuaternionFromEuler([0, 1.57057, 0])
+        box_pos = [2.8 + self.xyz[0], 0.7 + self.xyz[1], 0.5 + self.xyz[2]]
+        p.loadURDF(
+            "block.urdf",
+            box_pos,
+            box_q,
+            physicsClientId=self.CLIENT,
+            useFixedBase=True,
+            globalScaling=10,
+        )
+        if self.difficulty == 4:
+            return
+
+        box_q = p.getQuaternionFromEuler([0, 1.57057, 0])
+        box_pos = [1.7 + self.xyz[0], self.xyz[1], 0.5 + self.xyz[2]]
+        p.loadURDF(
+            "block.urdf",
+            box_pos,
+            box_q,
+            physicsClientId=self.CLIENT,
+            useFixedBase=True,
+            globalScaling=10,
+        )
+
+        box_pos = [2.5 + self.xyz[0], 0.5 + self.xyz[1], 0.5 + self.xyz[2]]
+        p.loadURDF(
+            "block.urdf",
+            box_pos,
+            box_q,
+            physicsClientId=self.CLIENT,
+            useFixedBase=True,
+            globalScaling=10,
+        )
+        box_pos = [2.7 + self.xyz[0], 0.2 + self.xyz[1], 0.5 + self.xyz[2]]
+        p.loadURDF(
+            "block.urdf",
+            box_pos,
+            box_q,
+            physicsClientId=self.CLIENT,
+            useFixedBase=True,
+            globalScaling=10,
+        )
+        if self.difficulty == 5:
+            return
 
