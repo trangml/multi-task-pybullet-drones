@@ -16,6 +16,7 @@ import torch.optim as optim
 from stable_baselines3.common.buffers import ReplayBuffer
 from torch.utils.tensorboard import SummaryWriter
 from gym_pybullet_drones.envs.single_agent_rl import CrossObstaclesAviary
+from gym_pybullet_drones.envs.multi_agent_rl import MultiCrossObstaclesAviary
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
     ActionType,
     ObservationType,
@@ -84,9 +85,7 @@ def make_env(env_id, seed, idx, capture_video, run_name, env_config):
         # with open(env_config, "r") as f:
         #     cfg = yaml.safe_load(f)
         cfg = OmegaConf.load(env_config)
-        env = gym.make(
-            env_id, act=ActionType.RPM, obs=ObservationType.KIN, **cfg["env_kwargs"]
-        )
+        env = gym.make(env_id, act=ActionType.RPM, obs=ObservationType.KIN,)
         env = gym.wrappers.RecordEpisodeStatistics(env)
         if capture_video:
             if idx == 0:

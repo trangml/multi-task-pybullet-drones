@@ -1,5 +1,5 @@
 # general script settings
-tag: inc_difficulty_5_on_no_inc_diff_3
+tag: inc_difficulty_6_no_pretrain
 env: cross-obstacles
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
@@ -7,7 +7,7 @@ algo: ppo
 obs: BOTH
 # choices=["kin", "rgb", "both"],
 act: RPM
-exp: /home/mtrang/Documents/vt/research/multiagent-pybullet-drones/experiments/learning/results/save-cross-obstacles-ppo-BOTH-RPM-inc_difficulty_6-09.07.2022_01.39.49
+exp: none
 cpu: 8
 stop_after_no_improvement: 1500
 n_steps: 1e7
@@ -27,7 +27,7 @@ ppo:
     # Agents do better with the default net_arch
 # Env specific settings
 env_kwargs:
-  difficulty: 3
+  difficulty: 6
   initial_xyzs: [[-0.5, 0, 0.5]]
   bounds: [[5, 1, 1], [-1, -1, 0.1]]
   collision_detection: True

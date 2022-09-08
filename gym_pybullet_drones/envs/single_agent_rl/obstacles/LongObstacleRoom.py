@@ -78,4 +78,3 @@ class LongObstacleRoom:
                 globalScaling=1,
                 useFixedBase=True,
             )
-

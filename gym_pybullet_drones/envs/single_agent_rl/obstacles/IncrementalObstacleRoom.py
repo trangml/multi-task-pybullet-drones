@@ -129,4 +129,32 @@ class IncrementalObstacleRoom:
         )
         if self.difficulty == 5:
             return
-
+        box_pos = [1 + self.xyz[0], 0.5 + self.xyz[1], 0.5 + self.xyz[2]]
+        p.loadURDF(
+            "block.urdf",
+            box_pos,
+            box_q,
+            physicsClientId=self.CLIENT,
+            useFixedBase=True,
+            globalScaling=10,
+        )
+        box_pos = [1 + self.xyz[0], 0.3 + self.xyz[1], 0.5 + self.xyz[2]]
+        p.loadURDF(
+            "block.urdf",
+            box_pos,
+            box_q,
+            physicsClientId=self.CLIENT,
+            useFixedBase=True,
+            globalScaling=10,
+        )
+        box_pos = [1 + self.xyz[0], 0.1 + self.xyz[1], 0.5 + self.xyz[2]]
+        p.loadURDF(
+            "block.urdf",
+            box_pos,
+            box_q,
+            physicsClientId=self.CLIENT,
+            useFixedBase=True,
+            globalScaling=10,
+        )
+        if self.difficulty == 5:
+            return

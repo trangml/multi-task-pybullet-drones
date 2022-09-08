@@ -2,6 +2,9 @@ from typing import List, Optional
 import os
 import numpy as np
 import gym_pybullet_drones.envs.single_agent_rl.rewards as rewards
+from gym_pybullet_drones.envs.single_agent_rl.rewards.CollisionReward import (
+    CollisionReward,
+)
 from gym_pybullet_drones.envs.single_agent_rl.rewards.cross_obstacles.EnterAreaReward import (
     EnterAreaReward,
 )
@@ -125,13 +128,14 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
         self.EPISODE_LEN_SEC = 10
         self.difficulty = difficulty
         self.obstacles.append(
-            IncrementalObstacleRoom(
-                xyz=[0, 0, 0], physics=self.CLIENT, difficulty=self.difficulty
-            )
+            ObstacleRoom(xyz=[0, 0, 0], physics=self.CLIENT, difficulty=self.difficulty)
         )
         if collision_detection:
             self.term_components.append(
                 CollisionTerm([[4, 5], [-1, 1]], self.DRONE_IDS[0], self.CLIENT)
+            )
+            self.reward_components.append(
+                CollisionReward(10, [[4, 5], [-1, 1]], self.DRONE_IDS[0], self.CLIENT)
             )
         self.reward_dict = getRewardDict(self.reward_components)
         self.term_dict = getTermDict(self.term_components)

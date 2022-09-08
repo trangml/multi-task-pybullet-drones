@@ -30,7 +30,7 @@ from gym_pybullet_drones.envs.single_agent_rl.rewards.Reward import (
 class CollisionReward(SparseReward):
     """Calculate the sparse collision reward, which is a punishment."""
 
-    def __init__(self, area, drone_id, client):
+    def __init__(self, scale, area, drone_id, client):
         """
         Generate
 
@@ -43,7 +43,7 @@ class CollisionReward(SparseReward):
         area : Tuple[Bounds, Bounds]
             safe/landing zone area
         """
-        super().__init__()
+        super().__init__(scale)
         self.drone_id = drone_id
         self.CLIENT = client
         self.area = (Bounds(area[0][0], area[0][1]), Bounds(area[1][0], area[1][1]))
