@@ -650,7 +650,10 @@ class BaseAviary(gym.Env):
         if self.RECORD and self.GUI:
             self.VIDEO_ID = p.startStateLogging(
                 loggingType=p.STATE_LOGGING_VIDEO_MP4,
-                fileName=os.path.join(self.CURR_OUTPUT_FOLDER, "output.mp4",),
+                fileName=os.path.join(
+                    self.CURR_OUTPUT_FOLDER,
+                    "output" + datetime.now().strftime("%M%S") + ".mp4",
+                ),
                 physicsClientId=self.CLIENT,
             )
         if self.RECORD and not self.GUI:

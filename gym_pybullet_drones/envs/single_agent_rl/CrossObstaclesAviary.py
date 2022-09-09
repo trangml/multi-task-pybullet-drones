@@ -128,7 +128,9 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
         self.EPISODE_LEN_SEC = 10
         self.difficulty = difficulty
         self.obstacles.append(
-            ObstacleRoom(xyz=[0, 0, 0], physics=self.CLIENT, difficulty=self.difficulty)
+            IncrementalObstacleRoom(
+                xyz=[0, 0, 0], physics=self.CLIENT, difficulty=self.difficulty
+            )
         )
         if collision_detection:
             self.term_components.append(

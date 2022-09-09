@@ -317,7 +317,7 @@ if __name__ == "__main__":
         "--gui",
         default=DEFAULT_GUI,
         type=str2bool,
-        help="Whether to use PyBullet GUI (default: False)",
+        help="Whether to use PyBullet GUI (default: True)",
         metavar="",
     )
     parser.add_argument(

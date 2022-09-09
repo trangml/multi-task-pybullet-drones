@@ -45,7 +45,7 @@ def parse_args():
         help="weather to capture videos of the agent performances (check out `videos` folder)")
 
     # Algorithm specific arguments
-    parser.add_argument("--env-id", type=str, default="cross-obstacles-aviary-v0",
+    parser.add_argument("--env-id", type=str, default="multicrossobs-aviary-v0",
         help="the id of the environment")
     parser.add_argument("--env-config", type=str, default="config/cross-obstacles-aviary.yaml",
         help="config file for the env")
@@ -71,6 +71,8 @@ def parse_args():
         help="noise clip parameter of the Target Policy Smoothing Regularization")
     parser.add_argument('--num-models', type=int, default=10,
         help='the number of models saved')
+    parser.add_argument('--num-drones', type=int, default=2,
+        help='the number of drones used')
     args = parser.parse_args()
     # fmt: on
     args.save_frequency = min(
@@ -86,10 +88,10 @@ def make_env(env_id, seed, idx, capture_video, run_name, env_config):
         #     cfg = yaml.safe_load(f)
         cfg = OmegaConf.load(env_config)
         env = gym.make(env_id, act=ActionType.RPM, obs=ObservationType.KIN,)
-        env = gym.wrappers.RecordEpisodeStatistics(env)
-        if capture_video:
-            if idx == 0:
-                env = gym.wrappers.RecordVideo(env, f"results/videos/{run_name}")
+        # env = gym.wrappers.RecordEpisodeStatistics(env)
+        # if capture_video:
+        #     if idx == 0:
+        #         env = gym.wrappers.RecordVideo(env, f"results/videos/{run_name}")
         env.seed(seed)
         env.action_space.seed(seed)
         env.observation_space.seed(seed)
@@ -100,13 +102,18 @@ def make_env(env_id, seed, idx, capture_video, run_name, env_config):
 
 # ALGO LOGIC: initialize agent here:
 class QNetwork(nn.Module):
-    def __init__(self, env):
+    def __init__(self, env, key):
         super().__init__()
-        self.fc1 = nn.Linear(
-            np.array(env.single_observation_space.shape).prod()
-            + np.prod(env.single_action_space.shape),
-            256,
-        )
+        # Check reshape whatever the input is into a box.
+        self.obs_dim = env.single_observation_space[key].shape[0]
+        self.act_dim = env.single_action_space[key].shape[0]
+
+        # self.fc1 = nn.Linear(
+        #     np.array(env.single_observation_space.shape).prod()
+        #     + np.prod(env.single_action_space.shape),
+        #     256,
+        # )
+        self.fc1 = nn.Linear(self.obs_dim + self.act_dim, 256)
         self.fc2 = nn.Linear(256, 256)
         self.fc3 = nn.Linear(256, 1)
 
@@ -119,19 +126,30 @@ class QNetwork(nn.Module):
 
 
 class Actor(nn.Module):
-    def __init__(self, env):
+    def __init__(self, env, key):
         super().__init__()
-        self.fc1 = nn.Linear(np.array(env.single_observation_space.shape).prod(), 256)
+        obs_dim = np.array(env.single_observation_space[key].shape).prod()
+        act_dim = np.prod(env.single_action_space[key].shape)
+        # self.fc1 = nn.Linear(np.array(env.single_observation_space.shape).prod(), 256)
+        self.fc1 = nn.Linear(obs_dim, 256)
         self.fc2 = nn.Linear(256, 256)
-        self.fc_mu = nn.Linear(256, np.prod(env.single_action_space.shape))
+        # self.fc_mu = nn.Linear(256, np.prod(env.single_action_space.shape))
+        self.fc_mu = nn.Linear(256, act_dim)
         # action rescaling
+        # env.action_space is also a dictionary
         self.register_buffer(
             "action_scale",
-            torch.FloatTensor((env.action_space.high - env.action_space.low) / 2.0),
+            torch.FloatTensor(
+                (env.single_action_space[key].high - env.single_action_space[key].low)
+                / 2.0
+            ),
         )
         self.register_buffer(
             "action_bias",
-            torch.FloatTensor((env.action_space.high + env.action_space.low) / 2.0),
+            torch.FloatTensor(
+                (env.single_action_space[key].high + env.single_action_space[key].low)
+                / 2.0
+            ),
         )
 
     def forward(self, x):
@@ -172,31 +190,43 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
 
     # env setup
-    envs = gym.vector.SyncVectorEnv(
-        [
-            make_env(
-                args.env_id, args.seed, 0, args.capture_video, run_name, args.env_config
-            )
-        ]
+    envs = make_env(
+        args.env_id, args.seed, 0, args.capture_video, run_name, args.env_config
     )
-    assert isinstance(
-        envs.single_action_space, gym.spaces.Box
-    ), "only continuous action space is supported"
 
-    actor = Actor(envs).to(device)
-    qf1 = QNetwork(envs).to(device)
-    qf1_target = QNetwork(envs).to(device)
-    target_actor = Actor(envs).to(device)
-    target_actor.load_state_dict(actor.state_dict())
-    qf1_target.load_state_dict(qf1.state_dict())
-    q_optimizer = optim.Adam(list(qf1.parameters()), lr=args.learning_rate)
-    actor_optimizer = optim.Adam(list(actor.parameters()), lr=args.learning_rate)
+    # assert isinstance(
+    #     envs.single_action_space, gym.spaces.Box
+    # ), "only continuous action space is supported"
+    actors = {}
+    qf1s = {}
+    qf1_targets = {}
+    target_actors = {}
+    q_optimizers = {}
+    actor_optimizers = {}
 
-    envs.single_observation_space.dtype = np.float32
+    # we know that the observation space is a dictionary
+    for key, space in envs.single_observation_space.spaces.items():
+        actors[key] = Actor(envs, key).to(device)
+
+        qf1s[key] = QNetwork(envs, key).to(device)
+        qf1_targets[key] = QNetwork(envs, key).to(device)
+        target_actors[key] = Actor(envs, key).to(device)
+        target_actors[key].load_state_dict(actors[key].state_dict())
+        qf1_targets[key].load_state_dict(qf1s[key].state_dict())
+
+        q_optimizers[key] = optim.Adam(
+            list(qf1s[key].parameters()), lr=args.learning_rate
+        )
+        actor_optimizers[key] = optim.Adam(
+            list(actors[key].parameters()), lr=args.learning_rate
+        )
+
+    # envs.single_observation_space.dtype = np.float32
+
     rb = ReplayBuffer(
         args.buffer_size,
-        envs.single_observation_space,
-        envs.single_action_space,
+        envs.single_observation_space[0],
+        envs.single_action_space[0],
         device,
         handle_timeout_termination=True,
     )
@@ -212,14 +242,23 @@ if __name__ == "__main__":
             )
         else:
             with torch.no_grad():
-                actions = actor(torch.Tensor(obs).to(device))
-                actions += torch.normal(
-                    actor.action_bias, actor.action_scale * args.exploration_noise
+                actions = np.array(
+                    [actors[ix](torch.Tensor(obs[ix]).to(device)) for ix in obs.keys()]
                 )
+                actions += [
+                    torch.normal(
+                        actors[ix].action_bias,
+                        actors[ix].action_scale * args.exploration_noise,
+                    )
+                    for ix in obs.keys()
+                ]
                 actions = (
                     actions.cpu()
                     .numpy()
-                    .clip(envs.single_action_space.low, envs.single_action_space.high)
+                    .clip(
+                        envs.single_action_space[0].low,
+                        envs.single_action_space[0].high,
+                    )
                 )
 
         # TRY NOT TO MODIFY: execute the game and log data.
@@ -253,19 +292,26 @@ if __name__ == "__main__":
         if global_step > args.learning_starts:
             data = rb.sample(args.batch_size)
             with torch.no_grad():
-                next_state_actions = target_actor(data.next_observations)
-                qf1_next_target = qf1_target(data.next_observations, next_state_actions)
+                next_state_actions = [
+                    target_actors[ix](data.next_observations) for ix in obs.keys()
+                ]
+                qf1_next_target = [
+                    qf1_targets[ix](data.next_observations, next_state_actions)
+                    for ix in obs.keys()
+                ]
                 next_q_value = data.rewards.flatten() + (
                     1 - data.dones.flatten()
                 ) * args.gamma * (qf1_next_target).view(-1)
 
-            qf1_a_values = qf1(data.observations, data.actions).view(-1)
+            qf1_a_values = [
+                qf1s[ix](data.observations, data.actions).view(-1) for ix in obs.keys()
+            ]
             qf1_loss = F.mse_loss(qf1_a_values, next_q_value)
 
             # optimize the model
-            q_optimizer.zero_grad()
+            [q_optimizers[ix].zero_grad() for ix in obs.keys()]
             qf1_loss.backward()
-            q_optimizer.step()
+            [q_optimizers[ix].step() for ix in obs.keys()]
 
             if global_step % args.policy_frequency == 0:
                 actor_loss = -qf1(data.observations, actor(data.observations)).mean()
