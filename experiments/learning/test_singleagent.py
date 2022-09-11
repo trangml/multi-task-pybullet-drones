@@ -16,6 +16,7 @@ import argparse
 import numpy as np
 import gym
 import torch
+import random
 from omegaconf import OmegaConf
 from stable_baselines3 import A2C
 from stable_baselines3 import PPO
@@ -81,6 +82,13 @@ def run(
     else:
         raise ValueError("No config.yaml found in {}".format(exp))
     print(ARGS)
+
+    # TRY NOT TO MODIFY: seeding
+    print(ARGS.seed)
+    random.seed(ARGS.seed)
+    np.random.seed(ARGS.seed)
+    torch.manual_seed(ARGS.seed)
+
     #### Load the model from file ##############################
     algo = ARGS.algo
     vec_wrapped = False
@@ -356,7 +364,7 @@ if __name__ == "__main__":
         metavar="",
     )
     parser.add_argument(
-        "--seed", type=int, default=0, help="The random seed to use", metavar="",
+        "--seed", type=int, help="The random seed to use", metavar="",
     )
     # parser.add_argument(
     #     "--env_kwargs", type=str, default="difficulty:", help="string of env", metavar="",

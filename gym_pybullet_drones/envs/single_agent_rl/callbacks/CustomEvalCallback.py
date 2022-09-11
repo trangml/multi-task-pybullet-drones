@@ -221,6 +221,13 @@ class CustomEvalCallback(EventCallback):
                     self.model.save(
                         os.path.join(self.best_model_save_path, "best_model")
                     )
+                    with open(
+                        os.path.join(self.best_model_save_path, "best_model_log.txt"),
+                        "a",
+                    ) as file_handler:
+                        file_handler.write(
+                            f"Reward: {mean_reward:.2f}, Timesteps: {self.num_timesteps}"
+                        )
                 if (
                     self.save_vecnormalize
                     and self.model.get_vec_normalize_env() is not None
