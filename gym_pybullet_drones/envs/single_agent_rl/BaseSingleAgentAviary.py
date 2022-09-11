@@ -96,6 +96,9 @@ class BaseSingleAgentAviary(BaseAviary):
         self.OBS_TYPE = obs
         self.ACT_TYPE = act
         self.EPISODE_LEN_SEC = 5
+        self._seed = (
+            0  # bullet is deterministic, but we set seed for algorithms which need it
+        )
 
         self.completeEpisode = False
         self.min_dist = 100
@@ -156,6 +159,9 @@ class BaseSingleAgentAviary(BaseAviary):
                 "[ERROR] in BaseSingleAgentAviary.__init__(), ActionType.TUN requires an implementation of _trajectoryTrackingRPMs in the instantiated subclass"
             )
             exit()
+
+    def seed(self, seed: int):
+        self._seed = seed
 
     ################################################################################
     def getFirstDroneState(self):

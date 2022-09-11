@@ -20,6 +20,7 @@ To check the tensorboard results at:
 
 """
 import os
+import random
 import pprint
 import subprocess
 from datetime import datetime
@@ -71,9 +72,7 @@ from stable_baselines3.td3 import MlpPolicy as td3ddpgMlpPolicy
 
 import shared_constants
 
-EPISODE_REWARD_THRESHOLD = (
-    10000  # Upperbound: rewards are always negative, but non-zero
-)
+EPISODE_REWARD_THRESHOLD = 1000  # Upperbound: rewards are always negative, but non-zero
 """float: Reward threshold to halt the script."""
 
 MAX_EPISODES = 10000  # Upperbound: number of episodes
@@ -85,6 +84,11 @@ DEFAULT_OUTPUT_FOLDER = "results"
 def train_loop(cfg: DictConfig = None):
     # cfg = OmegaConf.load(ARGS.config)
     pprint.pprint(cfg)
+
+    # TRY NOT TO MODIFY: seeding
+    random.seed(cfg.seed)
+    np.random.seed(cfg.seed)
+    torch.manual_seed(cfg.seed)
 
     #### Save directory ########################################
     filename = (

@@ -11,6 +11,7 @@ exp: /home/mtrang/Documents/vt/research/multiagent-pybullet-drones/experiments/l
 cpu: 8
 n_steps: 1e7
 stop_after_no_improvement: 1000
+seed: 0
 
 # PPO arguments
 ppo:

@@ -10,6 +10,7 @@ act: RPM
 exp: none
 cpu: 8
 n_steps: 1e7
+seed: 0
 
 # PPO arguments
 ppo:
