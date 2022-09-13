@@ -9,7 +9,7 @@ obs: BOTH
 act: RPM
 exp: /home/mtrang/Documents/vt/research/multiagent-pybullet-drones/experiments/learning/results/save-cross-obstacles-ppo-BOTH-RPM-inc_difficulty_1-09.04.2022_22.02.29
 cpu: 8
-stop_after_no_improvement: 500
+stop_after_no_improvement: 1000
 n_steps: 1e7
 seed: 0
 # PPO arguments

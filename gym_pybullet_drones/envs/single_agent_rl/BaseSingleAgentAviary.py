@@ -1,3 +1,4 @@
+from typing import Optional
 import os
 from enum import Enum
 import numpy as np
@@ -57,6 +58,7 @@ class BaseSingleAgentAviary(BaseAviary):
         record=False,
         obs: ObservationType = ObservationType.KIN,
         act: ActionType = ActionType.RPM,
+        tag: str = "",
     ):
         """Initialization of a generic single agent RL environment.
 
@@ -146,6 +148,7 @@ class BaseSingleAgentAviary(BaseAviary):
             user_debug_gui=False,  # Remove of RPM sliders from all single agent learning aviaries
             vision_attributes=vision_attributes,
             dynamics_attributes=dynamics_attributes,
+            tag=tag,
         )
         #### Set a limit on the maximum target speed ###############
         if act == ActionType.VEL:

@@ -226,7 +226,7 @@ class CustomEvalCallback(EventCallback):
                         "a",
                     ) as file_handler:
                         file_handler.write(
-                            f"Reward: {mean_reward:.2f}, Timesteps: {self.num_timesteps}"
+                            f"Reward: {mean_reward:.2f}, Timesteps: {self.num_timesteps}\n"
                         )
                 if (
                     self.save_vecnormalize

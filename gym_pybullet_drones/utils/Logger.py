@@ -415,6 +415,7 @@ class Logger(object):
             axs[i].grid(True)
             axs[i].legend(loc="upper right", frameon=True)
 
+        plt.savefig(os.path.join(self.OUTPUT_FOLDER, "episode_rewards.png"))
         plt.show()
 
     def plot(self, pwm=False):
@@ -614,3 +615,4 @@ class Logger(object):
             plt.savefig(os.path.join("results", "output_figure.png"))
         else:
             plt.show(block=False)
+            plt.savefig(os.path.join(self.OUTPUT_FOLDER, "episode_states.png"))

@@ -39,7 +39,8 @@ class BaseAviary(gym.Env):
         user_debug_gui=True,
         vision_attributes=False,
         dynamics_attributes=False,
-        output_folder="results",
+        output_folder="results/recordings",
+        tag: str = "",
     ):
         """Initialization of a generic aviary environment.
 
@@ -94,6 +95,7 @@ class BaseAviary(gym.Env):
         self.USER_DEBUG = user_debug_gui
         self.URDF = self.DRONE_MODEL.value + ".urdf"
         self.OUTPUT_FOLDER = output_folder
+        self.tag = tag
         #### Load the drone properties from the .urdf file #########
         (
             self.M,
@@ -156,7 +158,7 @@ class BaseAviary(gym.Env):
         )
         self.CURR_OUTPUT_FOLDER = os.path.join(
             self.OUTPUT_FOLDER,
-            "recording_" + datetime.now().strftime("%m.%d.%Y_%H.%M.%S"),
+            "recording_" + self.tag + datetime.now().strftime("%m.%d.%Y_%H.%M.%S"),
         )
         #### Create attributes for vision tasks ####################
         self.VISION_ATTR = vision_attributes

@@ -168,6 +168,7 @@ def run(
         aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
         obs=OBS,
         act=ACT,
+        tag=ARGS.obs + "_" + ARGS.act + "_" + ARGS.tag + "_",
         **ARGS.env_kwargs,
     )
     if vec_wrapped:
@@ -191,7 +192,7 @@ def run(
             num_rewards=len(test_env.get_attr("reward_dict")[0]),
             rewards_names=list(test_env.get_attr("reward_dict")[0].keys()),
             # done_names=list(test_env.term_dict.keys()),
-            output_folder=output_folder,
+            output_folder=test_env.get_attr("CURR_OUTPUT_FOLDER")[0],
         )
 
         obs = test_env.reset()

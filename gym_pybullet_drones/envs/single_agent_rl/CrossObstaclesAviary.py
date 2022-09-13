@@ -56,6 +56,7 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
         term_components: List = [],
         bounds: List = [[5, 1, 1], [-1, -1, 0.1]],
         collision_detection: bool = False,
+        tag: str = "",
     ):
         """Initialization of a single agent RL environment.
 
@@ -122,6 +123,7 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
             record=record,
             obs=obs,
             act=act,
+            tag=tag,
         )
 
         # override base aviary episode length
