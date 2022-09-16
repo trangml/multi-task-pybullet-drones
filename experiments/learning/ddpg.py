@@ -7,7 +7,6 @@ from distutils.util import strtobool
 
 import gym
 import numpy as np
-import pybullet_envs  # noqa
 import yaml
 import torch
 import torch.nn as nn
@@ -128,11 +127,15 @@ class Actor(nn.Module):
         # action rescaling
         self.register_buffer(
             "action_scale",
-            torch.FloatTensor((env.action_space.high - env.action_space.low) / 2.0),
+            torch.FloatTensor(
+                (env.action_space[0].high - env.action_space[0].low) / 2.0
+            ),
         )
         self.register_buffer(
             "action_bias",
-            torch.FloatTensor((env.action_space.high + env.action_space.low) / 2.0),
+            torch.FloatTensor(
+                (env.action_space[0].high + env.action_space[0].low) / 2.0
+            ),
         )
 
     def forward(self, x):
@@ -140,6 +143,30 @@ class Actor(nn.Module):
         x = F.relu(self.fc2(x))
         x = torch.tanh(self.fc_mu(x))
         return x * self.action_scale + self.action_bias
+
+
+def save(path, agent, training, total_steps, obs):
+    """Saves model params and experiment state to checkpoint path.
+    """
+    path_dir = os.path.dirname(path)
+    os.makedirs(path_dir, exist_ok=True)
+    state_dict = {
+        "agent": agent.state_dict(),
+        # "obs_normalizer": self.obs_normalizer.state_dict(),
+        # "reward_normalizer": self.reward_normalizer.state_dict(),
+    }
+    if training:
+        exp_state = {
+            "total_steps": total_steps,
+            "obs": obs,
+            # "random_state": get_random_state(),
+            # "env_random_state": self.env.get_env_random_state(),
+        }
+        state_dict.update(exp_state)
+    torch.save(state_dict, path)
+
+
+
 
 
 if __name__ == "__main__":
@@ -301,10 +328,20 @@ if __name__ == "__main__":
                     global_step,
                 )
             if global_step % args.save_frequency == 0:
-                if not os.path.exists(f"results/{run_name}"):
-                    os.makedirs(f"results/{run_name}")
-                torch.save(actor.state_dict(), f"results/{run_name}/agent.pt")
-                torch.save(actor.state_dict(), f"results/{run_name}/{global_step}.pt")
+                save(
+                    path=f"results/{run_name}/agent.pt",
+                    agent=actor,
+                    training=True,
+                    total_steps=global_step,
+                    obs=obs,
+                )
+                save(
+                    path=f"results/{run_name}/{global_step}_agent.pt",
+                    agent=actor,
+                    training=True,
+                    total_steps=global_step,
+                    obs=obs,
+                )
                 if args.track:
                     wandb.save(
                         f"results/{run_name}/agent.pt",
