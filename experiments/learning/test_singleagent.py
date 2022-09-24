@@ -72,7 +72,6 @@ def run(
         _description_, by default DEFAULT_OUTPUT_FOLDER
     """
     #### Load the model from file ##############################
-    algo = exp.split("-")[2]
 
     if os.path.isfile(exp + "/config.yaml"):
         with open(exp + "/config.yaml", "r") as f:
@@ -95,6 +94,13 @@ def run(
     vec_norm_pth = exp + "/vec_normalize_best_model.pkl"
     if ARGS.override_path is not None:
         path = ARGS.override_path
+        idx = ARGS.override_path.rindex("_", 0, len(ARGS.override_path) - 10)
+        vec_norm_pth = (
+            ARGS.override_path[:idx]
+            + "_vecnormalize"
+            + ARGS.override_path[idx:-3]
+            + "pkl"
+        )
         # TODO: add vecnorm pickle check
     else:
         if ARGS.latest:
@@ -162,13 +168,14 @@ def run(
     print("\n\n\nMean reward ", mean_reward, " +- ", std_reward, "\n\n")
 
     #### Show, record a video, and log the model's performance #
+    exp_start = exp.index("save")
     env_kwargs = dict(
         gui=gui,
         record=ARGS.record,
         aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
         obs=OBS,
         act=ACT,
-        tag=ARGS.obs + "_" + ARGS.act + "_" + ARGS.tag + "_",
+        tag=exp[exp_start:],
         **ARGS.env_kwargs,
     )
     if vec_wrapped:
@@ -309,6 +316,7 @@ def run(
     if plot:
         logger.plot()
         logger.plot_rewards()
+        logger.save_rewards(exp, mean_reward, std_reward)
 
 
 if __name__ == "__main__":

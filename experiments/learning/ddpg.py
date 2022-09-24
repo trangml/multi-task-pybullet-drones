@@ -166,9 +166,6 @@ def save(path, agent, training, total_steps, obs):
     torch.save(state_dict, path)
 
 
-
-
-
 if __name__ == "__main__":
     args = parse_args()
     run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
