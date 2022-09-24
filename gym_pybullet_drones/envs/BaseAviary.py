@@ -295,12 +295,18 @@ class BaseAviary(gym.Env):
         elif np.array(initial_xyzs).shape == (self.NUM_DRONES, 3):
             self.INIT_XYZS = np.array(initial_xyzs)
         else:
-            print(
-                "[ERROR] invalid initial_xyzs in BaseAviary.__init__(), try initial_xyzs.reshape(NUM_DRONES,3)"
-            )
+            try:
+                self.INIT_XYZS = np.array(initial_xyzs).reshape(self.NUM_DRONES, 3)
+            except:
+                print(
+                    "[ERROR] invalid initial_xyzs in BaseAviary.__init__(), try initial_xyzs.reshape(NUM_DRONES,3)"
+                )
+                raise ValueError
         if initial_rpys is None:
             self.INIT_RPYS = np.zeros((self.NUM_DRONES, 3))
         elif np.array(initial_rpys).shape == (self.NUM_DRONES, 3):
+            self.INIT_RPYS = initial_rpys
+        elif np.array(initial_rpys).reshape(self.NUM_DRONES, 3):
             self.INIT_RPYS = initial_rpys
         else:
             print(
@@ -461,13 +467,13 @@ class BaseAviary(gym.Env):
         #### Update and store the drones kinematic information #####
         self._updateAndStoreKinematicInformation()
         #### Prepare the return values #############################
-        obs = self._computeObs()
+        self.obs = self._computeObs()
         reward = self._computeReward()
         done = self._computeDone()
         info = self._computeInfo()
         #### Advance the step counter ##############################
         self.step_counter = self.step_counter + (1 * self.AGGR_PHY_STEPS)
-        return obs, reward, done, info
+        return self.obs, reward, done, info
 
     ################################################################################
 
@@ -1114,6 +1120,12 @@ class BaseAviary(gym.Env):
         """
         if isinstance(action, collections.abc.Mapping):
             for k, v in action.items():
+                res_v = np.resize(
+                    v, (1, 4)
+                )  # Resize, possibly with repetition, to cope with different action spaces in RL subclasses
+                self.last_action[int(k), :] = res_v
+        elif isinstance(action, collections.abc.Sequence):
+            for k, v in action[0].items():
                 res_v = np.resize(
                     v, (1, 4)
                 )  # Resize, possibly with repetition, to cope with different action spaces in RL subclasses

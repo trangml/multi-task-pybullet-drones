@@ -1,4 +1,5 @@
 from typing import List, Optional
+import copy
 import os
 import numpy as np
 import gym_pybullet_drones.envs.single_agent_rl.rewards as rewards
@@ -234,7 +235,7 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
         if self.truncated:
             info["TimeLimit.truncated"] = True
         if self.done:
-            info["terminal_observation"] = True
+            info["terminal_observation"] = copy.deepcopy(self.obs)
         return info
 
     ################################################################################

@@ -1,5 +1,6 @@
 from typing import List, Optional
 import numpy as np
+import copy
 
 import gym_pybullet_drones.envs.single_agent_rl.rewards as rewards
 from gym_pybullet_drones.envs.single_agent_rl.rewards.OrientationReward import (
@@ -50,6 +51,8 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
         reward_components: List = [],
         term_components: List = [],
         bounds: List = [[5, 1, 1], [-1, -1, 0.1]],
+        collision_detection: bool = False,
+        tag: str = "",
     ):
         """Initialization of a multi-agent RL environment.
 
@@ -91,7 +94,12 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
             if reward_components[reward_name]["scale"] != 0:
                 r_class = getattr(rewards, reward_name)
                 self.reward_components.append(r_class(**reward_components[reward_name]))
-
+        if len(self.reward_components) == 0:
+            self.reward_components.append(
+                EnterAreaReward(scale=100, area=[[4, 5], [-1, 6]])
+            )
+            self.reward_components.append(OrientationReward(scale=0.01))
+            self.reward_components.append(IncreaseXReward(scale=0.1))
         self.term_components = []
         for term_name in term_components:
             t_class = getattr(terminations, term_name)
@@ -100,12 +108,9 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
                 self.term_components.append(t_class(**args))
             else:
                 self.term_components.append(t_class())
+        if len(self.term_components) == 0:
+            self.term_components.append(OrientationTerm())
 
-        self.reward_components.append(EnterAreaReward(scale=20, area=[[4, 5], [-1, 6]]))
-        self.reward_components.append(OrientationReward(scale=0.01))
-        self.reward_components.append(IncreaseXReward(scale=0.1))
-
-        self.term_components.append(OrientationTerm())
         super().__init__(
             drone_model=drone_model,
             num_drones=num_drones,
@@ -132,11 +137,26 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
         self.obstacles.append(
             ObstacleRoom(xyz=[0, 5, 0], physics=self.CLIENT, difficulty=2)
         )
+        if collision_detection:
+            self.term_components.append(
+                CollisionTerm([[4, 5], [-1, 1]], self.DRONE_IDS[0], self.CLIENT)
+            )
+            self.reward_components.append(
+                CollisionReward(10, [[4, 5], [-1, 1]], self.DRONE_IDS[0], self.CLIENT)
+            )
+        self.reward_dict = getRewardDict(self.reward_components)
+        self.term_dict = getTermDict(self.term_components)
+        self.cum_reward_dict = getRewardDict(self.reward_components)
+        self.truncated = False
+        self.done = False
         self.reward_dict = getRewardDict(self.reward_components)
         self.term_dict = getTermDict(self.term_components)
         self.cum_reward_dict = getRewardDict(self.reward_components)
         self.NUM_DRONES = num_drones
         self.called_done = {i: False for i in range(self.NUM_DRONES)}
+        self.term_obs = {i: None for i in range(self.NUM_DRONES)}
+        self.truncated = False
+        self.done = False
 
     ################################################################################
 
@@ -146,6 +166,8 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
         Returns: obs
 
         """
+        self.truncated = False
+        self.done = False
         self.called_done = {i: False for i in range(self.NUM_DRONES)}
         for rwd in self.reward_components:
             rwd.reset()
@@ -209,6 +231,11 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
         bool_val = (
             True if self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC else False
         )
+        if bool_val:
+            # TODO: add to info if we timeout
+            self.truncated = True
+            self.done = True
+
         done = {i: bool_val for i in range(self.NUM_DRONES)}
 
         states = np.array(
@@ -230,10 +257,12 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
                     done[ix] = False
                 else:
                     self.called_done[ix] = True
+                    self.term_obs = copy.deepcopy(self.obs)
 
         done["__all__"] = bool_val or all(
             self.called_done[ix] for ix in self.called_done
         )  # True if True in done.values() else False
+        self.done = done
         return done
 
     ################################################################################
@@ -249,7 +278,18 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
             Dictionary of empty dictionaries.
 
         """
-        return {i: {} for i in range(self.NUM_DRONES)}
+        # list_dict = [
+        #     {"episode": {}},
+        # ]
+        all_infos = {}
+        for ix in range(self.NUM_DRONES):
+            info = {}
+            if self.truncated:
+                info["TimeLimit.truncated"] = True
+            if self.called_done[ix]:
+                info["terminal_observation"] = self.term_obs[ix]
+            all_infos[ix] = info
+        return all_infos
 
     ################################################################################
 

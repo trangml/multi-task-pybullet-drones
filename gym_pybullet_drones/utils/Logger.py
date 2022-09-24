@@ -616,3 +616,12 @@ class Logger(object):
         else:
             plt.show(block=False)
             plt.savefig(os.path.join(self.OUTPUT_FOLDER, "episode_states.png"))
+
+    def save_rewards(self, exp, mean_reward, std_reward):
+        """Save rewards to a file."""
+        with open(
+            os.path.join(self.OUTPUT_FOLDER, "rewards_" + str(mean_reward) + ".txt"),
+            "w",
+        ) as f:
+            f.write(str(mean_reward) + " " + str(std_reward) + "\n" + exp)
+
