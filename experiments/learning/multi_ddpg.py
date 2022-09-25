@@ -312,7 +312,9 @@ if __name__ == "__main__":
             next_obs = envs.reset()
             ave_episode_rwd = np.mean(episode_rwds)
             if ave_episode_rwd > best_per_agent["average"]["reward"]:
-                print(f"New best average reward! Timestep{}: Reward{ave_episode_rwd}")
+                print(
+                    f"New best average reward! Timestep:{global_step}, Reward:{ave_episode_rwd}"
+                )
                 best_per_agent["average"]["reward"] = ave_episode_rwd
                 best_per_agent["average"]["timestep"] = global_step
                 save(
