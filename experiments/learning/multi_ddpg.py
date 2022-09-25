@@ -311,9 +311,10 @@ if __name__ == "__main__":
         if dones["__all__"]:
             next_obs = envs.reset()
             ave_episode_rwd = np.mean(episode_rwds)
-            if ave_episode_rwd > best_per_agent["__all__"]["reward"]:
-                best_per_agent["__all__"]["reward"] = ave_episode_rwd
-                best_per_agent["__all__"]["timestep"] = global_step
+            if ave_episode_rwd > best_per_agent["average"]["reward"]:
+                print(f"New best average reward! Timestep{}: Reward{ave_episode_rwd}")
+                best_per_agent["average"]["reward"] = ave_episode_rwd
+                best_per_agent["average"]["timestep"] = global_step
                 save(
                     path=f"results/{run_name}/best_agent_average.pt",
                     agents=actors,
@@ -340,6 +341,8 @@ if __name__ == "__main__":
                 writer.add_scalar(
                     f"charts/episodic_length_{ix}", info["episode"]["l"], global_step
                 )
+                # TODO: using this value here isn't the best, should really run an eval episode with
+                # no random noise to see if the agent is actually good and not just lucky
                 if info["episode"]["r"] > best_per_agent[ix]["reward"]:
                     best_per_agent[ix]["reward"] = info["episode"]["r"]
                     best_per_agent[ix]["timestep"] = global_step

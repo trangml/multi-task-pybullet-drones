@@ -71,7 +71,7 @@ def parse_args():
         help="noise clip parameter of the Target Policy Smoothing Regularization")
     parser.add_argument('--num-agents', type=int, default=2,
         help='the number of agents used')
-    parser.add_argument("--load-path", type=str, default="/home/mtrang/Documents/vt/research/multiagent-pybullet-drones/experiments/learning/results/multicrossobs-aviary-v0__multi-ddpg__1__1664051025/agent.pt",
+    parser.add_argument("--load-path", type=str, default="/home/mtrang/Documents/vt/research/multiagent-pybullet-drones/experiments/learning/results/multicrossobs-aviary-v0__multi-ddpg__1__1664064320/agent.pt",
         help="config file for the env")
     args = parser.parse_args()
     # fmt: on
@@ -264,7 +264,7 @@ if __name__ == "__main__":
     global_step = 0
     while not all_done:
         envs.render()
-        time.sleep(0.05)
+        time.sleep(0.01)
         with torch.no_grad():
             actions = [
                 actors[ix](torch.Tensor(obs[ix]).to(device)) for ix in obs.keys()

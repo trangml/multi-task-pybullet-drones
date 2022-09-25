@@ -27,6 +27,12 @@ from gym_pybullet_drones.envs.multi_agent_rl.BaseMultiagentAviary import (
 from gym_pybullet_drones.envs.single_agent_rl.rewards import getRewardDict
 from gym_pybullet_drones.envs.single_agent_rl.terminations import getTermDict
 from gym_pybullet_drones.envs.single_agent_rl.obstacles.ObstacleRoom import ObstacleRoom
+from gym_pybullet_drones.envs.single_agent_rl.terminations.CollisionTerm import (
+    CollisionTerm,
+)
+from gym_pybullet_drones.envs.single_agent_rl.rewards.CollisionReward import (
+    CollisionReward,
+)
 
 
 class MultiCrossObstaclesAviary(BaseMultiagentAviary):
@@ -126,6 +132,7 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
             act=act,
         )
 
+        self.NUM_DRONES = num_drones
         # override base aviary episode length
         self.EPISODE_LEN_SEC = 10
         self.obstacles.append(
@@ -138,21 +145,13 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
             ObstacleRoom(xyz=[0, 5, 0], physics=self.CLIENT, difficulty=2)
         )
         if collision_detection:
-            self.term_components.append(
-                CollisionTerm([[4, 5], [-1, 1]], self.DRONE_IDS[0], self.CLIENT)
-            )
-            self.reward_components.append(
-                CollisionReward(10, [[4, 5], [-1, 1]], self.DRONE_IDS[0], self.CLIENT)
-            )
+            self.term_components.append(CollisionTerm([[4, 5], [-1, 1]], self.CLIENT))
+            # self.reward_components.append(
+            #     CollisionReward(10, [[4, 5], [-1, 1]], self.DRONE_IDS[0], self.CLIENT)
+            # )
         self.reward_dict = getRewardDict(self.reward_components)
         self.term_dict = getTermDict(self.term_components)
         self.cum_reward_dict = getRewardDict(self.reward_components)
-        self.truncated = False
-        self.done = False
-        self.reward_dict = getRewardDict(self.reward_components)
-        self.term_dict = getTermDict(self.term_components)
-        self.cum_reward_dict = getRewardDict(self.reward_components)
-        self.NUM_DRONES = num_drones
         self.called_done = {i: False for i in range(self.NUM_DRONES)}
         self.term_obs = {i: None for i in range(self.NUM_DRONES)}
         self.truncated = False
@@ -245,7 +244,7 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
         for ix, state in enumerate(states):
             i_done = False
             for term_component, t_dict in zip(self.term_components, self.term_dict):
-                t = term_component.calculateTerm(state)
+                t = term_component.calculateTerm(state, ix)
                 self.term_dict[t_dict] = t
                 i_done = i_done or t
             all_done = all_done and i_done

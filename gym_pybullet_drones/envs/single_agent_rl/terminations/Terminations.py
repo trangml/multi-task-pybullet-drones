@@ -1,5 +1,6 @@
 import math
 import os
+from typing import Type
 import numpy as np
 from gym_pybullet_drones.envs.single_agent_rl.rewards.utils import Bounds, within_bounds
 
@@ -17,11 +18,16 @@ class Terminations:
         """Resets the terminal function"""
         pass
 
-    def _calculateTerm(self, state):
+    def _calculateTerm(self, state, drone_id):
+        # if this method is not overriden, then try returning the version which only takes in a state
         return False
 
-    def calculateTerm(self, state):
-        return self._calculateTerm(state)
+    def calculateTerm(self, state, drone_id=0):
+        try:
+            return self._calculateTerm(state, drone_id)
+        except TypeError:
+            return self._calculateTerm(state)
+
 
 
 def getTermDict(term):

@@ -17,7 +17,7 @@ from gym_pybullet_drones.envs.single_agent_rl.terminations import Terminations
 class CollisionTerm(Terminations):
     """Calculate the sparse entered area reward."""
 
-    def __init__(self, area, drone_id, client):
+    def __init__(self, area, client):
         """
         Generate
 
@@ -31,15 +31,12 @@ class CollisionTerm(Terminations):
             safe/landing zone area
         """
         super().__init__()
-        self.drone_id = drone_id
         self.CLIENT = client
         self.area = (Bounds(area[0][0], area[0][1]), Bounds(area[1][0], area[1][1]))
 
-    def _calculateTerm(self, state):
+    def _calculateTerm(self, state, drone_id=0):
         # For now, ignore height.
-        contact_pts = p.getContactPoints(
-            bodyA=self.drone_id, physicsClientId=self.CLIENT
-        )
+        contact_pts = p.getContactPoints(bodyA=drone_id, physicsClientId=self.CLIENT)
         if len(contact_pts) > 0:
             position = state[0:2]
             in_area = True
