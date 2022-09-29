@@ -1,5 +1,5 @@
 # general script settings
-tag: difficulty_3_from_2_success
+tag: test
 env: long-cross-obs
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
@@ -7,7 +7,7 @@ algo: ppo
 obs: BOTH
 # choices=["kin", "rgb", "both"],
 act: RPM
-exp: /home/mtrang/Documents/vt/research/multiagent-pybullet-drones/experiments/learning/results/save-long-cross-obs-ppo-BOTH-RPM-difficulty_2-09.06.2022_11.42.26
+exp: none
 cpu: 8
 n_steps: 1e7
 stop_after_no_improvement: 1000

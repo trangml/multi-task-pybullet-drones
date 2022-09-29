@@ -137,7 +137,7 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
         )
         if collision_detection:
             self.term_components.append(
-                CollisionTerm([[4, 5], [-1, 1]], self.DRONE_IDS[0], self.CLIENT)
+                CollisionTerm([[4, 5], [-1, 1]], self.CLIENT)
             )
             self.reward_components.append(
                 CollisionReward(10, [[4, 5], [-1, 1]], self.DRONE_IDS[0], self.CLIENT)
@@ -205,7 +205,6 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
 
         """
         if self.step_counter / self.SIM_FREQ > self.EPISODE_LEN_SEC:
-            # TODO: add to info if we timeout
             self.truncated = True
             self.done = True
         else:
