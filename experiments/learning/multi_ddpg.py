@@ -88,13 +88,17 @@ def parse_args():
     return args
 
 
-def make_env(env_id, seed, idx, capture_video, run_name, env_config):
+def make_env(env_id, seed, idx, capture_video, run_name, env_config, num_agents):
     # cfg = {"env_kwargs": None}
     # with open(env_config, "r") as f:
     #     cfg = yaml.safe_load(f)
     cfg = OmegaConf.load(env_config)
     env = gym.make(
-        env_id, act=ActionType.RPM, obs=ObservationType.KIN, **cfg.env_kwargs
+        env_id,
+        act=ActionType.RPM,
+        obs=ObservationType.KIN,
+        num_drones=num_agents,
+        **cfg.env_kwargs,
     )
     env = MultiRecordEpisodeStatistics(env)
     # env = gym.wrappers.RecordEpisodeStatistics(env)
@@ -121,8 +125,8 @@ class QNetwork(nn.Module):
         #     + np.prod(env.action_space.shape),
         #     256,
         # )
-        self.fc1 = nn.Linear(self.obs_dim + self.act_dim, 256)
-        self.fc2 = nn.Linear(256, 256)
+        self.fc1 = nn.Linear(self.obs_dim + self.act_dim, 512)
+        self.fc2 = nn.Linear(512, 256)
         self.fc3 = nn.Linear(256, 1)
 
     def forward(self, x, a):
@@ -139,8 +143,8 @@ class Actor(nn.Module):
         obs_dim = np.array(env.observation_space[key].shape).prod()
         act_dim = np.prod(env.action_space[key].shape)
         # self.fc1 = nn.Linear(np.array(env.observation_space.shape).prod(), 256)
-        self.fc1 = nn.Linear(obs_dim, 256)
-        self.fc2 = nn.Linear(256, 256)
+        self.fc1 = nn.Linear(obs_dim, 512)
+        self.fc2 = nn.Linear(512, 256)
         # self.fc_mu = nn.Linear(256, np.prod(env.action_space.shape))
         self.fc_mu = nn.Linear(256, act_dim)
         # action rescaling
@@ -219,7 +223,13 @@ if __name__ == "__main__":
 
     # env setup
     envs = make_env(
-        args.env_id, args.seed, 0, args.capture_video, run_name, args.env_config
+        args.env_id,
+        args.seed,
+        0,
+        args.capture_video,
+        run_name,
+        args.env_config,
+        args.num_agents,
     )
 
     # assert isinstance(

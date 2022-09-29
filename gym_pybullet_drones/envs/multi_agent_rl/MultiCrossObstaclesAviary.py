@@ -27,6 +27,9 @@ from gym_pybullet_drones.envs.multi_agent_rl.BaseMultiagentAviary import (
 from gym_pybullet_drones.envs.single_agent_rl.rewards import getRewardDict
 from gym_pybullet_drones.envs.single_agent_rl.terminations import getTermDict
 from gym_pybullet_drones.envs.single_agent_rl.obstacles.ObstacleRoom import ObstacleRoom
+from gym_pybullet_drones.envs.single_agent_rl.obstacles.IncrementalObstacleRoom import (
+    IncrementalObstacleRoom,
+)
 from gym_pybullet_drones.envs.single_agent_rl.terminations.CollisionTerm import (
     CollisionTerm,
 )
@@ -45,7 +48,7 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
         drone_model: DroneModel = DroneModel.CF2X,
         num_drones: int = 2,
         neighbourhood_radius: float = np.inf,
-        initial_xyzs=[[-0.5, 0, 0.5], [-0.5, 2.5, 0.5]],
+        initial_xyzs=None,
         initial_rpys=None,
         physics: Physics = Physics.PYB,
         freq: int = 240,
@@ -102,7 +105,7 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
                 self.reward_components.append(r_class(**reward_components[reward_name]))
         if len(self.reward_components) == 0:
             self.reward_components.append(
-                EnterAreaReward(scale=100, area=[[4, 5], [-1, 6]])
+                EnterAreaReward(scale=100, area=[[4, 5], [-20, 20]])
             )
             self.reward_components.append(OrientationReward(scale=0.01))
             self.reward_components.append(IncreaseXReward(scale=0.1))
@@ -116,6 +119,9 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
                 self.term_components.append(t_class())
         if len(self.term_components) == 0:
             self.term_components.append(OrientationTerm())
+        if initial_xyzs is None:
+            # [[-0.5, 0, 0.5], [-0.5, 2.5, 0.5]]
+            initial_xyzs = [[-0.5, 2.5 * i, 0.5] for i in range(num_drones)]
 
         super().__init__(
             drone_model=drone_model,
@@ -135,15 +141,12 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
         self.NUM_DRONES = num_drones
         # override base aviary episode length
         self.EPISODE_LEN_SEC = 10
-        self.obstacles.append(
-            ObstacleRoom(xyz=[0, 0, 0], physics=self.CLIENT, difficulty=0)
-        )
-        self.obstacles.append(
-            ObstacleRoom(xyz=[0, 2.5, 0], physics=self.CLIENT, difficulty=1)
-        )
-        self.obstacles.append(
-            ObstacleRoom(xyz=[0, 5, 0], physics=self.CLIENT, difficulty=2)
-        )
+        for i in range(self.NUM_DRONES):
+            self.obstacles.append(
+                IncrementalObstacleRoom(
+                    xyz=[0, 2.5 * i, 0], physics=self.CLIENT, difficulty=i
+                )
+            )
         if collision_detection:
             self.term_components.append(CollisionTerm([[4, 5], [-1, 1]], self.CLIENT))
             # self.reward_components.append(

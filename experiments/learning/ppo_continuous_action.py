@@ -44,7 +44,7 @@ def parse_args():
         help="the id of the environment")
     parser.add_argument("--env-config", type=str, default="config/cross-obstacles-aviary.yaml",
         help="config file for the env")
-    parser.add_argument("--total-timesteps", type=int, default=10000000,
+    parser.add_argument("--total-timesteps", type=int, default=100000000,
         help="total timesteps of the experiments")
     parser.add_argument("--learning-rate", type=float, default=3e-4,
         help="the learning rate of the optimizer")
@@ -298,10 +298,12 @@ if __name__ == "__main__":
                     if item["episode"]["r"] > best_model_reward:
                         print("Saving new best model")
                         best_model_reward = item["episode"]["r"]
-                        if not os.path.exists(f"results/{run_name}"):
-                            os.makedirs(f"results/{run_name}")
-                        torch.save(
-                            agent.state_dict(), f"results/{run_name}/best_agent.pt"
+                        save(
+                            f"results/{run_name}/best_agent.pt",
+                            agent,
+                            training=True,
+                            total_steps=global_step,
+                            obs=next_obs,
                         )
                         with open(f"results/{run_name}/best_reward.txt", "w") as f:
                             f.write(
@@ -414,25 +416,19 @@ if __name__ == "__main__":
                     break
 
         if (update - 1) % args.save_frequency == 0:
-            if not os.path.exists(f"results/{run_name}"):
-                os.makedirs(f"results/{run_name}")
-            torch.save(agent.state_dict(), f"results/{run_name}/agent.pt")
-            torch.save(agent.state_dict(), f"results/{run_name}/{global_step}.pt")
+            save(
+                f"results/{run_name}/{global_step}.pt",
+                agent,
+                training=True,
+                total_steps=global_step,
+                obs=next_obs,
+            )
             if args.track:
                 wandb.save(
                     f"results/{run_name}/agent.pt",
                     base_path=f"results/{run_name}",
                     policy="now",
                 )
-            # if eval_executor is not None:
-            #     future = eval_executor.submit(
-            #         run_evaluation,
-            #         f"models/{args.exp_name}/{global_step}.pt",
-            #         f"runs/{args.exp_name}/{global_step}.csv",
-            #         args.eval_maps,
-            #     )
-            #     print(f"Queued models/{args.exp_name}/{global_step}.pt")
-            #     future.add_done_callback(trueskill_writer.on_evaluation_done)
 
         y_pred, y_true = b_values.cpu().numpy(), b_returns.cpu().numpy()
         var_y = np.var(y_true)

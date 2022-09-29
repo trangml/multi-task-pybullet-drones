@@ -80,7 +80,7 @@ def parse_args():
         help="the target KL divergence threshold")
     parser.add_argument('--num-models', type=int, default=10,
         help='the number of models saved')
-    parser.add_argument("--load-path", type=str, default="results/ppo_continuous_action/best_agent.pt",
+    parser.add_argument("--load-path", type=str, default="/home/mtrang/Documents/vt/research/multiagent-pybullet-drones/experiments/learning/results/ppo_continuous_action/best_agent.pt",
         help="config file for the env")
     args = parser.parse_args()
     args.save_frequency = min(

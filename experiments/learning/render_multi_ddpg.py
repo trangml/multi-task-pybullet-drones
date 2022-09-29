@@ -71,7 +71,7 @@ def parse_args():
         help="noise clip parameter of the Target Policy Smoothing Regularization")
     parser.add_argument('--num-agents', type=int, default=2,
         help='the number of agents used')
-    parser.add_argument("--load-path", type=str, default="/home/mtrang/Documents/vt/research/multiagent-pybullet-drones/experiments/learning/results/multicrossobs-aviary-v0__multi-ddpg__1__1664064320/agent.pt",
+    parser.add_argument("--load-path", type=str, default="/home/mtrang/Documents/vt/research/multiagent-pybullet-drones/experiments/learning/results/multicrossobs-aviary-v0__multi_ddpg__0__1664068465/best_agent_average.p/home/mtrang/Documents/vt/research/multiagent-pybullet-drones/experiments/learning/results/multicrossobs-aviary-v0__multi-ddpg__1__1664064320/agent.ptt",
         help="config file for the env")
     args = parser.parse_args()
     # fmt: on
