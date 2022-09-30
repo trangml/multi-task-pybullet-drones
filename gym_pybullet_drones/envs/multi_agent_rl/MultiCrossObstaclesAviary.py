@@ -95,6 +95,7 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
             The type of action space (1 or 3D; RPMS, thurst and torques, or waypoint with PID control)
 
         """
+        self.NUM_DRONES = num_drones
         self.bounds = bounds
 
         self.obstacles = []
@@ -136,9 +137,9 @@ class MultiCrossObstaclesAviary(BaseMultiagentAviary):
             record=record,
             obs=obs,
             act=act,
+            tag=tag,
         )
 
-        self.NUM_DRONES = num_drones
         # override base aviary episode length
         self.EPISODE_LEN_SEC = 10
         for i in range(self.NUM_DRONES):

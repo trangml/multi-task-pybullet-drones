@@ -160,6 +160,9 @@ class BaseAviary(gym.Env):
             self.OUTPUT_FOLDER,
             "recording_" + self.tag + datetime.now().strftime("%m.%d.%Y_%H.%M.%S"),
         )
+        if self.RECORD:
+            # TODO: This doesn't appear to work in general
+            os.makedirs(self.CURR_OUTPUT_FOLDER, exist_ok=True)
         #### Create attributes for vision tasks ####################
         self.VISION_ATTR = vision_attributes
         if self.VISION_ATTR:
@@ -227,13 +230,22 @@ class BaseAviary(gym.Env):
                 p.COV_ENABLE_SEGMENTATION_MARK_PREVIEW,
             ]:
                 p.configureDebugVisualizer(i, 0, physicsClientId=self.CLIENT)
-            p.resetDebugVisualizerCamera(
-                cameraDistance=3,
-                cameraYaw=-30,
-                cameraPitch=-30,
-                cameraTargetPosition=[0, 0, 0],
-                physicsClientId=self.CLIENT,
-            )
+            if self.NUM_DRONES > 1:
+                p.resetDebugVisualizerCamera(
+                    cameraDistance=6,
+                    cameraYaw=-90,
+                    cameraPitch=-80,
+                    cameraTargetPosition=[2, 6, 0],
+                    physicsClientId=self.CLIENT,
+                )
+            else:
+                p.resetDebugVisualizerCamera(
+                    cameraDistance=3,
+                    cameraYaw=-30,
+                    cameraPitch=-30,
+                    cameraTargetPosition=[0, 0, 0],
+                    physicsClientId=self.CLIENT,
+                )
             ret = p.getDebugVisualizerCamera(physicsClientId=self.CLIENT)
             print("viewMatrix", ret[2])
             print("projectionMatrix", ret[3])

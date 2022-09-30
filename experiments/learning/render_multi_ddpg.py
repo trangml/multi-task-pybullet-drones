@@ -1,5 +1,6 @@
 # docs and experiment results can be found at https://docs.cleanrl.dev/rl-algorithms/ddpg/#ddpg_continuous_actionpy
 import argparse
+from datetime import datetime
 import os
 from platform import java_ver
 import random
@@ -69,22 +70,29 @@ def parse_args():
         help="the scale of exploration noise")
     parser.add_argument("--noise-clip", type=float, default=0.5,
         help="noise clip parameter of the Target Policy Smoothing Regularization")
-    parser.add_argument('--num-agents', type=int, default=2,
+    parser.add_argument('--num-agents', type=int, default=6,
         help='the number of agents used')
-    parser.add_argument("--load-path", type=str, default="/home/mtrang/Documents/vt/research/multiagent-pybullet-drones/experiments/learning/results/multicrossobs-aviary-v0__multi_ddpg__0__1664068465/best_agent_average.p/home/mtrang/Documents/vt/research/multiagent-pybullet-drones/experiments/learning/results/multicrossobs-aviary-v0__multi-ddpg__1__1664064320/agent.ptt",
+    parser.add_argument("--load-path", type=str, default="/home/mtrang/Documents/vt/research/multiagent-pybullet-drones/experiments/learning/results/multicrossobs-aviary-v0__multi_ddpg__0__1664427009/best_agent_average.pt",
         help="config file for the env")
     args = parser.parse_args()
     # fmt: on
     return args
 
 
-def make_env(env_id, seed, idx, capture_video, run_name, env_config):
+def make_env(env_id, seed, idx, capture_video, run_name, env_config, num_agents):
     # cfg = {"env_kwargs": None}
     # with open(env_config, "r") as f:
     #     cfg = yaml.safe_load(f)
     cfg = OmegaConf.load(env_config)
     env = gym.make(
-        env_id, act=ActionType.RPM, obs=ObservationType.KIN, gui=True, **cfg.env_kwargs
+        env_id,
+        act=ActionType.RPM,
+        obs=ObservationType.KIN,
+        gui=True,
+        record=True,
+        tag=f"multiagent_ddpg_aviary_{num_agents}_drones_" + datetime.now().strftime("%m.%d.%Y_%H.%M.%S"),
+        num_drones=num_agents,
+        **cfg.env_kwargs,
     )
     env = MultiRecordEpisodeStatistics(env)
     # env = gym.wrappers.RecordEpisodeStatistics(env)
@@ -106,13 +114,13 @@ class QNetwork(nn.Module):
         self.obs_dim = env.observation_space[key].shape[0]
         self.act_dim = env.action_space[key].shape[0]
 
-        # self.fc1 = nn.Linear(
+        # self.fc1 = nn.Linear0(
         #     np.array(env.observation_space.shape).prod()
         #     + np.prod(env.action_space.shape),
         #     256,
         # )
-        self.fc1 = nn.Linear(self.obs_dim + self.act_dim, 256)
-        self.fc2 = nn.Linear(256, 256)
+        self.fc1 = nn.Linear(self.obs_dim + self.act_dim, 512)
+        self.fc2 = nn.Linear(512, 256)
         self.fc3 = nn.Linear(256, 1)
 
     def forward(self, x, a):
@@ -129,8 +137,8 @@ class Actor(nn.Module):
         obs_dim = np.array(env.observation_space[key].shape).prod()
         act_dim = np.prod(env.action_space[key].shape)
         # self.fc1 = nn.Linear(np.array(env.observation_space.shape).prod(), 256)
-        self.fc1 = nn.Linear(obs_dim, 256)
-        self.fc2 = nn.Linear(256, 256)
+        self.fc1 = nn.Linear(obs_dim, 512)
+        self.fc2 = nn.Linear(512, 256)
         # self.fc_mu = nn.Linear(256, np.prod(env.action_space.shape))
         self.fc_mu = nn.Linear(256, act_dim)
         # action rescaling
@@ -219,11 +227,17 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
     torch.backends.cudnn.deterministic = args.torch_deterministic
 
-    device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_avaONBOARD_IMG_PATHilable() and args.cuda else "cpu")
 
     # env setup
     envs = make_env(
-        args.env_id, args.seed, 0, args.capture_video, run_name, args.env_config
+        args.env_id,
+        args.seed,
+        0,
+        args.capture_video,
+        run_name,
+        args.env_config,
+        args.num_agents,
     )
 
     # assert isinstance(
