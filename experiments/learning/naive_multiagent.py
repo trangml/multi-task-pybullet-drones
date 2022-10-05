@@ -30,6 +30,7 @@ import collections
 
 import gym
 import hydra
+from omegaconf import open_dict
 import numpy as np
 import torch
 from gym_pybullet_drones.envs.single_agent_rl import map_name_to_env
@@ -138,7 +139,8 @@ def train_loop(cfg: DictConfig = None):
         # exit()
 
         env_name = cfg.env + "-aviary-v0"
-        cfg.env_kwargs["difficulty"] = ix
+        with open_dict(cfg.env_kwargs):
+            cfg.env_kwargs["difficulty"] = ix
         sa_env_kwargs = dict(
             aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
             obs=ObservationType[cfg.obs],
