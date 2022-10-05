@@ -138,11 +138,11 @@ def train_loop(cfg: DictConfig = None):
         # exit()
 
         env_name = cfg.env + "-aviary-v0"
+        cfg.env_kwargs["difficulty"] = ix
         sa_env_kwargs = dict(
             aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
             obs=ObservationType[cfg.obs],
             act=ActionType[cfg.act],
-            difficulty=ix,
             **cfg.env_kwargs,
         )
         n_envs = cfg.cpu
@@ -400,7 +400,7 @@ def train_loop(cfg: DictConfig = None):
         if steps % 1000 == 0:
             save_path = filename + "/logs/"
             model_path = save_path + f"rl_model_{steps}_steps.zip"
-            #model_path = self._checkpoint_path(extension="zip")
+            # model_path = self._checkpoint_path(extension="zip")
             models[0].save(model_path)
             print(f"Saving model checkpoint to {model_path}")
 
