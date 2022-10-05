@@ -16,15 +16,20 @@ from gym_pybullet_drones.envs.single_agent_rl.rewards.utils import (
 
 
 class Reward:
-    def __init__(self):
-        pass
-
-    def calculateReward(self):
-        return 0
+    def __init__(self, scale):
+        self.scale = scale
 
     def reset(self):
         """Reset the reward"""
         pass
+
+    def _calculateReward(self, state, drone_id=0):
+        return 0
+
+    def calculateReward(self, state, drone_id=0):
+        if self.scale == 0:
+            return 0
+        return self._calculateReward(state, drone_id) * self.scale
 
 
 def getRewardDict(rewards):
@@ -40,30 +45,10 @@ class DenseReward(Reward):
 
     """
 
-    def __init__(self, scale):
-        self.scale = scale
-
-    def _calculateReward(self, state):
-        return 0
-
-    def calculateReward(self, state):
-        if self.scale == 0:
-            return 0
-        return self._calculateReward(state) * self.scale
-
 
 class SparseReward(Reward):
     """Sparse reward for a drone.
 
+    # TODO: Do we really need to seperate this from DenseReward?
     """
 
-    def __init__(self, scale):
-        self.scale = scale
-
-    def _calculateReward(self, state):
-        return 0
-
-    def calculateReward(self, state):
-        if self.scale == 0:
-            return 0
-        return self._calculateReward(state) * self.scale

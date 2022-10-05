@@ -28,7 +28,7 @@ class BoundsReward(SparseReward):
     def reset(self):
         self.step = 0
 
-    def _calculateReward(self, state):
+    def _calculateReward(self, state, drone_id=0):
         self.step += 1
         position = state[0:3]
 

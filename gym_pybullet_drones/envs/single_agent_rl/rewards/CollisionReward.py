@@ -30,7 +30,7 @@ from gym_pybullet_drones.envs.single_agent_rl.rewards.Reward import (
 class CollisionReward(SparseReward):
     """Calculate the sparse collision reward, which is a punishment."""
 
-    def __init__(self, scale, area, drone_id, client):
+    def __init__(self, scale, area, client):
         """
         Generate
 
@@ -44,15 +44,12 @@ class CollisionReward(SparseReward):
             safe/landing zone area
         """
         super().__init__(scale)
-        self.drone_id = drone_id
         self.CLIENT = client
         self.area = (Bounds(area[0][0], area[0][1]), Bounds(area[1][0], area[1][1]))
 
-    def _calculateReward(self, state):
+    def _calculateReward(self, state, drone_id=0):
         # For now, ignore height.
-        contact_pts = p.getContactPoints(
-            bodyA=self.drone_id, physicsClientId=self.CLIENT
-        )
+        contact_pts = p.getContactPoints(bodyA=drone_id, physicsClientId=self.CLIENT)
         if len(contact_pts) > 0:
             # TODO: Update with things which can be collided without penalty ie, landing zone
             position = state[0:2]

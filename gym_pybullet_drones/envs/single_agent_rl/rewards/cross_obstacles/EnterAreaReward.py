@@ -35,7 +35,7 @@ class EnterAreaReward(SparseReward):
         super().__init__(scale)
         self.area = (Bounds(area[0][0], area[0][1]), Bounds(area[1][0], area[1][1]))
 
-    def _calculateReward(self, state):
+    def _calculateReward(self, state, drone_id=0):
         # For now, ignore height.
         position = state[0:2]
         in_area = True

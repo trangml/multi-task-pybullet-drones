@@ -23,7 +23,7 @@ class LandingReward(SparseReward):
         self.landing_zone_xyz = landing_zone_xyz
         self.landing_frames = 0
 
-    def _calculateReward(self, state):
+    def _calculateReward(self, state, drone_id=0):
         position = state[0:3]
 
         # only consider x and y
@@ -61,7 +61,7 @@ class LandingRewardV2(SparseReward):
         self.landing_frames = 0
         self.is_landed = False
 
-    def _calculateReward(self, state):
+    def _calculateReward(self, state, drone_id=0):
         position = state[0:3]
 
         # only consider x and y

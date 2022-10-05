@@ -22,7 +22,7 @@ class DistanceReward(DenseReward):
         super().__init__(scale)
         self.landing_zone_xyz = landing_zone_xyz
 
-    def _calculateReward(self, state):
+    def _calculateReward(self, state, drone_id=0):
         position = state[0:3]
         target_position = self.landing_zone_xyz
         pos_dist = np.linalg.norm(position[0:2] - target_position[0:2])
@@ -44,7 +44,7 @@ class DistanceRewardV2(DenseReward):
         DRONE_MID_Z = 0.01347
         self.target_position[2] = 2 * self.target_position[2] + DRONE_MID_Z
 
-    def _calculateReward(self, state):
+    def _calculateReward(self, state, drone_id=0):
         position = state[0:3]
         pos_dist = np.linalg.norm(position - self.target_position)
         reward = min(POSITIVE_REWARD - ((pos_dist) / 5) ** 0.5, POSITIVE_REWARD)

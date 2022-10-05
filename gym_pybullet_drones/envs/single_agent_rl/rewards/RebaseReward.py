@@ -27,7 +27,7 @@ class RebaseReward(DenseReward):
     def reset(self):
         self.step_counter = 0
 
-    def _calculateReward(self, state):
+    def _calculateReward(self, state, drone_id=0):
         position = state[0:3]
         self.step_counter += 1
         # if we are at a time when we need to rebase, then reward that

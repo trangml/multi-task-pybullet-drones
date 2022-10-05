@@ -36,7 +36,7 @@ class DropAltitudeReward(DenseReward):
         self.reward = False
         self.prev_alt = 1
 
-    def _calculateReward(self, state):
+    def _calculateReward(self, state, drone_id=0):
         # get the actual state, not the obs
         position = state[0:3]
         pos_dist = np.linalg.norm(position[0:2] - self.target_position[0:2])
