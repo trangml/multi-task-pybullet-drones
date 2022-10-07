@@ -37,7 +37,7 @@ class EnterAreaTerm(Terminations):
         self.steps_in_area = 0
         return super().reset()
 
-    def _calculateTerm(self, state):
+    def _calculateTerm(self, state, drone_id):
         # For now, ignore height.
         position = state[0:2]
         in_area = True

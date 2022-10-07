@@ -27,7 +27,7 @@ class FieldCoverageTerm(Terminations):
     def reset(self):
         self.curr_fuel = self.interval
 
-    def _calculateTerm(self, state):
+    def _calculateTerm(self, state, drone_id):
         self.curr_fuel -= 1
         position = state[0:3]
         pos_dist = np.linalg.norm(position - self.target_position)

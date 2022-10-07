@@ -33,7 +33,7 @@ class WaypointReward(DenseReward):
         self._new_point = True
         self.curr_waypoint = 0
 
-    def _calculateReward(self, state, drone_id=0):
+    def _calculateReward(self, state, drone_id):
         position = state[0:3]
         target_position = self.waypoints[self.curr_waypoint]
         pos_dist = np.linalg.norm(position - target_position)

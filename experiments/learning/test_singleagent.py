@@ -101,7 +101,6 @@ def run(
             + ARGS.override_path[idx:-3]
             + "pkl"
         )
-        # TODO: add vecnorm pickle check
     else:
         if ARGS.latest:
             logs = os.listdir(ARGS.exp + "/logs")

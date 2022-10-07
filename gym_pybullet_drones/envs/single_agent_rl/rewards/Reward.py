@@ -23,10 +23,10 @@ class Reward:
         """Reset the reward"""
         pass
 
-    def _calculateReward(self, state, drone_id=0):
+    def _calculateReward(self, state, drone_id):
         return 0
 
-    def calculateReward(self, state, drone_id=0):
+    def calculateReward(self, state, drone_id=1):
         if self.scale == 0:
             return 0
         return self._calculateReward(state, drone_id) * self.scale

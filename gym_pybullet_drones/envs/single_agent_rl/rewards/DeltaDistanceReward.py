@@ -34,7 +34,7 @@ class DeltaDistanceReward(DenseReward):
         self._initial_step = True
         self.last_pos_dist = 0
 
-    def _calculateReward(self, state, drone_id=0):
+    def _calculateReward(self, state, drone_id):
         # get the actual state, not the obs
         position = state[0:3]
         pos_dist = np.linalg.norm(position[0:2] - self.target_position[0:2])
@@ -76,7 +76,7 @@ class DeltaDistanceRewardV2(DenseReward):
         self._initial_step = True
         self.last_pos_dist = 0
 
-    def _calculateReward(self, state, drone_id=0):
+    def _calculateReward(self, state, drone_id):
         # get the actual state, not the obs
         position = state[0:3]
         pos_dist = np.linalg.norm(position - self.target_position)

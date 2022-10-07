@@ -35,7 +35,7 @@ class IncreaseXReward(DenseReward):
     # def reset(self):
     #     self.last_pos
 
-    def _calculateReward(self, state, drone_id=0):
+    def _calculateReward(self, state, drone_id):
         # For now, reward based on just x position
         position = state[0]
         if position > 0:
@@ -65,7 +65,7 @@ class IncreaseXRewardV2(DenseReward):
     def reset(self):
         self.max_x = -1000
 
-    def _calculateReward(self, state, drone_id=0):
+    def _calculateReward(self, state, drone_id):
         # For now, reward based on just x position
         position = state[0]
         if position > self.max_x + 0.2:
