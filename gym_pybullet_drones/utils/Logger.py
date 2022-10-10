@@ -27,6 +27,7 @@ class Logger(object):
         rewards_names: list = ["r"],
         # done_names: list = ["d"],
         colab: bool = False,
+        save: bool = False,
     ):
         """Logger class __init__ method.
 
@@ -45,8 +46,10 @@ class Logger(object):
         """
         self.COLAB = colab
         self.OUTPUT_FOLDER = output_folder
-        if not os.path.exists(self.OUTPUT_FOLDER):
-            os.mkdir(self.OUTPUT_FOLDER)
+        self.SAVE = save
+        if self.SAVE:
+            if not os.path.exists(self.OUTPUT_FOLDER):
+                os.makedirs(self.OUTPUT_FOLDER, exist_ok=True)
         self.LOGGING_FREQ_HZ = logging_freq_hz
         self.NUM_DRONES = num_drones
         self.PREALLOCATED_ARRAYS = False if duration_sec == 0 else True
@@ -167,6 +170,8 @@ class Logger(object):
     def save(self):
         """Save the logs to file.
         """
+        if not os.path.exists(self.OUTPUT_FOLDER):
+            os.makedirs(self.OUTPUT_FOLDER, exist_ok=True)
         with open(
             os.path.join(
                 self.OUTPUT_FOLDER,
@@ -192,6 +197,8 @@ class Logger(object):
             Added to the foldername.
 
         """
+        if not os.path.exists(self.OUTPUT_FOLDER):
+            os.makedirs(self.OUTPUT_FOLDER, exist_ok=True)
         csv_dir = os.path.join(
             self.OUTPUT_FOLDER,
             "save-flight-"
@@ -415,7 +422,8 @@ class Logger(object):
             axs[i].grid(True)
             axs[i].legend(loc="upper right", frameon=True)
 
-        plt.savefig(os.path.join(self.OUTPUT_FOLDER, "episode_rewards.png"))
+        if self.SAVE:
+            plt.savefig(os.path.join(self.OUTPUT_FOLDER, "episode_rewards.png"))
         plt.show()
 
     def plot(self, pwm=False):
@@ -615,9 +623,15 @@ class Logger(object):
             plt.savefig(os.path.join("results", "output_figure.png"))
         else:
             plt.show(block=False)
-            plt.savefig(os.path.join(self.OUTPUT_FOLDER, "episode_states.png"))
+            if self.SAVE:
+                if not os.path.exists(self.OUTPUT_FOLDER):
+                    os.makedirs(self.OUTPUT_FOLDER, exist_ok=True)
+                plt.savefig(os.path.join(self.OUTPUT_FOLDER, "episode_states.png"))
 
     def save_rewards(self, exp, mean_reward, std_reward):
+
+        if not os.path.exists(self.OUTPUT_FOLDER):
+            os.makedirs(self.OUTPUT_FOLDER, exist_ok=True)
         """Save rewards to a file."""
         with open(
             os.path.join(self.OUTPUT_FOLDER, "rewards_" + str(mean_reward) + ".txt"),

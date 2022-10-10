@@ -223,6 +223,7 @@ def train_loop(cfg: DictConfig = None):
                 # policy_kwargs=onpolicy_kwargs,
                 tensorboard_log=filename + "/tb/",
                 verbose=1,
+                seed=cfg.seed,
                 **p_kwargs,
             )
 

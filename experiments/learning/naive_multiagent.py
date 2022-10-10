@@ -92,6 +92,7 @@ def train_loop(cfg: DictConfig = None):
     random.seed(cfg.seed)
     np.random.seed(cfg.seed)
     torch.manual_seed(cfg.seed)
+    os.environ["PYTHONHASHSEED"] = str(cfg.seed)
 
     #### Save directory ########################################
     filename = (
@@ -230,12 +231,13 @@ def train_loop(cfg: DictConfig = None):
                 else:
                     policy = a2cppoMultiInputPolicy
 
-                model = PPO(
+                model = A2C(
                     policy,
                     train_env,
                     # policy_kwargs=onpolicy_kwargs,
                     tensorboard_log=filename + "/tb/",
                     verbose=1,
+                    seed=cfg.seed,
                     **p_kwargs,
                 )
 
@@ -255,6 +257,7 @@ def train_loop(cfg: DictConfig = None):
                     # policy_kwargs=onpolicy_kwargs,
                     tensorboard_log=filename + "/tb/",
                     verbose=1,
+                    seed=cfg.seed,
                     **p_kwargs,
                 )
 
@@ -269,6 +272,7 @@ def train_loop(cfg: DictConfig = None):
                         train_env,
                         policy_kwargs=offpolicy_kwargs,
                         tensorboard_log=filename + "/tb/",
+                        seed=cfg.seed,
                         verbose=1,
                     )
                     if ObservationType[cfg.obs] == ObservationType.KIN
@@ -277,6 +281,7 @@ def train_loop(cfg: DictConfig = None):
                         train_env,
                         policy_kwargs=offpolicy_kwargs,
                         tensorboard_log=filename + "/tb/",
+                        seed=cfg.seed,
                         verbose=1,
                     )
                 )
@@ -287,6 +292,7 @@ def train_loop(cfg: DictConfig = None):
                         train_env,
                         policy_kwargs=offpolicy_kwargs,
                         tensorboard_log=filename + "/tb/",
+                        seed=cfg.seed,
                         verbose=1,
                     )
                     if ObservationType[cfg.obs] == ObservationType.KIN
@@ -295,6 +301,7 @@ def train_loop(cfg: DictConfig = None):
                         train_env,
                         policy_kwargs=offpolicy_kwargs,
                         tensorboard_log=filename + "/tb/",
+                        seed=cfg.seed,
                         verbose=1,
                     )
                 )
@@ -305,6 +312,7 @@ def train_loop(cfg: DictConfig = None):
                         train_env,
                         policy_kwargs=offpolicy_kwargs,
                         tensorboard_log=filename + "/tb/",
+                        seed=cfg.seed,
                         verbose=1,
                     )
                     if ObservationType[cfg.obs] == ObservationType.KIN
@@ -313,6 +321,7 @@ def train_loop(cfg: DictConfig = None):
                         train_env,
                         policy_kwargs=offpolicy_kwargs,
                         tensorboard_log=filename + "/tb/",
+                        seed=cfg.seed,
                         verbose=1,
                     )
                 )

@@ -87,6 +87,7 @@ def run(
     random.seed(ARGS.seed)
     np.random.seed(ARGS.seed)
     torch.manual_seed(ARGS.seed)
+    os.environ["PYTHONHASHSEED"] = str(ARGS.seed)
 
     num_agents = ARGS.num_agents
     #### Load the model from file ##############################
@@ -204,6 +205,7 @@ def run(
                 rewards_names=list(test_env.get_attr("reward_dict")[0].keys()),
                 # done_names=list(test_env.term_dict.keys()),
                 output_folder=test_env.get_attr("CURR_OUTPUT_FOLDER")[0],
+                save=ARGS.record,
             )
 
             obs = test_env.reset()
@@ -265,6 +267,7 @@ def run(
                 rewards_names=list(test_env.reward_dict.keys()),
                 # done_names=list(test_env.term_dict.keys()),
                 output_folder=output_folder,
+                save=ARGS.record,
             )
 
             obs = test_env.reset()
