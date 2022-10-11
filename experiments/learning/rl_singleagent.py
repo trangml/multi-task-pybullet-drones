@@ -44,6 +44,9 @@ from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCheckpointCallback
 from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomEvalCallback import (
     CustomEvalCallback,
 )
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.StopTrainingRunningAverageRewardThreshold import (
+    StopTrainingRunningAverageRewardThreshold,
+)
 from omegaconf import DictConfig, OmegaConf
 from stable_baselines3 import A2C, DDPG, PPO, SAC, TD3
 from stable_baselines3.common.callbacks import (  # StopTrainingOnMaxEpisodes,
@@ -75,7 +78,6 @@ import shared_constants
 EPISODE_REWARD_THRESHOLD = 1000  # Upperbound: rewards are always negative, but non-zero
 """float: Reward threshold to halt the script."""
 
-MAX_EPISODES = 10000  # Upperbound: number of episodes
 
 DEFAULT_OUTPUT_FOLDER = "results"
 
@@ -331,8 +333,11 @@ def train_loop(cfg: DictConfig = None):
         verbose=2,
         save_vecnormalize=True,
     )
-    callback_on_best = StopTrainingOnRewardThreshold(
-        reward_threshold=EPISODE_REWARD_THRESHOLD, verbose=1
+    # callback_on_best = StopTrainingOnRewardThreshold(
+    #     reward_threshold=EPISODE_REWARD_THRESHOLD, verbose=1
+    # )
+    callback_on_best = StopTrainingRunningAverageRewardThreshold(
+        reward_threshold=EPISODE_REWARD_THRESHOLD, eval_rollback_len=5, verbose=1
     )
     stop_callback = StopTrainingOnNoModelImprovement(
         max_no_improvement_evals=(

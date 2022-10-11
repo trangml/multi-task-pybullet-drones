@@ -24,7 +24,7 @@ ppo:
     activation_fn:
       _partial_: true
       _target_: torch.nn.ReLU
-    #net_arch: [512, 256, { "pi": [256, 256], "vf": [256, 256] }]
+    net_arch: [512, 256, 256, { "pi": [256, 256], "vf": [256, 256] }]
 
     #net_arch = [dict(pi=[64, 64], vf=[64, 64])]
     # Agents do better with the default net_arch

@@ -146,12 +146,12 @@ def run(
     ACT = ActionType[ARGS.act]
     diff = ARGS.env_kwargs.difficulty
     if ARGS.all_difficulties:
-        if diff > 10:
+        if diff > 10 or (ARGS.alternate_difficulty and diff < 10):
             diff_range = [0, *range(11, 17)]
         else:
             diff_range = range(0, 7)
     else:
-        if diff > 10:
+        if diff > 10 or (ARGS.alternate_difficulty and diff > 10):
             diff_range = [0, *range(11, diff + 1)]
         else:
             diff_range = range(0, diff + 1)
@@ -404,6 +404,11 @@ if __name__ == "__main__":
         "--lower_difficulties",
         action="store_true",
         help="if included, the agent will be tested on only its difficulty level and lower",
+    )
+    parser.add_argument(
+        "--alternate_difficulty",
+        action="store_true",
+        help="if included, the agent will be tested on the difficulty version it wasn't trained on, ie wall->no wall",
     )
     # parser.add_argument(
     #     "--env_kwargs", type=str, default="difficulty:", help="string of env", metavar="",
