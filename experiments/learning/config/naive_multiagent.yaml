@@ -11,8 +11,8 @@ num_agents: 6
 exp: none
 cpu: 8
 training_duration: 1000
-stop_after_no_improvement: 1000
-n_steps: 1e7
+stop_after_no_improvement: 2000
+n_steps: 1e6
 seed: 0
 # PPO arguments
 ppo:
@@ -26,7 +26,7 @@ ppo:
     activation_fn:
       _partial_: true
       _target_: torch.nn.ReLU
-    #net_arch: [512, 256, { "pi": [256, 256], "vf": [256, 256] }]
+    net_arch: [512, 256, 256, { "pi": [256, 256], "vf": [256, 256] }]
 
     #net_arch = [dict(pi=[64, 64], vf=[64, 64])]
     # Agents do better with the default net_arch

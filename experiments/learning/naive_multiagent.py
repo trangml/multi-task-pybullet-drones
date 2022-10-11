@@ -389,15 +389,17 @@ def train_loop(cfg: DictConfig = None):
 
     training_duration = cfg.training_duration
     training_steps = int(cfg.n_steps / training_duration)
-    rewards = [[] for _ in range(num_agents)]
+    training_rewards = []
     for steps in range(training_steps):
+        rewards = []
         for ix in range(num_agents):
             models[ix].learn(
                 total_timesteps=int(training_duration),
                 callback=callbacks[ix],
                 log_interval=1000,
+                reset_num_timesteps=False,
             )
-            # rewards[ix].append(callbacks[ix].last_mean_reward)
+            rewards.append(callbacks[ix].callbacks[1].last_mean_reward)
 
         # average the model policies
         policies = []
@@ -406,6 +408,18 @@ def train_loop(cfg: DictConfig = None):
         avg_policy = average_policies(policies, num_agents)
         for ix in range(num_agents):
             models[ix].set_parameters(avg_policy)
+
+        average_reward = np.mean(rewards)
+        training_rewards.append(rewards.append(average_reward))
+        all_successful = True
+        for ix, r in enumerate(rewards):
+            if r < EPISODE_REWARD_THRESHOLD:
+                all_successful = False
+            print(f"Reward for agent {ix} : {r}")
+
+        if all_successful:
+            print("All agents successful, stopping training")
+            break
 
         # save the model
         if steps % 1000 == 0:

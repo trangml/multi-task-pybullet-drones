@@ -169,7 +169,7 @@ def run(
         else:
             eval_env = gym.make(env_name, **env_kwargs,)
 
-        mean_reward, std_reward = evaluate_policy(model, eval_env, n_eval_episodes=10)
+        mean_reward, std_reward = evaluate_policy(model, eval_env, n_eval_episodes=1)
         print("\n\n\nMean reward ", mean_reward, " +- ", std_reward, "\n\n")
 
         #### Show, record a video, and log the model's performance #
