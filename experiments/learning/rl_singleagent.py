@@ -75,9 +75,6 @@ from stable_baselines3.td3 import MlpPolicy as td3ddpgMlpPolicy
 
 import shared_constants
 
-EPISODE_REWARD_THRESHOLD = 1000  # Upperbound: rewards are always negative, but non-zero
-"""float: Reward threshold to halt the script."""
-
 
 DEFAULT_OUTPUT_FOLDER = "results"
 
@@ -92,6 +89,8 @@ def train_loop(cfg: DictConfig = None):
     np.random.seed(cfg.seed)
     torch.manual_seed(cfg.seed)
     os.environ["PYTHONHASHSEED"] = str(cfg.seed)
+
+    EPISODE_REWARD_THRESHOLD = getattr(cfg, "episode_reward_threshold", 1000)
 
     #### Save directory ########################################
     filename = (
@@ -126,6 +125,7 @@ def train_loop(cfg: DictConfig = None):
 
     with open(filename + "/config.yaml", "w") as f:
         OmegaConf.save(cfg, f)
+
     #### Uncomment to debug slurm scripts ######################
     # exit()
 
@@ -169,7 +169,12 @@ def train_loop(cfg: DictConfig = None):
         if algo == "a2c":
             model = A2C.load(path, tensorboard_log=filename + "/tb_log")
         if algo == "ppo":
-            model = PPO.load(path, tensorboard_log=filename + "/tb_log")
+            p_kwargs = hydra.utils.instantiate(cfg.ppo, _convert_="partial")
+            p_kwargs["seed"] = cfg.seed
+            model = PPO.load(
+                path, tensorboard_log=filename + "/tb_log", kwargs=p_kwargs
+            )
+            model.seed = cfg.seed
         if algo == "sac":
             model = SAC.load(path, tensorboard_log=filename + "/tb_log")
         if algo == "td3":

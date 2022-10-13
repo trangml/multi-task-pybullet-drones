@@ -7,11 +7,12 @@ algo: ppo
 obs: BOTH
 # choices=["kin", "rgb", "both"],
 act: RPM
-exp: none
+exp: experiments/learning/results/save-cross-obstacles-ppo-BOTH-RPM-inc_difficulty_0_collision_seed_3-10.10.2022_03.01.10
 cpu: 8
 stop_after_no_improvement: 1000
 n_steps: 1e7
 seed: 0
+max_reward: 1000 # Default 1000
 # PPO arguments
 ppo:
   gae_lambda: 0.95
@@ -24,13 +25,13 @@ ppo:
     activation_fn:
       _partial_: true
       _target_: torch.nn.ReLU
-    net_arch: [512, 256, 256, { "pi": [256, 256], "vf": [256, 256] }]
+    #net_arch: [512, 256, { "pi": [256, 256], "vf": [256, 256] }]
 
     #net_arch = [dict(pi=[64, 64], vf=[64, 64])]
     # Agents do better with the default net_arch
 # Env specific settings
 env_kwargs:
-  difficulty: 2
+  difficulty: 11
   initial_xyzs: [[-0.5, 0, 0.5]]
   bounds: [[5, 1, 1], [-1, -1, 0.1]]
   collision_detection: True
@@ -38,14 +39,14 @@ env_kwargs:
   # rewards
   reward_components:
     EnterAreaReward:
-      scale: 100.0
+      scale: 1.0
       area: [[4, 5], [-1, 1]]
     OrientationReward:
-      scale: 0.01
+      scale: 0.0001
     IncreaseXRewardV2:
-      scale: 0.1
+      scale: 0.0001
     BoundsReward:
-      scale: 10.0
+      scale: 0.1
       bounds: ${env_kwargs.bounds}
   # terminals
   term_components:

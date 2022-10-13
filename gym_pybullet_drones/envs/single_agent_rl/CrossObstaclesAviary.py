@@ -136,11 +136,9 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
             )
         )
         if collision_detection:
-            self.term_components.append(
-                CollisionTerm([[4, 5], [-1, 1]], self.CLIENT)
-            )
+            self.term_components.append(CollisionTerm([[4, 5], [-1, 1]], self.CLIENT))
             self.reward_components.append(
-                CollisionReward(10, [[4, 5], [-1, 1]], self.CLIENT)
+                CollisionReward(0.2, [[4, 5], [-1, 1]], self.CLIENT)
             )
         self.reward_dict = getRewardDict(self.reward_components)
         self.term_dict = getTermDict(self.term_components)
