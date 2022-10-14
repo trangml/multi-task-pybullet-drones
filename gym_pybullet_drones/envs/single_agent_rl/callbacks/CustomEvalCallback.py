@@ -1,26 +1,19 @@
+import os
 import pickle
 import warnings
 from copy import deepcopy
 from typing import Any, Dict, List, Optional, Union
-import os
-
 
 import gym
 import numpy as np
-
 from stable_baselines3.common import utils
+from stable_baselines3.common.callbacks import (BaseCallback, DummyVecEnv,
+                                                EventCallback, evaluate_policy,
+                                                sync_envs_normalization)
 from stable_baselines3.common.running_mean_std import RunningMeanStd
-from stable_baselines3.common.vec_env.base_vec_env import (
-    VecEnv,
-    VecEnvStepReturn,
-    VecEnvWrapper,
-)
-
-from stable_baselines3.common.callbacks import BaseCallback
-from stable_baselines3.common.callbacks import EventCallback
-from stable_baselines3.common.callbacks import DummyVecEnv
-from stable_baselines3.common.callbacks import sync_envs_normalization
-from stable_baselines3.common.callbacks import evaluate_policy
+from stable_baselines3.common.vec_env.base_vec_env import (VecEnv,
+                                                           VecEnvStepReturn,
+                                                           VecEnvWrapper)
 
 
 class CustomEvalCallback(EventCallback):

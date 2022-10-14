@@ -19,20 +19,46 @@ To check the tensorboard results at:
     http://localhost:6006/
 
 """
-import os
-import random
-import pprint
-import subprocess
+import collections
 import copy
+import os
+import pprint
+import random
+import subprocess
 from datetime import datetime
 from sys import platform
-import collections
 
 import gym
 import hydra
-from omegaconf import open_dict
 import numpy as np
+import shared_constants
 import torch
+from omegaconf import DictConfig, OmegaConf, open_dict
+from stable_baselines3 import A2C, DDPG, PPO, SAC, TD3
+from stable_baselines3.common.callbacks import (  # StopTrainingOnMaxEpisodes,
+    CallbackList,
+    CheckpointCallback,
+    EvalCallback,
+    StopTrainingOnNoModelImprovement,
+    StopTrainingOnRewardThreshold,
+)
+from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3.common.policies import ActorCriticCnnPolicy as a2cppoCnnPolicy
+from stable_baselines3.common.policies import ActorCriticPolicy as a2cppoMlpPolicy
+from stable_baselines3.common.policies import (
+    MultiInputActorCriticPolicy as a2cppoMultiInputPolicy,
+)
+from stable_baselines3.common.vec_env import (
+    VecCheckNan,
+    VecFrameStack,
+    VecNormalize,
+    VecTransposeImage,
+)
+from stable_baselines3.sac import CnnPolicy as sacCnnPolicy
+from stable_baselines3.sac.policies import SACPolicy as sacMlpPolicy
+from stable_baselines3.td3 import CnnPolicy as td3ddpgCnnPolicy
+from stable_baselines3.td3 import MlpPolicy as td3ddpgMlpPolicy
+
 from gym_pybullet_drones.envs.single_agent_rl import map_name_to_env
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
     ActionType,
@@ -47,33 +73,6 @@ from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCheckpointCallback
 from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomEvalCallback import (
     CustomEvalCallback,
 )
-from omegaconf import DictConfig, OmegaConf
-from stable_baselines3 import A2C, DDPG, PPO, SAC, TD3
-from stable_baselines3.common.callbacks import (  # StopTrainingOnMaxEpisodes,
-    CallbackList,
-    CheckpointCallback,
-    EvalCallback,
-    StopTrainingOnRewardThreshold,
-    StopTrainingOnNoModelImprovement,
-)
-from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.policies import ActorCriticCnnPolicy as a2cppoCnnPolicy
-from stable_baselines3.common.policies import ActorCriticPolicy as a2cppoMlpPolicy
-from stable_baselines3.common.policies import (
-    MultiInputActorCriticPolicy as a2cppoMultiInputPolicy,
-)
-from stable_baselines3.common.vec_env import (
-    VecTransposeImage,
-    VecFrameStack,
-    VecNormalize,
-    VecCheckNan,
-)
-from stable_baselines3.sac import CnnPolicy as sacCnnPolicy
-from stable_baselines3.sac.policies import SACPolicy as sacMlpPolicy
-from stable_baselines3.td3 import CnnPolicy as td3ddpgCnnPolicy
-from stable_baselines3.td3 import MlpPolicy as td3ddpgMlpPolicy
-
-import shared_constants
 
 EPISODE_REWARD_THRESHOLD = 1000  # Upperbound: rewards are always negative, but non-zero
 """float: Reward threshold to halt the script."""
@@ -178,6 +177,7 @@ def train_loop(cfg: DictConfig = None):
                 vec_norm_path = cfg.exp + "/vecnormalize_best_model.pkl"
                 print("Loading vecnormalize")
 
+            # TODO: Fix tb log path for loading models
             if algo == "a2c":
                 model = A2C.load(path, tensorboard_log=filename + "/tb_log")
             if algo == "ppo":
@@ -214,6 +214,7 @@ def train_loop(cfg: DictConfig = None):
             print("[INFO] Action space:", train_env.action_space)
             print("[INFO] Observation space:", train_env.observation_space)
             #### On-policy algorithms ##################################
+            # default policy
             p_kwargs = {
                 "onpolicy_kwargs": dict(
                     activation_fn=torch.nn.ReLU,
@@ -255,7 +256,7 @@ def train_loop(cfg: DictConfig = None):
                     policy,
                     train_env,
                     # policy_kwargs=onpolicy_kwargs,
-                    tensorboard_log=filename + "/tb/",
+                    tensorboard_log=filename + f"/tb{ix}/",
                     verbose=1,
                     seed=cfg.seed,
                     **p_kwargs,
@@ -271,7 +272,7 @@ def train_loop(cfg: DictConfig = None):
                         sacMlpPolicy,
                         train_env,
                         policy_kwargs=offpolicy_kwargs,
-                        tensorboard_log=filename + "/tb/",
+                        tensorboard_log=filename + f"/tb{ix}/",
                         seed=cfg.seed,
                         verbose=1,
                     )
@@ -348,7 +349,7 @@ def train_loop(cfg: DictConfig = None):
         #### Train the model #######################################
         checkpoint_callback = CustomCheckpointCallback(
             save_freq=max(100000 // n_envs, 1),
-            save_path=filename + "/logs/",
+            save_path=filename + f"/logs{ix}/",
             name_prefix="rl_model",
             verbose=2,
             save_vecnormalize=True,
@@ -370,8 +371,8 @@ def train_loop(cfg: DictConfig = None):
             callback_on_new_best=callback_on_best,
             callback_after_eval=stop_callback,
             verbose=1,
-            best_model_save_path=filename + "/",
-            log_path=filename + "/",
+            best_model_save_path=filename + f"/best_{ix}/",
+            log_path=filename + f"/best_{ix}/",
             eval_freq=int(2000 / cfg.cpu),
             deterministic=True,
             render=False,
@@ -422,8 +423,8 @@ def train_loop(cfg: DictConfig = None):
             break
 
         # save the model
-        if steps % 1000 == 0:
-            save_path = filename + "/logs/"
+        if steps % 100 == 0:
+            save_path = filename + "/ave_logs/"
             model_path = save_path + f"rl_model_{steps}_steps.zip"
             # model_path = self._checkpoint_path(extension="zip")
             models[0].save(model_path)
@@ -448,7 +449,7 @@ def train_loop(cfg: DictConfig = None):
             # vec_normalize_path = self._checkpoint_path(
             #     "vecnormalize_", extension="pkl"
             # )
-            vec_normalize_path = save_path + f"rl_model_vecnormalize_{steps}_steps.zip"
+            vec_normalize_path = save_path + f"rl_model_vecnormalize_{steps}_steps.pkl"
             models[0].get_vec_normalize_env().save(vec_normalize_path)
             print(f"Saving model VecNormalize to {vec_normalize_path}")
 

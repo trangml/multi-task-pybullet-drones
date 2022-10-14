@@ -9,41 +9,30 @@ To run the script, type in a terminal:
     $ python test_singleagent.py --exp ./results/save-<env>-<algo>-<obs>-<act>-<time_date>
 
 """
+import argparse
 import os
+import random
 import time
 from datetime import datetime
-import argparse
-import numpy as np
+
 import gym
-import torch
-import random
-from omegaconf import OmegaConf
-from stable_baselines3 import A2C
-from stable_baselines3 import PPO
-from stable_baselines3 import SAC
-from stable_baselines3 import TD3
-from stable_baselines3 import DDPG
-from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.vec_env import (
-    VecTransposeImage,
-    VecFrameStack,
-    VecNormalize,
-)
-from gym_pybullet_drones.envs.single_agent_rl.common.NotVecNormalize import (
-    NotVecNormalize,
-)
-from stable_baselines3.common.env_util import make_vec_env
-from gym_pybullet_drones.envs.single_agent_rl import map_name_to_env
-
-from gym_pybullet_drones.utils.utils import sync
-from gym_pybullet_drones.utils.Logger import Logger
-from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
-    ActionType,
-    ObservationType,
-)
-from gym_pybullet_drones.utils.utils import sync, str2bool
-
+import numpy as np
 import shared_constants
+import torch
+from omegaconf import OmegaConf
+from stable_baselines3 import A2C, DDPG, PPO, SAC, TD3
+from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3.common.evaluation import evaluate_policy
+from stable_baselines3.common.vec_env import (VecFrameStack, VecNormalize,
+                                              VecTransposeImage)
+
+from gym_pybullet_drones.envs.single_agent_rl import map_name_to_env
+from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
+    ActionType, ObservationType)
+from gym_pybullet_drones.envs.single_agent_rl.common.NotVecNormalize import \
+    NotVecNormalize
+from gym_pybullet_drones.utils.Logger import Logger
+from gym_pybullet_drones.utils.utils import str2bool, sync
 
 DEFAULT_GUI = True
 DEFAULT_PLOT = True
