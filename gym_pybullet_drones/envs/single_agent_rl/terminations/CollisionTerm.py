@@ -1,15 +1,16 @@
 import copy
 import math
+from typing import List, Tuple
+
 import numpy as np
 import pybullet as p
-from typing import Tuple, List
 
 from gym_pybullet_drones.envs.single_agent_rl.rewards.utils import (
+    NEGATIVE_REWARD,
+    POSITIVE_REWARD,
+    ZERO_REWARD,
     Bounds,
     within_bounds,
-    POSITIVE_REWARD,
-    NEGATIVE_REWARD,
-    ZERO_REWARD,
 )
 from gym_pybullet_drones.envs.single_agent_rl.terminations import Terminations
 
@@ -17,7 +18,7 @@ from gym_pybullet_drones.envs.single_agent_rl.terminations import Terminations
 class CollisionTerm(Terminations):
     """Calculate the sparse entered area reward."""
 
-    def __init__(self, area, client):
+    def __init__(self, area, client=0):
         """
         Generate
 
@@ -33,6 +34,9 @@ class CollisionTerm(Terminations):
         super().__init__()
         self.CLIENT = client
         self.area = (Bounds(area[0][0], area[0][1]), Bounds(area[1][0], area[1][1]))
+
+    def setClient(self, client):
+        self.CLIENT = client
 
     def _calculateTerm(self, state, drone_id):
         # For now, ignore height.

@@ -1,36 +1,20 @@
 import copy
 import math
+from typing import List, Tuple
+
 import numpy as np
 import pybullet as p
-from typing import Tuple, List
 
-from gym_pybullet_drones.envs.single_agent_rl.rewards.utils import (
-    Bounds,
-    within_bounds,
-    POSITIVE_REWARD,
-    NEGATIVE_REWARD,
-    ZERO_REWARD,
-)
-import math
-import numpy as np
-
-from gym_pybullet_drones.envs.single_agent_rl.rewards.utils import (
-    Bounds,
-    within_bounds,
-    POSITIVE_REWARD,
-    NEGATIVE_REWARD,
-    ZERO_REWARD,
-)
 from gym_pybullet_drones.envs.single_agent_rl.rewards.Reward import (
-    DenseReward,
-    SparseReward,
-)
+    DenseReward, SparseReward)
+from gym_pybullet_drones.envs.single_agent_rl.rewards.utils import (
+    NEGATIVE_REWARD, POSITIVE_REWARD, ZERO_REWARD, Bounds, within_bounds)
 
 
 class CollisionReward(SparseReward):
     """Calculate the sparse collision reward, which is a punishment."""
 
-    def __init__(self, scale, area, client):
+    def __init__(self, scale, area, client=0):
         """
         Generate
 
@@ -46,6 +30,9 @@ class CollisionReward(SparseReward):
         super().__init__(scale)
         self.CLIENT = client
         self.area = (Bounds(area[0][0], area[0][1]), Bounds(area[1][0], area[1][1]))
+
+    def setClient(self, client):
+        self.CLIENT = client
 
     def _calculateReward(self, state, drone_id):
         # For now, ignore height.

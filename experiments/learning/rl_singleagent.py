@@ -20,8 +20,8 @@ To check the tensorboard results at:
 
 """
 import os
-import random
 import pprint
+import random
 import subprocess
 from datetime import datetime
 from sys import platform
@@ -29,52 +29,38 @@ from sys import platform
 import gym
 import hydra
 import numpy as np
+import shared_constants
 import torch
-from gym_pybullet_drones.envs.single_agent_rl import map_name_to_env
-from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
-    ActionType,
-    ObservationType,
-)
-from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCallback import (
-    CustomCallback,
-)
-from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCheckpointCallback import (
-    CustomCheckpointCallback,
-)
-from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomEvalCallback import (
-    CustomEvalCallback,
-)
-from gym_pybullet_drones.envs.single_agent_rl.callbacks.StopTrainingRunningAverageRewardThreshold import (
-    StopTrainingRunningAverageRewardThreshold,
-)
 from omegaconf import DictConfig, OmegaConf
 from stable_baselines3 import A2C, DDPG, PPO, SAC, TD3
 from stable_baselines3.common.callbacks import (  # StopTrainingOnMaxEpisodes,
-    CallbackList,
-    CheckpointCallback,
-    EvalCallback,
-    StopTrainingOnRewardThreshold,
-    StopTrainingOnNoModelImprovement,
-)
+    CallbackList, CheckpointCallback, EvalCallback,
+    StopTrainingOnNoModelImprovement, StopTrainingOnRewardThreshold)
 from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.policies import ActorCriticCnnPolicy as a2cppoCnnPolicy
-from stable_baselines3.common.policies import ActorCriticPolicy as a2cppoMlpPolicy
-from stable_baselines3.common.policies import (
-    MultiInputActorCriticPolicy as a2cppoMultiInputPolicy,
-)
-from stable_baselines3.common.vec_env import (
-    VecTransposeImage,
-    VecFrameStack,
-    VecNormalize,
-    VecCheckNan,
-)
+from stable_baselines3.common.policies import \
+    ActorCriticCnnPolicy as a2cppoCnnPolicy
+from stable_baselines3.common.policies import \
+    ActorCriticPolicy as a2cppoMlpPolicy
+from stable_baselines3.common.policies import \
+    MultiInputActorCriticPolicy as a2cppoMultiInputPolicy
+from stable_baselines3.common.vec_env import (VecCheckNan, VecFrameStack,
+                                              VecNormalize, VecTransposeImage)
 from stable_baselines3.sac import CnnPolicy as sacCnnPolicy
 from stable_baselines3.sac.policies import SACPolicy as sacMlpPolicy
 from stable_baselines3.td3 import CnnPolicy as td3ddpgCnnPolicy
 from stable_baselines3.td3 import MlpPolicy as td3ddpgMlpPolicy
 
-import shared_constants
-
+from gym_pybullet_drones.envs.single_agent_rl import map_name_to_env
+from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
+    ActionType, ObservationType)
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCallback import \
+    CustomCallback
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCheckpointCallback import \
+    CustomCheckpointCallback
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomEvalCallback import \
+    CustomEvalCallback
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.StopTrainingRunningAverageRewardThreshold import \
+    StopTrainingRunningAverageRewardThreshold
 
 DEFAULT_OUTPUT_FOLDER = "results"
 

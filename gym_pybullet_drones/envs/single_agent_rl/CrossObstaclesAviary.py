@@ -1,8 +1,23 @@
-from typing import List, Optional
 import copy
 import os
+from typing import List, Optional
+
 import numpy as np
+import pybullet as p
+
 import gym_pybullet_drones.envs.single_agent_rl.rewards as rewards
+import gym_pybullet_drones.envs.single_agent_rl.terminations as terminations
+from gym_pybullet_drones.envs.BaseAviary import BaseAviary, DroneModel, Physics
+from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
+    ActionType,
+    BaseSingleAgentAviary,
+    ObservationType,
+)
+from gym_pybullet_drones.envs.single_agent_rl.obstacles.IncrementalObstacleRoom import (
+    IncrementalObstacleRoom,
+)
+from gym_pybullet_drones.envs.single_agent_rl.obstacles.ObstacleRoom import ObstacleRoom
+from gym_pybullet_drones.envs.single_agent_rl.rewards import getRewardDict
 from gym_pybullet_drones.envs.single_agent_rl.rewards.CollisionReward import (
     CollisionReward,
 )
@@ -12,20 +27,7 @@ from gym_pybullet_drones.envs.single_agent_rl.rewards.cross_obstacles.EnterAreaR
 from gym_pybullet_drones.envs.single_agent_rl.rewards.cross_obstacles.IncreaseXReward import (
     IncreaseXReward,
 )
-import gym_pybullet_drones.envs.single_agent_rl.terminations as terminations
-import pybullet as p
-from gym_pybullet_drones.envs.BaseAviary import BaseAviary, DroneModel, Physics
-from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
-    ActionType,
-    BaseSingleAgentAviary,
-    ObservationType,
-)
-from gym_pybullet_drones.envs.single_agent_rl.rewards import getRewardDict
 from gym_pybullet_drones.envs.single_agent_rl.terminations import getTermDict
-from gym_pybullet_drones.envs.single_agent_rl.obstacles.ObstacleRoom import ObstacleRoom
-from gym_pybullet_drones.envs.single_agent_rl.obstacles.IncrementalObstacleRoom import (
-    IncrementalObstacleRoom,
-)
 from gym_pybullet_drones.envs.single_agent_rl.terminations.CollisionTerm import (
     CollisionTerm,
 )
@@ -135,11 +137,28 @@ class CrossObstaclesAviary(BaseSingleAgentAviary):
                 xyz=[0, 0, 0], physics=self.CLIENT, difficulty=self.difficulty
             )
         )
+
         if collision_detection:
-            self.term_components.append(CollisionTerm([[4, 5], [-1, 1]], self.CLIENT))
-            self.reward_components.append(
-                CollisionReward(0.2, [[4, 5], [-1, 1]], self.CLIENT)
-            )
+            collision_rwd_found = False
+            collision_term_found = False
+            for self.r_components in self.reward_components:
+                if isinstance(self.r_components, CollisionReward):
+                    self.r_components.setClient(self.CLIENT)
+                    collision_rwd_found = True
+            for self.t_components in self.term_components:
+                if isinstance(self.t_components, CollisionTerm):
+                    self.t_components.setClient(self.CLIENT)
+                    collision_term_found = True
+            # need this to keep backward compatibility
+            if not collision_rwd_found:
+                self.reward_components.append(
+                    CollisionReward(0.2, [[4, 5], [-1, 1]], self.CLIENT)
+                )
+            if not collision_term_found:
+                self.term_components.append(
+                    CollisionTerm([[4, 5], [-1, 1]], self.CLIENT)
+                )
+
         self.reward_dict = getRewardDict(self.reward_components)
         self.term_dict = getTermDict(self.term_components)
         self.cum_reward_dict = getRewardDict(self.reward_components)

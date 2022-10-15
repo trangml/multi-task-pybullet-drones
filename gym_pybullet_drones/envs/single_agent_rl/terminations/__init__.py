@@ -1,4 +1,4 @@
 from .Terminations import *
-from .FieldCoverageTerm import *
-from .EnterAreaTerm import *
 from .CollisionTerm import *
+from .EnterAreaTerm import *
+from .FieldCoverageTerm import *

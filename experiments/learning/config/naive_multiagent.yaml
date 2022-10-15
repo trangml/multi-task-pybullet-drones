@@ -1,5 +1,5 @@
 # general script settings
-tag: test
+tag: naive_test
 env: cross-obstacles
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
@@ -26,7 +26,7 @@ ppo:
     activation_fn:
       _partial_: true
       _target_: torch.nn.ReLU
-    net_arch: [512, 256, 256, { "pi": [256, 256], "vf": [256, 256] }]
+    #net_arch: [512, 256, 256, { "pi": [256, 256], "vf": [256, 256] }]
 
     #net_arch = [dict(pi=[64, 64], vf=[64, 64])]
     # Agents do better with the default net_arch
@@ -48,10 +48,15 @@ env_kwargs:
     BoundsReward:
       scale: 10.0
       bounds: ${env_kwargs.bounds}
+    CollisionReward:
+      scale: 0.1
+      area: ${env_kwargs.reward_components.EnterAreaReward.area}
   # terminals
   term_components:
     # EnterAreaTerm:
     #   area: [[4, 5], [-1, 1]]
     BoundsTerm:
       bounds: ${env_kwargs.bounds}
+    CollisionTerm:
+      area: ${env_kwargs.reward_components.EnterAreaReward.area}
     OrientationTerm:

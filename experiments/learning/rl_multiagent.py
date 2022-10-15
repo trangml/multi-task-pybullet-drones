@@ -16,61 +16,57 @@ Check Ray's status at:
     http://127.0.0.1:8265
 
 """
-import os
-import time
 import argparse
+import math
+import os
+import pdb
+import pickle
+import subprocess
+import time
 from datetime import datetime
 from sys import platform
-import subprocess
-import pdb
-import math
+
+import gym
+import matplotlib.pyplot as plt
 import numpy as np
 import pybullet as p
-import pickle
-import matplotlib.pyplot as plt
-import gym
-from gym import error, spaces, utils
-from gym.utils import seeding
-from gym.spaces import Box, Dict
+import ray
+import shared_constants
 import torch
 import torch.nn as nn
-from ray.rllib.models.torch.fcnet import FullyConnectedNetwork
-import ray
+from gym import error, spaces, utils
+from gym.spaces import Box, Dict
+from gym.utils import seeding
 from ray import tune
-
-# from ray.tune.logger import DEFAULT_LOGGERS
-from ray.tune import register_env
 from ray.rllib.agents import ppo
+from ray.rllib.agents.callbacks import DefaultCallbacks
 from ray.rllib.agents.ppo import PPOTrainer
 from ray.rllib.examples.policy.random_policy import RandomPolicy
-from ray.rllib.utils.test_utils import check_learning_achieved
-from ray.rllib.agents.callbacks import DefaultCallbacks
-from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from ray.rllib.models import ModelCatalog
+from ray.rllib.models.torch.fcnet import FullyConnectedNetwork
+from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from ray.rllib.policy.sample_batch import SampleBatch
+from ray.rllib.utils.test_utils import check_learning_achieved
+# from ray.tune.logger import DEFAULT_LOGGERS
+from ray.tune import register_env
+
+from gym_pybullet_drones.envs.multi_agent_rl import map_name_to_multi_env
+from gym_pybullet_drones.envs.multi_agent_rl.BaseMultiagentAviary import \
+    BaseMultiagentAviary
+from gym_pybullet_drones.envs.multi_agent_rl.FlockAviary import FlockAviary
+from gym_pybullet_drones.envs.multi_agent_rl.LeaderFollowerAviary import \
+    LeaderFollowerAviary
+from gym_pybullet_drones.envs.multi_agent_rl.MeetupAviary import MeetupAviary
+from gym_pybullet_drones.envs.multi_agent_rl.MultiCrossObstaclesAviary import \
+    MultiCrossObstaclesAviary
+from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
+    ActionType, ObservationType)
+from gym_pybullet_drones.utils.enums import DroneModel, Physics
+from gym_pybullet_drones.utils.Logger import Logger
 
 # from ray.rllib.env.multi_agent_env import ENV_STATE
 
-from gym_pybullet_drones.utils.enums import DroneModel, Physics
-from gym_pybullet_drones.envs.multi_agent_rl import map_name_to_multi_env
-from gym_pybullet_drones.envs.multi_agent_rl.BaseMultiagentAviary import (
-    BaseMultiagentAviary,
-)
-from gym_pybullet_drones.envs.multi_agent_rl.FlockAviary import FlockAviary
-from gym_pybullet_drones.envs.multi_agent_rl.LeaderFollowerAviary import (
-    LeaderFollowerAviary,
-)
-from gym_pybullet_drones.envs.multi_agent_rl.MeetupAviary import MeetupAviary
-from gym_pybullet_drones.envs.multi_agent_rl.MultiCrossObstaclesAviary import (
-    MultiCrossObstaclesAviary,
-)
-from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
-    ActionType,
-    ObservationType,
-)
-from gym_pybullet_drones.utils.Logger import Logger
 
-import shared_constants
 
 OWN_OBS_VEC_SIZE = None  # Modified at runtime
 ACTION_VEC_SIZE = None  # Modified at runtime

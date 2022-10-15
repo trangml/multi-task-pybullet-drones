@@ -36,24 +36,17 @@ import torch
 from omegaconf import DictConfig, OmegaConf, open_dict
 from stable_baselines3 import A2C, DDPG, PPO, SAC, TD3
 from stable_baselines3.common.callbacks import (  # StopTrainingOnMaxEpisodes,
-    CallbackList,
-    CheckpointCallback,
-    EvalCallback,
-    StopTrainingOnNoModelImprovement,
-    StopTrainingOnRewardThreshold,
-)
+    CallbackList, CheckpointCallback, EvalCallback,
+    StopTrainingOnNoModelImprovement, StopTrainingOnRewardThreshold)
 from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.policies import ActorCriticCnnPolicy as a2cppoCnnPolicy
-from stable_baselines3.common.policies import ActorCriticPolicy as a2cppoMlpPolicy
-from stable_baselines3.common.policies import (
-    MultiInputActorCriticPolicy as a2cppoMultiInputPolicy,
-)
-from stable_baselines3.common.vec_env import (
-    VecCheckNan,
-    VecFrameStack,
-    VecNormalize,
-    VecTransposeImage,
-)
+from stable_baselines3.common.policies import \
+    ActorCriticCnnPolicy as a2cppoCnnPolicy
+from stable_baselines3.common.policies import \
+    ActorCriticPolicy as a2cppoMlpPolicy
+from stable_baselines3.common.policies import \
+    MultiInputActorCriticPolicy as a2cppoMultiInputPolicy
+from stable_baselines3.common.vec_env import (VecCheckNan, VecFrameStack,
+                                              VecNormalize, VecTransposeImage)
 from stable_baselines3.sac import CnnPolicy as sacCnnPolicy
 from stable_baselines3.sac.policies import SACPolicy as sacMlpPolicy
 from stable_baselines3.td3 import CnnPolicy as td3ddpgCnnPolicy
@@ -61,18 +54,13 @@ from stable_baselines3.td3 import MlpPolicy as td3ddpgMlpPolicy
 
 from gym_pybullet_drones.envs.single_agent_rl import map_name_to_env
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
-    ActionType,
-    ObservationType,
-)
-from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCallback import (
-    CustomCallback,
-)
-from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCheckpointCallback import (
-    CustomCheckpointCallback,
-)
-from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomEvalCallback import (
-    CustomEvalCallback,
-)
+    ActionType, ObservationType)
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCallback import \
+    CustomCallback
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCheckpointCallback import \
+    CustomCheckpointCallback
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomEvalCallback import \
+    CustomEvalCallback
 
 EPISODE_REWARD_THRESHOLD = 1000  # Upperbound: rewards are always negative, but non-zero
 """float: Reward threshold to halt the script."""
@@ -430,41 +418,32 @@ def train_loop(cfg: DictConfig = None):
             models[0].save(model_path)
             print(f"Saving model checkpoint to {model_path}")
 
-            # if (
-            #     self.save_replay_buffer
-            #     and hasattr(self.model, "replay_buffer")
-            #     and self.model.replay_buffer is not None
-            # ):
-            #     # If model has a replay buffer, save it too
-            #     replay_buffer_path = self._checkpoint_path(
-            #         "replay_buffer_", extension="pkl"
-            #     )
-            #     self.model.save_replay_buffer(replay_buffer_path)
-            #     if self.verbose > 1:
-            #         print(
-            #             f"Saving model replay buffer checkpoint to {replay_buffer_path}"
-            #         )
-
-            # Save the VecNormalize statistics
-            # vec_normalize_path = self._checkpoint_path(
-            #     "vecnormalize_", extension="pkl"
-            # )
             vec_normalize_path = save_path + f"rl_model_vecnormalize_{steps}_steps.pkl"
             models[0].get_vec_normalize_env().save(vec_normalize_path)
             print(f"Saving model VecNormalize to {vec_normalize_path}")
 
     #### Save the model ########################################
-    models[0].save(filename + "/success_model.zip")
-    print(filename)
+    save_path = filename
+    model_path = save_path + f"success_model.zip"
+    # model_path = self._checkpoint_path(extension="zip")
+    models[0].save(model_path)
+    print(f"Saving model checkpoint to {model_path}")
 
-    #### Print training progression ############################
-    with np.load(filename + "/evaluations.npz") as data:
-        for j in range(data["timesteps"].shape[0]):
-            try:
-                print(str(data["timesteps"][j]) + "," + str(data["results"][j][0]))
-            except Exception as ex:
-                print("oops")
-                raise ValueError("Could not print training progression") from ex
+    vec_normalize_path = save_path + f"vecnormalize_best_model.pkl"
+    models[0].get_vec_normalize_env().save(vec_normalize_path)
+    print(f"Saving model VecNormalize to {vec_normalize_path}")
+
+
+    for ix in range(num_agents):
+        #### Print training progression ############################
+        print("Log for Agent {}".format(ix))
+        with np.load(filename + f"best_{ix}/evaluations.npz") as data:
+            for j in range(data["timesteps"].shape[0]):
+                try:
+                    print(str(data["timesteps"][j]) + "," + str(data["results"][j][0]))
+                except Exception as ex:
+                    print("oops")
+                    raise ValueError("Could not print training progression") from ex
     return rewards
 
 
