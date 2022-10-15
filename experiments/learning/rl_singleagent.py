@@ -34,17 +34,24 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from stable_baselines3 import A2C, DDPG, PPO, SAC, TD3
 from stable_baselines3.common.callbacks import (  # StopTrainingOnMaxEpisodes,
-    CallbackList, CheckpointCallback, EvalCallback,
-    StopTrainingOnNoModelImprovement, StopTrainingOnRewardThreshold)
+    CallbackList,
+    CheckpointCallback,
+    EvalCallback,
+    StopTrainingOnNoModelImprovement,
+    StopTrainingOnRewardThreshold,
+)
 from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.policies import \
-    ActorCriticCnnPolicy as a2cppoCnnPolicy
-from stable_baselines3.common.policies import \
-    ActorCriticPolicy as a2cppoMlpPolicy
-from stable_baselines3.common.policies import \
-    MultiInputActorCriticPolicy as a2cppoMultiInputPolicy
-from stable_baselines3.common.vec_env import (VecCheckNan, VecFrameStack,
-                                              VecNormalize, VecTransposeImage)
+from stable_baselines3.common.policies import ActorCriticCnnPolicy as a2cppoCnnPolicy
+from stable_baselines3.common.policies import ActorCriticPolicy as a2cppoMlpPolicy
+from stable_baselines3.common.policies import (
+    MultiInputActorCriticPolicy as a2cppoMultiInputPolicy,
+)
+from stable_baselines3.common.vec_env import (
+    VecCheckNan,
+    VecFrameStack,
+    VecNormalize,
+    VecTransposeImage,
+)
 from stable_baselines3.sac import CnnPolicy as sacCnnPolicy
 from stable_baselines3.sac.policies import SACPolicy as sacMlpPolicy
 from stable_baselines3.td3 import CnnPolicy as td3ddpgCnnPolicy
@@ -52,15 +59,21 @@ from stable_baselines3.td3 import MlpPolicy as td3ddpgMlpPolicy
 
 from gym_pybullet_drones.envs.single_agent_rl import map_name_to_env
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
-    ActionType, ObservationType)
-from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCallback import \
-    CustomCallback
-from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCheckpointCallback import \
-    CustomCheckpointCallback
-from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomEvalCallback import \
-    CustomEvalCallback
-from gym_pybullet_drones.envs.single_agent_rl.callbacks.StopTrainingRunningAverageRewardThreshold import \
-    StopTrainingRunningAverageRewardThreshold
+    ActionType,
+    ObservationType,
+)
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCallback import (
+    CustomCallback,
+)
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCheckpointCallback import (
+    CustomCheckpointCallback,
+)
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomEvalCallback import (
+    CustomEvalCallback,
+)
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.StopTrainingRunningAverageRewardThreshold import (
+    StopTrainingRunningAverageRewardThreshold,
+)
 
 DEFAULT_OUTPUT_FOLDER = "results"
 
@@ -328,7 +341,7 @@ def train_loop(cfg: DictConfig = None):
     #     reward_threshold=EPISODE_REWARD_THRESHOLD, verbose=1
     # )
     callback_on_best = StopTrainingRunningAverageRewardThreshold(
-        reward_threshold=EPISODE_REWARD_THRESHOLD, eval_rollback_len=5, verbose=1
+        reward_threshold=EPISODE_REWARD_THRESHOLD, eval_rollback_len=3, verbose=1
     )
     stop_callback = StopTrainingOnNoModelImprovement(
         max_no_improvement_evals=(
@@ -363,6 +376,7 @@ def train_loop(cfg: DictConfig = None):
 
     #### Save the model ########################################
     model.save(filename + "/success_model.zip")
+    model.get_vec_normalize_env().save(filename + "/vecnormalize_success_model.pkl")
     print(filename)
 
     #### Print training progression ############################

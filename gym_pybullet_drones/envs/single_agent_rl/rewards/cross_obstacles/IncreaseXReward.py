@@ -48,7 +48,7 @@ class IncreaseXReward(DenseReward):
 class IncreaseXRewardV2(DenseReward):
     """Calculate the dense increase x reward."""
 
-    def __init__(self, scale: float):
+    def __init__(self, scale: float, delta: float = 0.2):
         """
         rewards the agent for moving in the positive x direction
 
@@ -61,6 +61,7 @@ class IncreaseXRewardV2(DenseReward):
         """
         super().__init__(scale)
         self.max_x = -1000
+        self.delta = delta
 
     def reset(self):
         self.max_x = -1000
@@ -68,7 +69,7 @@ class IncreaseXRewardV2(DenseReward):
     def _calculateReward(self, state, drone_id):
         # For now, reward based on just x position
         position = state[0]
-        if position > self.max_x + 0.2:
+        if position > self.max_x + self.delta:
             self.max_x = position
             return POSITIVE_REWARD
         return ZERO_REWARD

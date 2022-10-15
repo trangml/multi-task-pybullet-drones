@@ -125,10 +125,16 @@ def run(
             else:
                 print("[ERROR]: no model under the specified path", exp)
 
-            if os.path.isfile(exp + "/vecnormalize_best_model.pkl"):
+            if os.path.isfile(exp + "/vecnormalize_success_model.pkl"):
+                vec_wrapped = True
+                vec_norm_pth = exp + "/vecnormalize_success_model.pkl"
+                print("vecnorm found")
+            elif os.path.isfile(exp + "/vecnormalize_best_model.pkl"):
                 vec_wrapped = True
                 vec_norm_pth = exp + "/vecnormalize_best_model.pkl"
                 print("vecnorm found")
+            else:
+                print("no vecnorm found")
 
     if algo == "a2c":
         model = A2C.load(path)

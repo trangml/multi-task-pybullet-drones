@@ -124,10 +124,16 @@ def run(
             else:
                 print("[ERROR]: no model under the specified path", exp)
 
-            if os.path.isfile(exp + "/vecnormalize_best_model.pkl"):
+            if os.path.isfile(exp + "/vecnormalize_success_model.pkl"):
+                vec_wrapped = True
+                vec_norm_pth = exp + "/vecnormalize_success_model.pkl"
+                print("vecnorm found")
+            elif os.path.isfile(exp + "/vecnormalize_best_model.pkl"):
                 vec_wrapped = True
                 vec_norm_pth = exp + "/vecnormalize_best_model.pkl"
                 print("vecnorm found")
+            else:
+                print("no vecnorm found")
 
     if algo == "a2c":
         model = A2C.load(path)
@@ -156,6 +162,7 @@ def run(
         else:
             diff_range = range(0, diff + 1)
     #### Evaluate the model ####################################
+    cum_results = []
     for difficulty in diff_range:
         ARGS.env_kwargs.difficulty = difficulty
         env_kwargs = dict(
@@ -175,7 +182,8 @@ def run(
         else:
             eval_env = gym.make(env_name, **env_kwargs,)
 
-        mean_reward, std_reward = evaluate_policy(model, eval_env, n_eval_episodes=10)
+        mean_reward, std_reward = evaluate_policy(model, eval_env, n_eval_episodes=1)
+        cum_results.append(mean_reward)
 
         print(
             "Evaluated model on {}-difficulty {}-env with mean reward {:.2f} +/- {:.2f}".format(
@@ -337,6 +345,7 @@ def run(
             logger.plot()
             logger.plot_rewards()
             logger.save_rewards(exp, mean_reward, std_reward)
+    print(cum_results)
 
 
 if __name__ == "__main__":
