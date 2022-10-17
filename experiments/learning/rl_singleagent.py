@@ -89,7 +89,7 @@ def train_loop(cfg: DictConfig = None):
     torch.manual_seed(cfg.seed)
     os.environ["PYTHONHASHSEED"] = str(cfg.seed)
 
-    EPISODE_REWARD_THRESHOLD = getattr(cfg, "episode_reward_threshold", 1000)
+    EPISODE_REWARD_THRESHOLD = getattr(cfg, "max_reward", 1000)
 
     #### Save directory ########################################
     filename = (
@@ -337,12 +337,12 @@ def train_loop(cfg: DictConfig = None):
         verbose=2,
         save_vecnormalize=True,
     )
-    # callback_on_best = StopTrainingOnRewardThreshold(
-    #     reward_threshold=EPISODE_REWARD_THRESHOLD, verbose=1
-    # )
-    callback_on_best = StopTrainingRunningAverageRewardThreshold(
-        reward_threshold=EPISODE_REWARD_THRESHOLD, eval_rollback_len=3, verbose=1
+    callback_on_best = StopTrainingOnRewardThreshold(
+        reward_threshold=EPISODE_REWARD_THRESHOLD, verbose=1
     )
+    # callback_on_best = StopTrainingRunningAverageRewardThreshold(
+    #     reward_threshold=EPISODE_REWARD_THRESHOLD, eval_rollback_len=3, verbose=1
+    # )
     stop_callback = StopTrainingOnNoModelImprovement(
         max_no_improvement_evals=(
             cfg.stop_after_no_improvement
