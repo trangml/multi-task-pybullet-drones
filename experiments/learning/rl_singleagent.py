@@ -173,7 +173,7 @@ def train_loop(cfg: DictConfig = None):
             model = PPO.load(
                 path, tensorboard_log=filename + "/tb_log", kwargs=p_kwargs
             )
-            model.seed = cfg.seed
+            model.set_random_seed(cfg.seed)
         if algo == "sac":
             model = SAC.load(path, tensorboard_log=filename + "/tb_log")
         if algo == "td3":
@@ -337,24 +337,24 @@ def train_loop(cfg: DictConfig = None):
         verbose=2,
         save_vecnormalize=True,
     )
-    callback_on_best = StopTrainingOnRewardThreshold(
-        reward_threshold=EPISODE_REWARD_THRESHOLD, verbose=1
-    )
-    # callback_on_best = StopTrainingRunningAverageRewardThreshold(
-    #     reward_threshold=EPISODE_REWARD_THRESHOLD, eval_rollback_len=3, verbose=1
+    # callback_on_best = StopTrainingOnRewardThreshold(
+    #     reward_threshold=EPISODE_REWARD_THRESHOLD, verbose=1
     # )
-    stop_callback = StopTrainingOnNoModelImprovement(
-        max_no_improvement_evals=(
-            cfg.stop_after_no_improvement
-            if cfg.stop_after_no_improvement is not None
-            else cfg.n_steps
-        ),
-        min_evals=100,
-        verbose=1,
+    stop_callback = StopTrainingRunningAverageRewardThreshold(
+        reward_threshold=EPISODE_REWARD_THRESHOLD, eval_rollback_len=10, verbose=1
     )
+    # stop_callback = StopTrainingOnNoModelImprovement(
+    #     max_no_improvement_evals=(
+    #         cfg.stop_after_no_improvement
+    #         if cfg.stop_after_no_improvement is not None
+    #         else cfg.n_steps
+    #     ),
+    #     min_evals=100,
+    #     verbose=1,
+    # )
     eval_callback = CustomEvalCallback(
         eval_env,
-        callback_on_new_best=callback_on_best,
+        # callback_on_new_best=callback_on_best,
         callback_after_eval=stop_callback,
         verbose=1,
         best_model_save_path=filename + "/",
@@ -363,6 +363,7 @@ def train_loop(cfg: DictConfig = None):
         deterministic=True,
         render=False,
         save_vecnormalize=True,
+        n_eval_episodes=1,
     )
     custom_callback = CustomCallback()
     training_callback = CallbackList(

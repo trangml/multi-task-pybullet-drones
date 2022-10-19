@@ -76,8 +76,11 @@ def run(
     if os.path.isfile(exp + "/config.yaml"):
         with open(exp + "/config.yaml", "r") as f:
             additional_args = OmegaConf.load(f)
+            seed = ARGS["seed"] if "seed" in ARGS else additional_args.seed
             ARGS = OmegaConf.create({**ARGS, **additional_args})
             ARGS.exp = exp
+            if seed is not None:
+                ARGS.seed = seed
     else:
         raise ValueError("No config.yaml found in {}".format(exp))
     print(ARGS)
@@ -157,6 +160,7 @@ def run(
         aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
         obs=OBS,
         act=ACT,
+        # gui=gui,
         **ARGS.env_kwargs,
     )
     envAviary = map_name_to_env(env_name)
@@ -170,9 +174,11 @@ def run(
     else:
         eval_env = gym.make(env_name, **env_kwargs,)
 
-    mean_reward, std_reward = evaluate_policy(model, eval_env, n_eval_episodes=1)
+    mean_reward, std_reward = evaluate_policy(
+        model, eval_env, n_eval_episodes=1, render=False, deterministic=True
+    )
     print("\n\n\nMean reward ", mean_reward, " +- ", std_reward, "\n\n")
-
+    eval_env.close()
     #### Show, record a video, and log the model's performance #
     exp_start = exp.index("save")
     env_kwargs = dict(
@@ -193,6 +199,8 @@ def run(
             test_env = VecTransposeImage(test_env)
     else:
         test_env = gym.make(env_name, **env_kwargs,)
+
+    # test_env = eval_env
 
     total_reward = 0
     if vec_wrapped:
@@ -224,6 +232,8 @@ def run(
             )  # OPTIONAL 'deterministic=False'
             obs, reward, done, info = test_env.step(action)
             total_reward += reward
+            if ARGS.early_done and done:
+                break  # OPTIONAL EPISODE Break
             test_env.render()
             time.sleep(0.05)
             if OBS == ObservationType.KIN:
@@ -258,8 +268,6 @@ def run(
             # if done:
             #     obs = test_env.reset()  # OPTIONAL EPISODE HALT
             steps += 1
-            if ARGS.early_done and done:
-                break  # OPTIONAL EPISODE Break
     else:
         logger = Logger(
             logging_freq_hz=int(test_env.SIM_FREQ / test_env.AGGR_PHY_STEPS),
@@ -282,6 +290,8 @@ def run(
             )  # OPTIONAL 'deterministic=False'
             obs, reward, done, info = test_env.step(action)
             total_reward += reward
+            if ARGS.early_done and done:
+                break  # OPTIONAL EPISODE Break
             test_env.render()
             time.sleep(0.05)
             if OBS == ObservationType.KIN:
@@ -313,10 +323,12 @@ def run(
             # if done:
             #     obs = test_env.reset()  # OPTIONAL EPISODE HALT
             steps += 1
-            if ARGS.early_done and done:
-                break  # OPTIONAL EPISODE Break
     test_env.close()
     # logger.save_as_csv("sa")  # Optional CSV save
+    # mean_reward, std_reward = evaluate_policy(
+    #     model, eval_env, n_eval_episodes=1, render=True, deterministic=True
+    # )
+    # print("\n\n\nMean reward ", mean_reward, " +- ", std_reward, "\n\n")
     print("\n\n\nMean reward ", mean_reward, " +- ", std_reward, "\n\n")
     print("Total Timesteps: ", steps)
     print("Total Reward: ", total_reward)
