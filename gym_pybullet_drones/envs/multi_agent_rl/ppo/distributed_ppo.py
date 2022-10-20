@@ -1,5 +1,5 @@
 import warnings
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Type, Union, List
 
 import numpy as np
 import torch as th
@@ -102,6 +102,7 @@ class DistributedPPO(OnPolicyAlgorithm):
         seed: Optional[int] = None,
         device: Union[th.device, str] = "auto",
         _init_setup_model: bool = True,
+        gradient: Optional[List[th.Tensor]] = None,
     ):
 
         super().__init__(
@@ -131,6 +132,7 @@ class DistributedPPO(OnPolicyAlgorithm):
             ),
         )
 
+        self.old_grad = gradient
         # Sanity check, otherwise it will lead to noisy gradient and NaN
         # because of the advantage normalization
         if normalize_advantage:
@@ -290,10 +292,17 @@ class DistributedPPO(OnPolicyAlgorithm):
                 # Optimization step
                 self.policy.optimizer.zero_grad()
                 loss.backward()
+                if self.old_grad is not None:
+                    for p, old_p in zip(self.policy.parameters(), self.old_grad):
+                        if p.grad is not None:
+                            p.grad += old_p
                 # Clip grad norm
                 th.nn.utils.clip_grad_norm_(
                     self.policy.parameters(), self.max_grad_norm
                 )
+
+                # I think we'd probably want the clipped gradient here, but I'm not sure
+                self.grads = [p.grad for p in self.policy.parameters()]
                 self.policy.optimizer.step()
 
             if not continue_training:

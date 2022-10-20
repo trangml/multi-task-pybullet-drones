@@ -74,12 +74,32 @@ from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomEvalCallback impor
 from gym_pybullet_drones.envs.single_agent_rl.callbacks.StopTrainingRunningAverageRewardThreshold import (
     StopTrainingRunningAverageRewardThreshold,
 )
+from gym_pybullet_drones.envs.multi_agent_rl.ppo.distributed_ppo import DistributedPPO
 
 DEFAULT_OUTPUT_FOLDER = "results"
 
 
-@hydra.main(version_base=None, config_path="config", config_name="rl_singleagent")
-def train_loop(cfg: DictConfig = None):
+@hydra.main(
+    version_base=None,
+    config_path="config",
+    config_name="rl_singleagent_optimal_incremental",
+)
+def train_agents(cfg: DictConfig = None):
+    cfg.env_kwargs.difficulty = 0
+    reward, gradient = train_loop(cfg)
+    diff_range = list(range(11, 17))
+    overall_rewards = [reward]
+    for difficulty_ix in diff_range:
+        cfg.env_kwargs.difficulty = difficulty_ix
+        reward, new_grad = train_loop(cfg, gradient)
+        overall_rewards.append(reward)
+        for g, new_g in zip(gradient, new_grad):
+            g += new_g
+    print("Overall rewards: ", overall_rewards)
+    return overall_rewards
+
+
+def train_loop(cfg: DictConfig = None, gradient=None):
     # cfg = OmegaConf.load(ARGS.config)
     pprint.pprint(cfg)
 
@@ -170,7 +190,7 @@ def train_loop(cfg: DictConfig = None):
         if algo == "ppo":
             p_kwargs = hydra.utils.instantiate(cfg.ppo, _convert_="partial")
             p_kwargs["seed"] = cfg.seed
-            model = PPO.load(
+            model = DistributedPPO.load(
                 path, tensorboard_log=filename + "/tb_log", kwargs=p_kwargs
             )
             model.set_random_seed(cfg.seed)
@@ -243,13 +263,14 @@ def train_loop(cfg: DictConfig = None):
             else:
                 policy = a2cppoMultiInputPolicy
 
-            model = PPO(
+            model = DistributedPPO(
                 policy,
                 train_env,
                 # policy_kwargs=onpolicy_kwargs,
                 tensorboard_log=filename + "/tb/",
                 verbose=1,
                 seed=cfg.seed,
+                gradient=gradient,
                 **p_kwargs,
             )
 
@@ -354,7 +375,7 @@ def train_loop(cfg: DictConfig = None):
     # )
     eval_callback = CustomEvalCallback(
         eval_env,
-        #callback_on_new_best=callback_on_best,
+        # callback_on_new_best=callback_on_best,
         callback_after_eval=stop_callback,
         verbose=1,
         best_model_save_path=filename + "/",
@@ -388,8 +409,8 @@ def train_loop(cfg: DictConfig = None):
             except Exception as ex:
                 print("oops")
                 raise ValueError("Could not print training progression") from ex
-    return reward
+    return reward, model.grads
 
 
 if __name__ == "__main__":
-    train_loop()
+    train_agents()

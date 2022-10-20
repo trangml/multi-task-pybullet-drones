@@ -9,6 +9,7 @@ To run the script, type in a terminal:
     $ python test_singleagent.py --exp ./results/save-<env>-<algo>-<obs>-<act>-<time_date>
 
 """
+from cgi import test
 import os
 import time
 from datetime import datetime
@@ -174,15 +175,17 @@ def run(
     else:
         eval_env = gym.make(env_name, **env_kwargs,)
 
+    eval_env.seed(ARGS.seed)
     mean_reward, std_reward = evaluate_policy(
         model, eval_env, n_eval_episodes=1, render=False, deterministic=True
     )
     print("\n\n\nMean reward ", mean_reward, " +- ", std_reward, "\n\n")
+
     eval_env.close()
     #### Show, record a video, and log the model's performance #
     exp_start = exp.index("save")
     env_kwargs = dict(
-        gui=gui,
+        gui=True,
         record=ARGS.record,
         aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS,
         obs=OBS,
@@ -201,6 +204,12 @@ def run(
         test_env = gym.make(env_name, **env_kwargs,)
 
     # test_env = eval_env
+    print(ARGS.seed)
+    random.seed(ARGS.seed)
+    np.random.seed(ARGS.seed)
+    torch.manual_seed(ARGS.seed)
+    os.environ["PYTHONHASHSEED"] = str(ARGS.seed)
+    test_env.seed(ARGS.seed)
 
     total_reward = 0
     if vec_wrapped:
@@ -220,6 +229,7 @@ def run(
         obs = test_env.reset()
         start = time.time()
         steps = 0
+        infos = []
         for i in range(
             test_env.get_attr("EPISODE_LEN_SEC")[0]
             * int(
@@ -234,7 +244,7 @@ def run(
             total_reward += reward
             if ARGS.early_done and done:
                 break  # OPTIONAL EPISODE Break
-            test_env.render()
+            # test_env.render()
             time.sleep(0.05)
             if OBS == ObservationType.KIN:
                 logger.log(
@@ -329,9 +339,18 @@ def run(
     #     model, eval_env, n_eval_episodes=1, render=True, deterministic=True
     # )
     # print("\n\n\nMean reward ", mean_reward, " +- ", std_reward, "\n\n")
-    print("\n\n\nMean reward ", mean_reward, " +- ", std_reward, "\n\n")
-    print("Total Timesteps: ", steps)
-    print("Total Reward: ", total_reward)
+
+    info = info[0]
+    if "episode" in info.keys():
+        # Do not trust "done" with episode endings.
+        # Monitor wrapper includes "episode" key in info if environment
+        # has been wrapped with it. Use those rewards instead.
+        print("\n\nInfo Stats")
+        print("Rewards: ", info["episode"]["r"])
+        print("Lengths: ", info["episode"]["l"])
+    print("\n\n\nEval Env: Total reward ", mean_reward, " +- ", std_reward, "\n\n")
+    print("Test Env: Total Timesteps: ", steps)
+    print("Test Env: Total Reward: ", total_reward)
     # logger.save_as_csv("sa")  # Optional CSV save
     if plot:
         logger.plot()
