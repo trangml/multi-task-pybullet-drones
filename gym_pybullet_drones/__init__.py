@@ -91,3 +91,8 @@ register(
     id="multicrossobs-aviary-v0",
     entry_point="gym_pybullet_drones.envs.multi_agent_rl:MultiCrossObstaclesAviary",
 )
+
+register(
+    id="room-aviary-v0",
+    entry_point="gym_pybullet_drones.envs.single_agent_rl:RoomAviary",
+)

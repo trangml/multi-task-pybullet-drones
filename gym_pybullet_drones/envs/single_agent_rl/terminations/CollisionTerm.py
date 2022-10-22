@@ -16,9 +16,12 @@ from gym_pybullet_drones.envs.single_agent_rl.terminations import Terminations
 
 
 class CollisionTerm(Terminations):
-    """Calculate the sparse entered area reward."""
+    """Calculate the collision termination function.
 
-    def __init__(self, area, client=0):
+    Can be extended to include a safe area and safe contact objects
+    """
+
+    def __init__(self, area=None, client=0):
         """
         Generate
 
@@ -33,22 +36,50 @@ class CollisionTerm(Terminations):
         """
         super().__init__()
         self.CLIENT = client
-        self.area = (Bounds(area[0][0], area[0][1]), Bounds(area[1][0], area[1][1]))
+        self.area = (
+            (Bounds(area[0][0], area[0][1]), Bounds(area[1][0], area[1][1]))
+            if area
+            else None
+        )
+        self.checkArea = True if area else False
+        self.exclude = []
 
     def setClient(self, client):
         self.CLIENT = client
 
+    def excludeBody(self, body_id: int):
+        self.exclude.append(body_id)
+
+    def _getExcludedContacts(self, drone_id):
+        excluded_contact_pts = []
+        for body_id in self.exclude:
+            excluded_contact_pts.extend(
+                p.getContactPoints(
+                    bodyA=drone_id, bodyB=body_id, physicsClientId=self.CLIENT
+                )
+            )
+        return excluded_contact_pts
+
     def _calculateTerm(self, state, drone_id):
         # For now, ignore height.
         contact_pts = p.getContactPoints(bodyA=drone_id, physicsClientId=self.CLIENT)
+        # if there are contact points
         if len(contact_pts) > 0:
-            position = state[0:2]
-            in_area = True
-            for bound, pos in zip(self.area, position):
-                in_area = in_area and within_bounds(bound, pos)
+            # check the excluded contact points
+            excluded_contact_pts = self._getExcludedContacts(drone_id)
+            if len(excluded_contact_pts) != len(contact_pts):
+                position = state[0:2]
+                if self.checkArea:
+                    # check if we're in a safe area
+                    in_area = True
+                    for bound, pos in zip(self.area, position):
+                        in_area = in_area and within_bounds(bound, pos)
 
-            if not in_area:
-                return True
+                    if not in_area:
+                        return True
+                else:
+                    # if we don't have a safe area, we're done
+                    return True
         return False
 
     ################################################################################

@@ -27,6 +27,7 @@ from gym_pybullet_drones.envs.single_agent_rl.CrossObstaclesAviary import (
 
 from gym_pybullet_drones.envs.single_agent_rl.BaseVisionAviary import BaseVisionAviary
 from gym_pybullet_drones.envs.single_agent_rl.LandVisionAviary import LandVisionAviary
+from gym_pybullet_drones.envs.single_agent_rl.RoomAviary import RoomAviary
 
 ENV_MAP = {
     "hover-aviary-v0": HoverAviary,
@@ -40,6 +41,7 @@ ENV_MAP = {
     "takeoff-aviary-v0": TakeoffAviary,
     "flythrugate-aviary-v0": FlyThruGateAviary,
     "tune-aviary-v0": TuneAviary,
+    "room-aviary-v0": RoomAviary,
 }
 
 
