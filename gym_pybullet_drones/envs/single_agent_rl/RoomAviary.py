@@ -9,6 +9,9 @@ import gym_pybullet_drones.envs.single_agent_rl.rewards as rewards
 from gym_pybullet_drones.envs.single_agent_rl.rewards.NoCollisionReward import (
     NoCollisionReward,
 )
+from gym_pybullet_drones.envs.single_agent_rl.rewards.TouchLandingZoneReward import (
+    TouchLandingZoneReward,
+)
 import gym_pybullet_drones.envs.single_agent_rl.terminations as terminations
 from gym_pybullet_drones.envs.BaseAviary import BaseAviary, DroneModel, Physics
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
@@ -37,6 +40,9 @@ from gym_pybullet_drones.envs.single_agent_rl.terminations import getTermDict
 from gym_pybullet_drones.envs.single_agent_rl.terminations.CollisionTerm import (
     CollisionTerm,
 )
+from gym_pybullet_drones.envs.single_agent_rl.terminations.TouchLandingZoneTerm import (
+    TouchLandingZoneTerm,
+)
 from gym_pybullet_drones.envs.single_agent_rl.terminations.Terminations import (
     BoundsTerm,
     OrientationTerm,
@@ -64,6 +70,7 @@ class RoomAviary(BaseSingleAgentAviary):
         term_components: List = [],
         bounds: List = [[10, 10, 2], [-10, -10, 0.1]],
         collision_detection: bool = True,
+        version=0,
         tag: str = "",
     ):
         """Initialization of a single agent RL environment.
@@ -95,7 +102,7 @@ class RoomAviary(BaseSingleAgentAviary):
 
         """
         self.bounds = bounds
-
+        self.version = version
         self.obstacles = []
         self.reward_components = []
         for reward_name in reward_components:
@@ -136,7 +143,9 @@ class RoomAviary(BaseSingleAgentAviary):
 
         # override base aviary episode length
         self.EPISODE_LEN_SEC = 10
-        self.obstacles.append(FurnitureRoom(xyz=[0, 0, 0], physics=self.CLIENT,))
+        self.obstacles.append(
+            FurnitureRoom(xyz=[0, 0, 0], physics=self.CLIENT, version=self.version)
+        )
         self.collision_term_idx = []
         self.collision_rwd_idx = []
 
@@ -146,7 +155,10 @@ class RoomAviary(BaseSingleAgentAviary):
                 if isinstance(self.r_components, CollisionReward):
                     self.r_components.setClient(self.CLIENT)
                     self.collision_rwd_idx.append(idx)
-                if isinstance(self.r_components, NoCollisionReward):
+                elif isinstance(self.r_components, NoCollisionReward):
+                    self.r_components.setClient(self.CLIENT)
+                    self.collision_rwd_idx.append(idx)
+                elif isinstance(self.r_components, TouchLandingZoneReward):
                     self.r_components.setClient(self.CLIENT)
                     self.collision_rwd_idx.append(idx)
                 idx += 1
@@ -154,6 +166,9 @@ class RoomAviary(BaseSingleAgentAviary):
             idx = 0
             for self.t_components in self.term_components:
                 if isinstance(self.t_components, CollisionTerm):
+                    self.t_components.setClient(self.CLIENT)
+                    self.collision_term_idx.append(idx)
+                elif isinstance(self.t_components, TouchLandingZoneTerm):
                     self.t_components.setClient(self.CLIENT)
                     self.collision_term_idx.append(idx)
                 idx += 1
@@ -195,9 +210,9 @@ class RoomAviary(BaseSingleAgentAviary):
                 if isinstance(obstacle, FurnitureRoom):
                     self.landing = obstacle.landing_zone
                     for i in self.collision_rwd_idx:
-                        self.reward_components[i].excludeBody(obstacle.landing_zone)
+                        self.reward_components[i].defineBody(obstacle.landing_zone)
                     for i in self.collision_term_idx:
-                        self.term_components[i].excludeBody(obstacle.landing_zone)
+                        self.term_components[i].defineBody(obstacle.landing_zone)
 
     ################################################################################
     def _computeReward(self):

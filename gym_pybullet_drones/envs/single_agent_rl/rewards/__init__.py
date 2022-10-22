@@ -13,4 +13,6 @@ from .LandingReward import *
 from .OrientationReward import *
 from .SlowdownReward import *
 from .SpeedReward import *
+from .TouchLandingZoneReward import *
 from .WaypointReward import *
+

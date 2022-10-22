@@ -1,5 +1,5 @@
 # general script settings
-tag: test
+tag: version_0_distance
 env: room
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
@@ -10,7 +10,7 @@ act: RPM
 exp: none
 cpu: 1
 stop_after_no_improvement: 10000
-n_steps: 1e7
+n_steps: 1e6
 seed: 0
 max_reward: 10000 # Default 1000
 # PPO arguments
@@ -32,6 +32,7 @@ ppo:
 # Env specific settings
 env_kwargs:
   initial_xyzs: [[-0.5, 0, 0.5]]
+  version: 0
 
   # need to account for hitting the ceiling
   bounds: [[10, 10, 2], [-10, -10, 0.1]]
@@ -41,11 +42,18 @@ env_kwargs:
     OrientationReward:
       scale: 0.01
     BoundsReward:
-      scale: 0.1
+      scale: 1
       bounds: ${env_kwargs.bounds}
     NoCollisionReward:
       scale: 0.1
       #area: ${env_kwargs.reward_components.EnterAreaReward.area}
+    # IncreaseXReward:
+    #   scale: 0.5
+    DistanceReward:
+      scale: 0.5
+      landing_zone_xyz: [6.5, 0, 0.75]
+    TouchLandingZoneReward:
+      scale: 50
   # terminals
   term_components:
     # EnterAreaTerm:
@@ -54,3 +62,4 @@ env_kwargs:
       bounds: ${env_kwargs.bounds}
     CollisionTerm:
     OrientationTerm:
+    TouchLandingZoneTerm:

@@ -47,7 +47,7 @@ class NoCollisionReward(SparseReward):
     def setClient(self, client):
         self.CLIENT = client
 
-    def excludeBody(self, body_id: int):
+    def defineBody(self, body_id: int):
         self.exclude.append(body_id)
 
     def _getExcludedContacts(self, drone_id):
