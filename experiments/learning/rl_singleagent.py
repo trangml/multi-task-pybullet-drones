@@ -97,6 +97,8 @@ def train_loop(cfg: DictConfig = None):
         + "/results/save-"
         + cfg.env
         + "-"
+        + cfg.algo
+        + "-"
         + cfg.obs
         + "-"
         + cfg.act
