@@ -120,13 +120,16 @@ class FurnitureRoom:
             globalScaling=1,
         )
         p.loadURDF(
-            "table/table.urdf",
-            [5, 0.5, 0],
+            os.path.dirname(os.path.abspath(__file__))
+            + "/../../../assets/chairs/table.urdf",
+            [5.3, 0.5, 0],
             baseOrientation=[0, 0, 1, 1],
             physicsClientId=self.CLIENT,
+            globalScaling=1.2,
         )
         p.loadURDF(
-            "table/table.urdf",
+            os.path.dirname(os.path.abspath(__file__))
+            + "/../../../assets/chairs/table.urdf",
             [1, 0.0, 0],
             baseOrientation=[0, 0, 0, 1],
             physicsClientId=self.CLIENT,

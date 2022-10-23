@@ -1,5 +1,5 @@
 # general script settings
-tag: version_0_distance
+tag: version_0_safedeltadistance
 env: room
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
@@ -49,7 +49,7 @@ env_kwargs:
       #area: ${env_kwargs.reward_components.EnterAreaReward.area}
     # IncreaseXReward:
     #   scale: 0.5
-    DistanceReward:
+    SafeDeltaDistanceReward:
       scale: 0.5
       landing_zone_xyz: [6.5, 0, 0.75]
     TouchLandingZoneReward:
