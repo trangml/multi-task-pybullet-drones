@@ -1,5 +1,5 @@
 # general script settings
-tag: version_0_safedeltadistance
+tag: version_2
 env: room
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
@@ -32,7 +32,7 @@ ppo:
 # Env specific settings
 env_kwargs:
   initial_xyzs: [[-0.5, 0, 0.5]]
-  version: 0
+  version: 2
 
   # need to account for hitting the ceiling
   bounds: [[10, 10, 2], [-10, -10, 0.1]]
@@ -45,10 +45,10 @@ env_kwargs:
       scale: 1
       bounds: ${env_kwargs.bounds}
     NoCollisionReward:
-      scale: 0.1
-      #area: ${env_kwargs.reward_components.EnterAreaReward.area}
-    # IncreaseXReward:
-    #   scale: 0.5
+      scale: 0.5
+    SafeDistanceReward:
+      scale: 0.01
+      landing_zone_xyz: [6.5, 0, 0.75]
     SafeDeltaDistanceReward:
       scale: 0.5
       landing_zone_xyz: [6.5, 0, 0.75]

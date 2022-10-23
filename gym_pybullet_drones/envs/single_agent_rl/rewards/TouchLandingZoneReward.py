@@ -42,7 +42,7 @@ class TouchLandingZoneReward(SparseReward):
     def defineBody(self, body_id: int):
         self.landing_zone = body_id
 
-    def _calculateTerm(self, state, drone_id):
+    def _calculateReward(self, state, drone_id):
         # For now, ignore height.
         contact_pts = p.getContactPoints(
             bodyA=drone_id, bodyB=self.landing_zone, physicsClientId=self.CLIENT
