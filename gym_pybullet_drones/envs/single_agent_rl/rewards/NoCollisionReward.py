@@ -60,7 +60,7 @@ class NoCollisionReward(SparseReward):
             )
         return excluded_contact_pts
 
-    def _calculateReward (self, state, drone_id):
+    def _calculateReward(self, state, drone_id):
         # For now, ignore height.
         contact_pts = p.getContactPoints(bodyA=drone_id, physicsClientId=self.CLIENT)
         # if there are contact points
@@ -81,4 +81,3 @@ class NoCollisionReward(SparseReward):
                     # if we don't have a safe area, we're done
                     return NEGATIVE_REWARD
         return POSITIVE_REWARD
-

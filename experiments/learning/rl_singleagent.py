@@ -97,8 +97,6 @@ def train_loop(cfg: DictConfig = None):
         + "/results/save-"
         + cfg.env
         + "-"
-        + cfg.algo
-        + "-"
         + cfg.obs
         + "-"
         + cfg.act
@@ -185,7 +183,7 @@ def train_loop(cfg: DictConfig = None):
             train_env = VecNormalize.load(vec_norm_path, train_env)
         else:
             train_env = VecNormalize(
-                train_env, norm_obs=True, norm_reward=True, clip_obs=10.0
+                train_env, norm_obs=True, norm_reward=False, clip_obs=10.0
             )
 
         if ObservationType[cfg.obs] != ObservationType.KIN:
@@ -196,7 +194,7 @@ def train_loop(cfg: DictConfig = None):
         model.set_env(train_env)
     else:
         train_env = VecNormalize(
-            train_env, norm_obs=True, norm_reward=True, clip_obs=10.0
+            train_env, norm_obs=True, norm_reward=False, clip_obs=10.0
         )
         if ObservationType[cfg.obs] != ObservationType.KIN:
             train_env = VecTransposeImage(train_env)
@@ -316,14 +314,16 @@ def train_loop(cfg: DictConfig = None):
     if ObservationType[cfg.obs] == ObservationType.KIN:
         eval_env = gym.make(env_name, **sa_env_kwargs)
         eval_env = VecNormalize(
-            eval_env, norm_obs=True, norm_reward=True, clip_obs=10.0
+            eval_env, norm_obs=True, norm_reward=False, clip_obs=10.0, training=False
         )
     else:
         n_envs = 1
         evalAviary = map_name_to_env(env_name)
-        eval_env = make_vec_env(evalAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0)
+        eval_env = make_vec_env(
+            evalAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=cfg.seed
+        )
         eval_env = VecNormalize(
-            eval_env, norm_obs=True, norm_reward=True, clip_obs=10.0
+            eval_env, norm_obs=True, norm_reward=False, clip_obs=10.0, training=False
         )
         eval_env = VecTransposeImage(eval_env)
         # eval_env = VecFrameStack(eval_env, n_stack=4)
@@ -354,7 +354,7 @@ def train_loop(cfg: DictConfig = None):
     # )
     eval_callback = CustomEvalCallback(
         eval_env,
-        #callback_on_new_best=callback_on_best,
+        # callback_on_new_best=callback_on_best,
         callback_after_eval=stop_callback,
         verbose=1,
         best_model_save_path=filename + "/",

@@ -1,5 +1,5 @@
 # general script settings
-tag: version_2
+tag: version_2_test
 env: room
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
@@ -45,7 +45,7 @@ env_kwargs:
       scale: 1
       bounds: ${env_kwargs.bounds}
     NoCollisionReward:
-      scale: 0.5
+      scale: 0.001
     SafeDistanceReward:
       scale: 0.01
       landing_zone_xyz: [6.5, 0, 0.75]
