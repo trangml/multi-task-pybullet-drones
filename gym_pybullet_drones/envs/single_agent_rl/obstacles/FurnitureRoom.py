@@ -1,3 +1,4 @@
+from re import S
 from typing import Dict, Tuple
 import os
 import numpy as np
@@ -191,10 +192,77 @@ class FurnitureRoom:
             globalScaling=0.8,
         )
 
+    def version_2(self):
+        self.landing_zone = p.loadURDF(
+            "table_square/table_square.urdf", [6.5, 0, 0], physicsClientId=self.CLIENT,
+        )
+
+        p.loadURDF(
+            os.path.dirname(os.path.abspath(__file__))
+            + "/../../../assets/wider_room.urdf",
+            [7, -1.5, 0],
+            physicsClientId=self.CLIENT,
+            globalScaling=1,
+        )
+        p.loadURDF(
+            "table_square/table_square.urdf", [6.5, 0, 0], physicsClientId=self.CLIENT
+        )
+
+        p.loadURDF(
+            os.path.dirname(os.path.abspath(__file__))
+            + "/../../../assets/dresser.urdf",
+            [1.1, 1.0, 0.1],
+            baseOrientation=[0, 0, -1, 1],
+            physicsClientId=self.CLIENT,
+            globalScaling=0.15,
+        )
+        p.loadURDF(
+            os.path.dirname(os.path.abspath(__file__))
+            + "/../../../assets/dresser.urdf",
+            [1.1, -1.0, 0.1],
+            baseOrientation=[0, 0, -1, 1],
+            physicsClientId=self.CLIENT,
+            globalScaling=0.15,
+        )
+        p.loadURDF(
+            os.path.dirname(os.path.abspath(__file__))
+            + "/../../../assets/dresser.urdf",
+            [2.1, 0.0, 0.1],
+            baseOrientation=[0, 0, -1, 1],
+            physicsClientId=self.CLIENT,
+            globalScaling=0.15,
+        )
+        p.loadURDF(
+            os.path.dirname(os.path.abspath(__file__))
+            + "/../../../assets/cupboard.urdf",
+            [4.1, 0.0, 0],
+            baseOrientation=[0, 0, 0, 1],
+            physicsClientId=self.CLIENT,
+            globalScaling=0.25,
+        )
+        p.loadURDF(
+            os.path.dirname(os.path.abspath(__file__))
+            + "/../../../assets/cupboard.urdf",
+            [3.1, 1.0, 0],
+            baseOrientation=[0, 0, 0, 1],
+            physicsClientId=self.CLIENT,
+            globalScaling=0.25,
+        )
+        p.loadURDF(
+            os.path.dirname(os.path.abspath(__file__))
+            + "/../../../assets/cupboard.urdf",
+            [3.1, -1.0, 0],
+            baseOrientation=[0, 0, 0, 1],
+            physicsClientId=self.CLIENT,
+            globalScaling=0.25,
+        )
+
     def _addObstacles(self):
         """Add obstacles"""
         if self.version == 0:
             self.version_0()
         elif self.version == 1:
             self.version_1()
+        elif self.version == 2:
+            self.version_2()
 
