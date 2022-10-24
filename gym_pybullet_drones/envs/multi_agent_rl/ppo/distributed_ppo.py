@@ -103,6 +103,7 @@ class DistributedPPO(OnPolicyAlgorithm):
         device: Union[th.device, str] = "auto",
         _init_setup_model: bool = True,
         gradient: Optional[List[th.Tensor]] = None,
+        gradient_weight: float = 1.0,
     ):
 
         super().__init__(
@@ -133,6 +134,7 @@ class DistributedPPO(OnPolicyAlgorithm):
         )
 
         self.old_grad = gradient
+        self.gradient_weight = gradient_weight
         # Sanity check, otherwise it will lead to noisy gradient and NaN
         # because of the advantage normalization
         if normalize_advantage:
@@ -295,7 +297,7 @@ class DistributedPPO(OnPolicyAlgorithm):
                 if self.old_grad is not None:
                     for p, old_p in zip(self.policy.parameters(), self.old_grad):
                         if p.grad is not None:
-                            p.grad += old_p
+                            p.grad += old_p * self.gradient_weight
                 # Clip grad norm
                 th.nn.utils.clip_grad_norm_(
                     self.policy.parameters(), self.max_grad_norm

@@ -122,7 +122,7 @@ def run(
         else:
             # if we aren't using the latest model, then we want to use either the success_model or the
             # current best_model
-            if os.path.isfile(exp + "/success_model.zip") and ARGS.best is False:
+            if os.path.isfile(exp + "/success_model.zip") and ARGS.best == False:
                 path = exp + "/success_model.zip"
             elif os.path.isfile(exp + "/best_model.zip"):
                 path = exp + "/best_model.zip"
