@@ -13,6 +13,7 @@ stop_after_no_improvement: 10000
 n_steps: 1e6
 seed: 0
 max_reward: 200 # Default 1000
+load_best: True
 # PPO arguments
 ppo:
   gae_lambda: 0.95
@@ -48,16 +49,10 @@ env_kwargs:
       scale: 0.001
     SafeDistanceReward:
       scale: 0.5
-      landing_zone_xyz:
-      - 6.5
-      - 0
-      - 0.75
+      landing_zone_xyz: [6.5, 0, 0.75]
     SafeDeltaDistanceReward:
       scale: 0.1
-      landing_zone_xyz:
-      - 6.5
-      - 0
-      - 0.75
+      landing_zone_xyz: [6.5, 0, 0.75]
     TouchLandingZoneReward:
       scale: 100
   term_components:

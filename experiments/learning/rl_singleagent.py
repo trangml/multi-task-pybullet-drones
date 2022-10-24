@@ -152,7 +152,10 @@ def train_loop(cfg: DictConfig = None):
         # NOTE: if the model is loaded, then the number of cpus must be the same
         algo = cfg.algo
 
-        if os.path.isfile(cfg.exp + "/success_model.zip"):
+        # we always choose the best model from the previous unless we specify the success model
+        load_best = getattr(cfg, "load_best", True)
+        print("[INFO] Loaded model from " + cfg.exp)
+        if os.path.isfile(cfg.exp + "/success_model.zip") and not load_best:
             path = cfg.exp + "/success_model.zip"
             print("Loading success model")
         elif os.path.isfile(cfg.exp + "/best_model.zip"):
