@@ -1,5 +1,5 @@
 # general script settings
-tag: version_2_test
+tag: room_incremental
 env: room
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
@@ -12,7 +12,7 @@ cpu: 1
 stop_after_no_improvement: 10000
 n_steps: 1e6
 seed: 0
-max_reward: 10000 # Default 1000
+max_reward: 200 # Default 1000
 # PPO arguments
 ppo:
   gae_lambda: 0.95
@@ -38,28 +38,31 @@ env_kwargs:
   bounds: [[10, 10, 2], [-10, -10, 0.1]]
 
   # rewards
-  reward_components:
+ reward_components:
     OrientationReward:
       scale: 0.01
     BoundsReward:
-      scale: 1
+      scale: 5
       bounds: ${env_kwargs.bounds}
     NoCollisionReward:
       scale: 0.001
     SafeDistanceReward:
-      scale: 0.01
-      landing_zone_xyz: [6.5, 0, 0.75]
-    SafeDeltaDistanceReward:
       scale: 0.5
-      landing_zone_xyz: [6.5, 0, 0.75]
+      landing_zone_xyz:
+      - 6.5
+      - 0
+      - 0.75
+    SafeDeltaDistanceReward:
+      scale: 0.1
+      landing_zone_xyz:
+      - 6.5
+      - 0
+      - 0.75
     TouchLandingZoneReward:
-      scale: 50
-  # terminals
+      scale: 100
   term_components:
-    # EnterAreaTerm:
-    #   area: [[4, 5], [-1, 1]]
     BoundsTerm:
       bounds: ${env_kwargs.bounds}
-    CollisionTerm:
-    OrientationTerm:
-    TouchLandingZoneTerm:
+    CollisionTerm: null
+    OrientationTerm: null
+    TouchLandingZoneTerm: null
