@@ -88,7 +88,7 @@ def train_agents(cfg: DictConfig = None):
     if cfg.env == "cross-obstacles":
         cfg.env_kwargs.difficulty = 0
         diff_range = list(range(11, 17))
-    elif cfg.env == "hover":
+    elif cfg.env == "room":
         cfg.env_kwargs.version = 0
         diff_range = list(range(1, 3))
     reward, gradient = train_loop(cfg)
@@ -96,7 +96,7 @@ def train_agents(cfg: DictConfig = None):
     for difficulty_ix in diff_range:
         if cfg.env == "cross-obstacles":
             cfg.env_kwargs.difficulty = difficulty_ix
-        elif cfg.env == "hover":
+        elif cfg.env == "room":
             cfg.env_kwargs.version = difficulty_ix
         reward, new_grad = train_loop(cfg, gradient)
         overall_rewards.append(reward)

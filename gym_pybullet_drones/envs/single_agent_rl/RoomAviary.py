@@ -70,7 +70,7 @@ class RoomAviary(BaseSingleAgentAviary):
         term_components: List = [],
         bounds: List = [[10, 10, 2], [-10, -10, 0.1]],
         collision_detection: bool = True,
-        version=0,
+        difficulty: int = 0,
         tag: str = "",
     ):
         """Initialization of a single agent RL environment.
@@ -102,7 +102,7 @@ class RoomAviary(BaseSingleAgentAviary):
 
         """
         self.bounds = bounds
-        self.version = version
+        self.difficulty = difficulty
         self.obstacles = []
         self.reward_components = []
         for reward_name in reward_components:
@@ -144,7 +144,7 @@ class RoomAviary(BaseSingleAgentAviary):
         # override base aviary episode length
         self.EPISODE_LEN_SEC = 10
         self.obstacles.append(
-            FurnitureRoom(xyz=[0, 0, 0], physics=self.CLIENT, version=self.version)
+            FurnitureRoom(xyz=[0, 0, 0], physics=self.CLIENT, version=self.difficulty)
         )
         self.collision_term_idx = []
         self.collision_rwd_idx = []
