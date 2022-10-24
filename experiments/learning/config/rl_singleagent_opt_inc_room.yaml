@@ -32,7 +32,6 @@ ppo:
     # Agents do better with the default net_arch
 # Env specific settings
 env_kwargs:
-env_kwargs:
   initial_xyzs: [[-0.5, 0, 0.5]]
   collision_detection: True
   difficulty: 0
