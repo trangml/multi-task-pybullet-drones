@@ -142,7 +142,7 @@ def train_loop(cfg: DictConfig = None):
     # vectorized one
     envAviary = map_name_to_env(env_name)
     train_env = make_vec_env(
-        envAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
+        envAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=cfg.seed
     )
     # check_env(train_env, warn=True, skip_render_check=True)
     ### Load the saved model if specified #################

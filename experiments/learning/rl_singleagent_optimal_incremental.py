@@ -165,7 +165,7 @@ def train_loop(cfg: DictConfig = None, gradient=None):
     # vectorized one
     envAviary = map_name_to_env(env_name)
     train_env = make_vec_env(
-        envAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
+        envAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=cfg.seed
     )
     # check_env(train_env, warn=True, skip_render_check=True)
     ### Load the saved model if specified #################
@@ -340,14 +340,16 @@ def train_loop(cfg: DictConfig = None, gradient=None):
     if ObservationType[cfg.obs] == ObservationType.KIN:
         eval_env = gym.make(env_name, **sa_env_kwargs)
         eval_env = VecNormalize(
-            eval_env, norm_obs=True, norm_reward=True, clip_obs=10.0
+            eval_env, norm_obs=True, norm_reward=True, clip_obs=10.0, training=False
         )
     else:
         n_envs = 1
         evalAviary = map_name_to_env(env_name)
-        eval_env = make_vec_env(evalAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0)
+        eval_env = make_vec_env(
+            evalAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=cfg.seed
+        )
         eval_env = VecNormalize(
-            eval_env, norm_obs=True, norm_reward=True, clip_obs=10.0
+            eval_env, norm_obs=True, norm_reward=True, clip_obs=10.0, training=False
         )
         eval_env = VecTransposeImage(eval_env)
         # eval_env = VecFrameStack(eval_env, n_stack=4)
