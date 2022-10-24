@@ -23,14 +23,20 @@ from omegaconf import OmegaConf
 from stable_baselines3 import A2C, DDPG, PPO, SAC, TD3
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.vec_env import (VecFrameStack, VecNormalize,
-                                              VecTransposeImage)
+from stable_baselines3.common.vec_env import (
+    VecFrameStack,
+    VecNormalize,
+    VecTransposeImage,
+)
 
 from gym_pybullet_drones.envs.single_agent_rl import map_name_to_env
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
-    ActionType, ObservationType)
-from gym_pybullet_drones.envs.single_agent_rl.common.NotVecNormalize import \
-    NotVecNormalize
+    ActionType,
+    ObservationType,
+)
+from gym_pybullet_drones.envs.single_agent_rl.common.NotVecNormalize import (
+    NotVecNormalize,
+)
 from gym_pybullet_drones.utils.Logger import Logger
 from gym_pybullet_drones.utils.utils import str2bool, sync
 
@@ -99,7 +105,9 @@ def run(
             zips = [a for a in logs if a.endswith("zip")]
             pkls = [a for a in logs if a.endswith("pkl")]
             if len(zips) < 1:
-                print("[ERROR]: no latest model under the specified path", ARGS.exp)
+                raise ValueError(
+                    "[ERROR]: no latest model under the specified path", ARGS.exp
+                )
             else:
                 path = ARGS.exp + "/logs/" + logs[-1]
             if len(pkls) >= 1:
@@ -114,7 +122,7 @@ def run(
             elif os.path.isfile(exp + "/best_model.zip"):
                 path = exp + "/best_model.zip"
             else:
-                print("[ERROR]: no model under the specified path", exp)
+                raise ValueError("[ERROR]: no model under the specified path", exp)
 
             if os.path.isfile(exp + "/vecnormalize_best_model.pkl"):
                 vec_wrapped = True

@@ -31,7 +31,10 @@ from sys import platform
 import gym
 import hydra
 import numpy as np
-from gym_pybullet_drones.envs.single_agent_rl.callbacks.StopTrainingRunningAverageRewardThreshold import StopTrainingRunningAverageRewardThreshold
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.StopTrainingRunningAverageRewardThreshold import (
+    StopTrainingRunningAverageRewardThreshold,
+)
+from stable_baselines3.common.evaluation import evaluate_policy
 import shared_constants
 import torch
 from omegaconf import DictConfig, OmegaConf, open_dict
@@ -396,13 +399,14 @@ def train_loop(cfg: DictConfig = None):
     training_duration = cfg.training_duration
     training_steps = int(cfg.n_steps / training_duration)
     training_rewards = []
+    best_average_reward = -np.inf
     for steps in range(training_steps):
         rewards = []
         for ix in range(num_agents):
             models[ix].learn(
                 total_timesteps=int(training_duration),
                 callback=callbacks[ix],
-                log_interval=1000,
+                log_interval=int(training_steps / 10),
                 reset_num_timesteps=False,
             )
             rewards.append(callbacks[ix].callbacks[1].last_mean_reward)
@@ -415,19 +419,28 @@ def train_loop(cfg: DictConfig = None):
         for ix in range(num_agents):
             models[ix].set_parameters(avg_policy)
 
-        average_reward = np.mean(rewards)
-        training_rewards.append(rewards.append(average_reward))
+        # Test the new policy on all environments
+        mean_rewards = []
+        for ix in range(num_agents):
+            mean_reward, std_reward = evaluate_policy(
+                models[ix],
+                eval_envs[ix],
+                n_eval_episodes=1,
+                render=False,
+                deterministic=True,
+            )
+            mean_rewards.append(mean_reward)
+        average_reward = np.mean(mean_rewards)
+        mean_rewards.append(average_reward)
+        training_rewards.append(mean_rewards)
         all_successful = True
-        for ix, r in enumerate(rewards):
+
+        for ix, r in enumerate(mean_rewards):
             if r < EPISODE_REWARD_THRESHOLD:
                 all_successful = False
             print(f"Reward for agent {ix} : {r}")
 
-        if all_successful:
-            print("All agents successful, stopping training")
-            break
-
-        # save the model
+        # save the model with some frequency
         if steps % 100 == 0:
             save_path = filename + "/ave_logs/"
             model_path = save_path + f"rl_model_{steps}_steps.zip"
@@ -439,6 +452,25 @@ def train_loop(cfg: DictConfig = None):
             models[0].get_vec_normalize_env().save(vec_normalize_path)
             print(f"Saving model VecNormalize to {vec_normalize_path}")
 
+        # save the model if we have the new best average reward
+        if average_reward > best_average_reward:
+            best_average_reward = average_reward
+            print(f"New best average reward: {best_average_reward} at step {steps}")
+
+            save_path = filename
+            model_path = save_path + f"best_model.zip"
+            # model_path = self._checkpoint_path(extension="zip")
+            models[0].save(model_path)
+            print(f"Saving model checkpoint to {model_path}")
+
+            vec_normalize_path = save_path + f"vecnormalize_best_model.pkl"
+            models[0].get_vec_normalize_env().save(vec_normalize_path)
+            print(f"Saving model VecNormalize to {vec_normalize_path}")
+
+        if all_successful:
+            print("All agents successful, stopping training")
+            break
+
     #### Save the model ########################################
     save_path = filename
     model_path = save_path + f"success_model.zip"
@@ -446,7 +478,7 @@ def train_loop(cfg: DictConfig = None):
     models[0].save(model_path)
     print(f"Saving model checkpoint to {model_path}")
 
-    vec_normalize_path = save_path + f"vecnormalize_best_model.pkl"
+    vec_normalize_path = save_path + f"vecnormalize_success_model.pkl"
     models[0].get_vec_normalize_env().save(vec_normalize_path)
     print(f"Saving model VecNormalize to {vec_normalize_path}")
 
@@ -460,7 +492,7 @@ def train_loop(cfg: DictConfig = None):
                 except Exception as ex:
                     print("oops")
                     raise ValueError("Could not print training progression") from ex
-    return rewards
+    return training_rewards
 
 
 def average_policies(policies, num_agents):

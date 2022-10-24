@@ -1,5 +1,5 @@
 # general script settings
-tag: room_multiagent_naive
+tag: room_multiagent_naive_same_reward
 env: room
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
@@ -10,7 +10,7 @@ act: RPM
 num_agents: 3
 exp: none
 cpu: 1
-training_duration: 1000
+training_duration: 256
 stop_after_no_improvement: 2000
 max_reward: 50 # Default 50
 n_steps: 1e6

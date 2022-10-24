@@ -39,7 +39,7 @@ env_kwargs:
   bounds: [[10, 10, 2], [-10, -10, 0.1]]
 
   # rewards
- reward_components:
+  reward_components:
     OrientationReward:
       scale: 0.01
     BoundsReward:
