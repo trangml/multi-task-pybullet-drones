@@ -458,12 +458,12 @@ def train_loop(cfg: DictConfig = None):
             print(f"New best average reward: {best_average_reward} at step {steps}")
 
             save_path = filename
-            model_path = save_path + f"best_model.zip"
+            model_path = save_path + f"/best_model.zip"
             # model_path = self._checkpoint_path(extension="zip")
             models[0].save(model_path)
             print(f"Saving model checkpoint to {model_path}")
 
-            vec_normalize_path = save_path + f"vecnormalize_best_model.pkl"
+            vec_normalize_path = save_path + f"/vecnormalize_best_model.pkl"
             models[0].get_vec_normalize_env().save(vec_normalize_path)
             print(f"Saving model VecNormalize to {vec_normalize_path}")
 
@@ -473,12 +473,12 @@ def train_loop(cfg: DictConfig = None):
 
     #### Save the model ########################################
     save_path = filename
-    model_path = save_path + f"success_model.zip"
+    model_path = save_path + f"/success_model.zip"
     # model_path = self._checkpoint_path(extension="zip")
     models[0].save(model_path)
     print(f"Saving model checkpoint to {model_path}")
 
-    vec_normalize_path = save_path + f"vecnormalize_success_model.pkl"
+    vec_normalize_path = save_path + f"/vecnormalize_success_model.pkl"
     models[0].get_vec_normalize_env().save(vec_normalize_path)
     print(f"Saving model VecNormalize to {vec_normalize_path}")
 
