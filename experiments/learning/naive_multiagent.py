@@ -31,22 +31,30 @@ from sys import platform
 import gym
 import hydra
 import numpy as np
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.StopTrainingRunningAverageRewardThreshold import StopTrainingRunningAverageRewardThreshold
 import shared_constants
 import torch
 from omegaconf import DictConfig, OmegaConf, open_dict
 from stable_baselines3 import A2C, DDPG, PPO, SAC, TD3
 from stable_baselines3.common.callbacks import (  # StopTrainingOnMaxEpisodes,
-    CallbackList, CheckpointCallback, EvalCallback,
-    StopTrainingOnNoModelImprovement, StopTrainingOnRewardThreshold)
+    CallbackList,
+    CheckpointCallback,
+    EvalCallback,
+    StopTrainingOnNoModelImprovement,
+    StopTrainingOnRewardThreshold,
+)
 from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.policies import \
-    ActorCriticCnnPolicy as a2cppoCnnPolicy
-from stable_baselines3.common.policies import \
-    ActorCriticPolicy as a2cppoMlpPolicy
-from stable_baselines3.common.policies import \
-    MultiInputActorCriticPolicy as a2cppoMultiInputPolicy
-from stable_baselines3.common.vec_env import (VecCheckNan, VecFrameStack,
-                                              VecNormalize, VecTransposeImage)
+from stable_baselines3.common.policies import ActorCriticCnnPolicy as a2cppoCnnPolicy
+from stable_baselines3.common.policies import ActorCriticPolicy as a2cppoMlpPolicy
+from stable_baselines3.common.policies import (
+    MultiInputActorCriticPolicy as a2cppoMultiInputPolicy,
+)
+from stable_baselines3.common.vec_env import (
+    VecCheckNan,
+    VecFrameStack,
+    VecNormalize,
+    VecTransposeImage,
+)
 from stable_baselines3.sac import CnnPolicy as sacCnnPolicy
 from stable_baselines3.sac.policies import SACPolicy as sacMlpPolicy
 from stable_baselines3.td3 import CnnPolicy as td3ddpgCnnPolicy
@@ -54,15 +62,19 @@ from stable_baselines3.td3 import MlpPolicy as td3ddpgMlpPolicy
 
 from gym_pybullet_drones.envs.single_agent_rl import map_name_to_env
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
-    ActionType, ObservationType)
-from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCallback import \
-    CustomCallback
-from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCheckpointCallback import \
-    CustomCheckpointCallback
-from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomEvalCallback import \
-    CustomEvalCallback
+    ActionType,
+    ObservationType,
+)
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCallback import (
+    CustomCallback,
+)
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCheckpointCallback import (
+    CustomCheckpointCallback,
+)
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomEvalCallback import (
+    CustomEvalCallback,
+)
 
-EPISODE_REWARD_THRESHOLD = 1000  # Upperbound: rewards are always negative, but non-zero
 """float: Reward threshold to halt the script."""
 
 MAX_EPISODES = 10000  # Upperbound: number of episodes
@@ -80,6 +92,8 @@ def train_loop(cfg: DictConfig = None):
     np.random.seed(cfg.seed)
     torch.manual_seed(cfg.seed)
     os.environ["PYTHONHASHSEED"] = str(cfg.seed)
+
+    EPISODE_REWARD_THRESHOLD = getattr(cfg, "max_reward", 1000)
 
     #### Save directory ########################################
     filename = (
@@ -142,7 +156,7 @@ def train_loop(cfg: DictConfig = None):
         # vectorized one
         envAviary = map_name_to_env(env_name)
         train_env = make_vec_env(
-            envAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
+            envAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=cfg.seed
         )
         # check_env(train_env, warn=True, skip_render_check=True)
         ### Load the saved model if specified #################
@@ -319,16 +333,16 @@ def train_loop(cfg: DictConfig = None):
         if ObservationType[cfg.obs] == ObservationType.KIN:
             eval_env = gym.make(env_name, **sa_env_kwargs)
             eval_env = VecNormalize(
-                eval_env, norm_obs=True, norm_reward=True, clip_obs=10.0
+                eval_env, norm_obs=True, norm_reward=True, clip_obs=10.0, training=False
             )
         else:
             n_envs = 1
             evalAviary = map_name_to_env(env_name)
             eval_env = make_vec_env(
-                evalAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0
+                evalAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=cfg.seed
             )
             eval_env = VecNormalize(
-                eval_env, norm_obs=True, norm_reward=True, clip_obs=10.0
+                eval_env, norm_obs=True, norm_reward=True, clip_obs=10.0, training=False
             )
             eval_env = VecTransposeImage(eval_env)
             # eval_env = VecFrameStack(eval_env, n_stack=4)
@@ -342,21 +356,24 @@ def train_loop(cfg: DictConfig = None):
             verbose=2,
             save_vecnormalize=True,
         )
-        callback_on_best = StopTrainingOnRewardThreshold(
-            reward_threshold=EPISODE_REWARD_THRESHOLD, verbose=1
-        )
-        stop_callback = StopTrainingOnNoModelImprovement(
-            max_no_improvement_evals=(
-                cfg.stop_after_no_improvement
-                if cfg.stop_after_no_improvement is not None
-                else cfg.n_steps
-            ),
-            min_evals=100,
-            verbose=1,
+        # callback_on_best = StopTrainingOnRewardThreshold(
+        #     reward_threshold=EPISODE_REWARD_THRESHOLD, verbose=1
+        # )
+        # stop_callback = StopTrainingOnNoModelImprovement(
+        #     max_no_improvement_evals=(
+        #         cfg.stop_after_no_improvement
+        #         if cfg.stop_after_no_improvement is not None
+        #         else cfg.n_steps
+        #     ),
+        #     min_evals=100,
+        #     verbose=1,
+        # )
+        stop_callback = StopTrainingRunningAverageRewardThreshold(
+            reward_threshold=EPISODE_REWARD_THRESHOLD, eval_rollback_len=10, verbose=1
         )
         eval_callback = CustomEvalCallback(
             eval_env,
-            callback_on_new_best=callback_on_best,
+            # callback_on_new_best=callback_on_best,
             callback_after_eval=stop_callback,
             verbose=1,
             best_model_save_path=filename + f"/best_{ix}/",
@@ -432,7 +449,6 @@ def train_loop(cfg: DictConfig = None):
     vec_normalize_path = save_path + f"vecnormalize_best_model.pkl"
     models[0].get_vec_normalize_env().save(vec_normalize_path)
     print(f"Saving model VecNormalize to {vec_normalize_path}")
-
 
     for ix in range(num_agents):
         #### Print training progression ############################

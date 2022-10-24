@@ -1,5 +1,5 @@
 # general script settings
-tag: version_2_test
+tag: room_multiagent_naive
 env: room
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
@@ -7,12 +7,14 @@ algo: ppo
 obs: BOTH
 # choices=["kin", "rgb", "both"],
 act: RPM
+num_agents: 3
 exp: none
 cpu: 1
-stop_after_no_improvement: 10000
+training_duration: 1000
+stop_after_no_improvement: 2000
+max_reward: 50 # Default 50
 n_steps: 1e6
 seed: 0
-max_reward: 10000 # Default 1000
 # PPO arguments
 ppo:
   gae_lambda: 0.95
@@ -32,7 +34,7 @@ ppo:
 # Env specific settings
 env_kwargs:
   initial_xyzs: [[-0.5, 0, 0.5]]
-  difficulty: 2
+  difficulty: 0
 
   # need to account for hitting the ceiling
   bounds: [[10, 10, 2], [-10, -10, 0.1]]
