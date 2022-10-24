@@ -1,6 +1,6 @@
 # general script settings
-tag: incremental_w_grad_accumulation
-env: cross-obstacles
+tag: incremental_rooms
+env: room
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
 #choices=["a2c", "ppo", "sac", "td3", "ddpg"],
@@ -8,7 +8,7 @@ obs: BOTH
 # choices=["kin", "rgb", "both"],
 act: RPM
 exp: none
-cpu: 8
+cpu: 1
 stop_after_no_improvement: 10000
 n_steps: 1e6
 seed: 0
@@ -26,33 +26,37 @@ ppo:
     activation_fn:
       _partial_: true
       _target_: torch.nn.ReLU
-    #net_arch: [512, 256, { "pi": [256, 256], "vf": [256, 256] }]
+    net_arch: [512, 256, { "pi": [256, 256], "vf": [256, 256] }]
 
     #net_arch = [dict(pi=[64, 64], vf=[64, 64])]
     # Agents do better with the default net_arch
 # Env specific settings
 env_kwargs:
-  difficulty: 11
+env_kwargs:
   initial_xyzs: [[-0.5, 0, 0.5]]
-  bounds: [[5, 1, 1], [-1, -1, 0.1]]
   collision_detection: True
+  difficulty: 0
+
+  # need to account for hitting the ceiling
+  bounds: [[10, 10, 2], [-10, -10, 0.1]]
 
   # rewards
   reward_components:
-    EnterAreaReward:
-      scale: 100.0
-      area: [[4, 5], [-1, 1]]
     OrientationReward:
       scale: 0.01
-    IncreaseXRewardV2:
-      scale: 0.1
     BoundsReward:
-      scale: 10.0
+      scale: 1
       bounds: ${env_kwargs.bounds}
-    CollisionReward:
-      scale: 10
-      area: [[4, 5], [-1, 1]]
-      #area: ${env_kwargs.reward_components.EnterAreaReward.area}
+    NoCollisionReward:
+      scale: 0.001
+    SafeDistanceReward:
+      scale: 0.01
+      landing_zone_xyz: [6.5, 0, 0.75]
+    SafeDeltaDistanceReward:
+      scale: 0.5
+      landing_zone_xyz: [6.5, 0, 0.75]
+    TouchLandingZoneReward:
+      scale: 50
   # terminals
   term_components:
     # EnterAreaTerm:
@@ -60,5 +64,5 @@ env_kwargs:
     BoundsTerm:
       bounds: ${env_kwargs.bounds}
     CollisionTerm:
-      area: ${env_kwargs.reward_components.EnterAreaReward.area}
     OrientationTerm:
+    TouchLandingZoneTerm:

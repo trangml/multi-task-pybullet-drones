@@ -155,15 +155,25 @@ def run(
     ACT = ActionType[ARGS.act]
     diff = ARGS.env_kwargs.difficulty
     if ARGS.all_difficulties:
-        if diff > 10 or (ARGS.alternate_difficulty and diff < 10):
-            diff_range = [0, *range(11, 17)]
+        if ARGS.env == "room":
+            diff_range = range(0,3)
+        elif ARGS.env == "cross_obstacles":
+            if diff > 10 or (ARGS.alternate_difficulty and diff < 10):
+                diff_range = [0, *range(11, 17)]
+            else:
+                diff_range = range(0, 7)
         else:
-            diff_range = range(0, 7)
+            raise ValueError("Test not implemented for this environment")
     else:
-        if diff > 10 or (ARGS.alternate_difficulty and diff > 10):
-            diff_range = [0, *range(11, diff + 1)]
+        if ARGS.env == "room":
+            diff_range = range(0,3)
+        elif ARGS.env == "cross_obstacles":
+            if diff > 10 or (ARGS.alternate_difficulty and diff > 10):
+                diff_range = [0, *range(11, diff + 1)]
+            else:
+                diff_range = range(0, diff + 1)
         else:
-            diff_range = range(0, diff + 1)
+            raise ValueError("Test not implemented for this environment")
     #### Evaluate the model ####################################
     cum_results = []
     for difficulty in diff_range:
