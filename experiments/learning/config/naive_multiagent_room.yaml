@@ -37,25 +37,25 @@ env_kwargs:
   difficulty: 0
 
   # need to account for hitting the ceiling
-  bounds: [[10, 10, 2], [-10, -10, 0.1]]
+  bounds: [[10, 10, 1.5], [-10, -10, 0.1]]
 
   # rewards
   reward_components:
     OrientationReward:
       scale: 0.01
     BoundsReward:
-      scale: 1
+      scale: 5
       bounds: ${env_kwargs.bounds}
     NoCollisionReward:
       scale: 0.001
     SafeDistanceReward:
-      scale: 0.01
-      landing_zone_xyz: [6.5, 0, 0.75]
-    SafeDeltaDistanceReward:
       scale: 0.5
       landing_zone_xyz: [6.5, 0, 0.75]
+    SafeDeltaDistanceReward:
+      scale: 0.1
+      landing_zone_xyz: [6.5, 0, 0.75]
     TouchLandingZoneReward:
-      scale: 50
+      scale: 100
   # terminals
   term_components:
     # EnterAreaTerm:
