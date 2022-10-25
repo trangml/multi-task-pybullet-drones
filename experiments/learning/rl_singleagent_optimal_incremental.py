@@ -85,15 +85,19 @@ DEFAULT_OUTPUT_FOLDER = "results"
     config_name="rl_singleagent_optimal_incremental",
 )
 def train_agents(cfg: DictConfig = None):
+    base_tag = cfg.tag
     cfg.env_kwargs.difficulty = 0
     if cfg.env == "cross-obstacles":
         diff_range = list(range(11, 17))
     elif cfg.env == "room":
         diff_range = list(range(1, 3))
+
+    cfg.tag = base_tag + f"_difficulty_{cfg.env_kwargs.difficulty}"
     reward, gradient = train_loop(cfg)
     overall_rewards = [reward]
     for difficulty_ix in diff_range:
         cfg.env_kwargs.difficulty = difficulty_ix
+        cfg.tag = base_tag + f"_difficulty_{cfg.env_kwargs.difficulty}"
         reward, new_grad = train_loop(cfg, gradient)
         overall_rewards.append(reward)
         for g, new_g in zip(gradient, new_grad):
