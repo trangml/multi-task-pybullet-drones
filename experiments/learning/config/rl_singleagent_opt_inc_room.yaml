@@ -1,5 +1,5 @@
 # general script settings
-tag: incremental_rooms
+tag: optimal_incremental_rooms_grad_weight-0.2
 env: room
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
@@ -19,7 +19,7 @@ ppo:
   gamma: 0.99
   ent_coef: 0.0
   learning_rate: 2.5e-4
-  gradient_weight: 1 # needed for distributed PPO
+  gradient_weight: 0.2 # needed for distributed PPO
   policy_kwargs:
     log_std_init: -1
     ortho_init: False

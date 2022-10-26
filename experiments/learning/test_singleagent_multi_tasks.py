@@ -156,8 +156,8 @@ def run(
     diff = ARGS.env_kwargs.difficulty
     if ARGS.all_difficulties:
         if ARGS.env == "room":
-            diff_range = range(0,3)
-        elif ARGS.env == "cross_obstacles":
+            diff_range = range(0, 3)
+        elif ARGS.env == "cross-obstacles":
             if diff > 10 or (ARGS.alternate_difficulty and diff < 10):
                 diff_range = [0, *range(11, 17)]
             else:
@@ -166,7 +166,7 @@ def run(
             raise ValueError("Test not implemented for this environment")
     else:
         if ARGS.env == "room":
-            diff_range = range(0,3)
+            diff_range = range(0, 3)
         elif ARGS.env == "cross_obstacles":
             if diff > 10 or (ARGS.alternate_difficulty and diff > 10):
                 diff_range = [0, *range(11, diff + 1)]
