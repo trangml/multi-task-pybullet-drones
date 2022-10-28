@@ -423,7 +423,7 @@ def train_loop(cfg: DictConfig = None, gradient=None, old_policy=None):
             except Exception as ex:
                 print("oops")
                 raise ValueError("Could not print training progression") from ex
-    return reward, model.get_parameters(), model.grads
+    return reward, model.policy.parameters(), model.grads
 
 
 if __name__ == "__main__":
