@@ -102,8 +102,11 @@ class DistributedPPO(OnPolicyAlgorithm):
         seed: Optional[int] = None,
         device: Union[th.device, str] = "auto",
         _init_setup_model: bool = True,
+        old_policy: Optional[List[th.Tensor]] = None,
+        hessian_approx: float = 1.0,
         gradient: Optional[List[th.Tensor]] = None,
         gradient_weight: float = 1.0,
+        second_order: bool = False,
     ):
 
         super().__init__(
@@ -133,8 +136,11 @@ class DistributedPPO(OnPolicyAlgorithm):
             ),
         )
 
+        self.second_order = second_order
         self.old_grad = gradient
         self.gradient_weight = gradient_weight
+        self.old_policy = old_policy
+        self.hessian_approx = hessian_approx
         # Sanity check, otherwise it will lead to noisy gradient and NaN
         # because of the advantage normalization
         if normalize_advantage:
@@ -294,10 +300,24 @@ class DistributedPPO(OnPolicyAlgorithm):
                 # Optimization step
                 self.policy.optimizer.zero_grad()
                 loss.backward()
-                if self.old_grad is not None:
-                    for p, old_p in zip(self.policy.parameters(), self.old_grad):
-                        if p.grad is not None:
-                            p.grad += old_p * self.gradient_weight
+
+                if self.second_order:
+                    if self.old_grad is not None:
+                        for p, old_p, old_p_grad, in zip(
+                            self.policy.parameters(), self.old_policy, self.old_grad
+                        ):
+                            if p.grad is not None:
+                                # Add the second order term
+                                p.grad += (
+                                    old_p_grad * self.gradient_weight
+                                    + abs(p - old_p) * self.hessian_approx
+                                )
+                else:
+                    if self.old_grad is not None:
+                        for p, old_p in zip(self.policy.parameters(), self.old_grad):
+                            if p.grad is not None:
+                                p.grad += old_p * self.gradient_weight
+
                 # Clip grad norm
                 th.nn.utils.clip_grad_norm_(
                     self.policy.parameters(), self.max_grad_norm

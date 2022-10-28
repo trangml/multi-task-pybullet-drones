@@ -94,20 +94,23 @@ def train_agents(cfg: DictConfig = None):
         diff_range = [0, 1]
 
     cfg.tag = base_tag + f"_diff_{cfg.env_kwargs.difficulty}"
-    reward, gradient = train_loop(cfg)
+    reward, policy, gradient = train_loop(cfg)
     overall_rewards = [reward]
     for difficulty_ix in diff_range:
         cfg.env_kwargs.difficulty = difficulty_ix
         cfg.tag = cfg.tag + f"_diff_{cfg.env_kwargs.difficulty}"
-        reward, new_grad = train_loop(cfg, gradient)
+        reward, new_policy, new_grad = train_loop(cfg, gradient, policy)
         overall_rewards.append(reward)
         for g, new_g in zip(gradient, new_grad):
             g += new_g
+        for p, new_p in zip(policy, new_policy):
+            p += new_p
+
     print("Overall rewards: ", overall_rewards)
     return overall_rewards
 
 
-def train_loop(cfg: DictConfig = None, gradient=None):
+def train_loop(cfg: DictConfig = None, gradient=None, old_policy=None):
     # cfg = OmegaConf.load(ARGS.config)
     pprint.pprint(cfg)
 
@@ -279,6 +282,7 @@ def train_loop(cfg: DictConfig = None, gradient=None):
                 verbose=1,
                 seed=cfg.seed,
                 gradient=gradient,
+                old_policy=old_policy,
                 **p_kwargs,
             )
 
@@ -419,7 +423,7 @@ def train_loop(cfg: DictConfig = None, gradient=None):
             except Exception as ex:
                 print("oops")
                 raise ValueError("Could not print training progression") from ex
-    return reward, model.grads
+    return reward, model.get_parameters(), model.grads
 
 
 if __name__ == "__main__":
