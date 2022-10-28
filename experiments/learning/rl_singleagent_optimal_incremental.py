@@ -107,7 +107,7 @@ def train_agents(cfg: DictConfig = None):
             p += new_p
 
     print("Overall rewards: ", overall_rewards)
-    return overall_rewards
+    return sum(overall_rewards)
 
 
 def train_loop(cfg: DictConfig = None, gradient=None, old_policy=None):
