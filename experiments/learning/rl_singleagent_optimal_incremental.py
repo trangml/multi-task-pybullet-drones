@@ -85,31 +85,37 @@ DEFAULT_OUTPUT_FOLDER = "results"
     config_name="rl_singleagent_optimal_incremental",
 )
 def train_agents(cfg: DictConfig = None):
-    base_tag = cfg.tag
-    cfg.env_kwargs.difficulty = 0
-    if cfg.env == "cross-obstacles":
-        diff_range = list(range(11, 17))
-    elif cfg.env == "room":
-        cfg.env_kwargs.difficulty = 2
-        diff_range = [0, 1]
+    try:
+        base_tag = cfg.tag
+        cfg.env_kwargs.difficulty = 0
+        if cfg.env == "cross-obstacles":
+            diff_range = list(range(11, 17))
+        elif cfg.env == "room":
+            cfg.env_kwargs.difficulty = 2
+            diff_range = [0, 1]
 
-    cfg.tag = base_tag + f"_diff_{cfg.env_kwargs.difficulty}"
-    reward, policy, gradient = train_loop(cfg)
-    overall_rewards = [reward]
-    for difficulty_ix in diff_range:
-        cfg.env_kwargs.difficulty = difficulty_ix
-        cfg.tag = cfg.tag + f"_diff_{cfg.env_kwargs.difficulty}"
-        reward, new_policy, new_grad = train_loop(
-            cfg, gradient=gradient, old_policy=policy
-        )
-        overall_rewards.append(reward)
-        for g, new_g in zip(gradient, new_grad):
-            g += new_g
-        for p, new_p in zip(policy, new_policy):
-            p.data += new_p.data
+        cfg.tag = base_tag + f"_diff_{cfg.env_kwargs.difficulty}"
+        reward, policy, gradient = train_loop(cfg)
+        overall_rewards = [reward]
 
-    print("Overall rewards: ", overall_rewards)
-    return sum(overall_rewards)
+        for ix, difficulty_ix in enumerate(diff_range):
+            cfg.env_kwargs.difficulty = difficulty_ix
+            cfg.tag = cfg.tag + f"_diff_{cfg.env_kwargs.difficulty}"
+            reward, new_policy, new_grad = train_loop(
+                cfg, gradient=gradient, old_policy=policy
+            )
+            overall_rewards.append(reward)
+            for g, new_g in zip(gradient, new_grad):
+                g = ((g * (ix + 1)) + new_g) / (ix + 2)
+            for p, new_p in zip(policy, new_policy):
+                p.data += new_p.data
+                p.data = ((p.data * (ix + 1)) + new_p.data) / (ix + 2)
+
+        print("Overall rewards: ", overall_rewards)
+        return sum(overall_rewards)
+    except ValueError as e:
+        print(e)
+        return float("nan")
 
 
 def train_loop(cfg: DictConfig = None, gradient=None, old_policy=None):
