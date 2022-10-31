@@ -357,7 +357,6 @@ def train_loop(cfg: DictConfig = None):
             save_path=filename + f"/logs{ix}/",
             name_prefix="rl_model",
             verbose=2,
-            save_vecnormalize=True,
         )
         # callback_on_best = StopTrainingOnRewardThreshold(
         #     reward_threshold=EPISODE_REWARD_THRESHOLD, verbose=1
@@ -384,7 +383,6 @@ def train_loop(cfg: DictConfig = None):
             eval_freq=int(2000 / cfg.cpu),
             deterministic=True,
             render=False,
-            save_vecnormalize=True,
         )
         custom_callback = CustomCallback()
         training_callback = CallbackList(
@@ -448,9 +446,9 @@ def train_loop(cfg: DictConfig = None):
             models[0].save(model_path)
             print(f"Saving model checkpoint to {model_path}")
 
-            vec_normalize_path = save_path + f"rl_model_vecnormalize_{steps}_steps.pkl"
-            models[0].get_vec_normalize_env().save(vec_normalize_path)
-            print(f"Saving model VecNormalize to {vec_normalize_path}")
+            # vec_normalize_path = save_path + f"rl_model_vecnormalize_{steps}_steps.pkl"
+            # models[0].get_vec_normalize_env().save(vec_normalize_path)
+            # print(f"Saving model VecNormalize to {vec_normalize_path}")
 
         # save the model if we have the new best average reward
         if average_reward > best_average_reward:
@@ -463,9 +461,9 @@ def train_loop(cfg: DictConfig = None):
             models[0].save(model_path)
             print(f"Saving model checkpoint to {model_path}")
 
-            vec_normalize_path = save_path + f"/vecnormalize_best_model.pkl"
-            models[0].get_vec_normalize_env().save(vec_normalize_path)
-            print(f"Saving model VecNormalize to {vec_normalize_path}")
+            # vec_normalize_path = save_path + f"/vecnormalize_best_model.pkl"
+            # models[0].get_vec_normalize_env().save(vec_normalize_path)
+            # print(f"Saving model VecNormalize to {vec_normalize_path}")
 
         if all_successful:
             print("All agents successful, stopping training")
@@ -478,9 +476,9 @@ def train_loop(cfg: DictConfig = None):
     models[0].save(model_path)
     print(f"Saving model checkpoint to {model_path}")
 
-    vec_normalize_path = save_path + f"/vecnormalize_success_model.pkl"
-    models[0].get_vec_normalize_env().save(vec_normalize_path)
-    print(f"Saving model VecNormalize to {vec_normalize_path}")
+    # vec_normalize_path = save_path + f"/vecnormalize_success_model.pkl"
+    # models[0].get_vec_normalize_env().save(vec_normalize_path)
+    # print(f"Saving model VecNormalize to {vec_normalize_path}")
 
     for ix in range(num_agents):
         #### Print training progression ############################
