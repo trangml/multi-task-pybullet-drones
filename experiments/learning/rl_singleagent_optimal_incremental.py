@@ -95,14 +95,18 @@ def train_agents(cfg: DictConfig = None):
             diff_range = [0, 1]
 
         cfg.tag = base_tag + f"_diff_{cfg.env_kwargs.difficulty}"
-        reward, policy, gradient, parameters = train_loop(cfg)
+        reward, policy, gradient, parameters, vec_normalize_path = train_loop(cfg)
         overall_rewards = [reward]
 
         for ix, difficulty_ix in enumerate(diff_range):
             cfg.env_kwargs.difficulty = difficulty_ix
             cfg.tag = cfg.tag + f"_diff_{cfg.env_kwargs.difficulty}"
-            reward, new_policy, new_grad = train_loop(
-                cfg, gradient=gradient, old_policy=policy, parameters=parameters
+            reward, new_policy, new_grad, parameters, vec_normalize_path = train_loop(
+                cfg,
+                gradient=gradient,
+                old_policy=policy,
+                parameters=parameters,
+                vec_normalize_path=vec_normalize_path,
             )
             overall_rewards.append(reward)
             for g, new_g in zip(gradient, new_grad):
@@ -303,7 +307,7 @@ def train_loop(
                 **p_kwargs,
             )
             if parameters is not None:
-                model.load_parameters(parameters)
+                model.set_parameters(parameters)
 
         #### Off-policy algorithms #################################
         offpolicy_kwargs = dict(
@@ -431,7 +435,6 @@ def train_loop(
 
     #### Save the model ########################################
     model.save(filename + "/success_model.zip")
-    vec_normalize_path = filename + "/vec_normalize.pkl"
     model.get_vec_normalize_env().save(filename + "/vecnormalize_success_model.pkl")
     print(filename)
 
@@ -443,6 +446,8 @@ def train_loop(
             except Exception as ex:
                 print("oops")
                 raise ValueError("Could not print training progression") from ex
+
+    vec_normalize_path = filename + "/vecnormalize_best_model.pkl"
     return (
         reward,
         list(model.policy.parameters()),

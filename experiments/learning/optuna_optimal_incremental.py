@@ -12,7 +12,7 @@ def objective(trial):
     cfg = load_config(__file__)
     # cfg = {**ppo_params, **drone_params}
     cfg = OmegaConf.merge(cfg, ppo_params)
-    cfg["tag"] = f"retain_policy_optuna_{trial.number}"
+    cfg["tag"] = f"short_timesteps_retain_policy_optuna_{trial.number}"
     reward = train_agents(cfg)
     return reward
 
