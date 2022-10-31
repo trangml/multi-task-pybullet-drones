@@ -10,6 +10,7 @@ To run the script, type in a terminal:
 
 """
 import argparse
+from genericpath import isfile
 import os
 import random
 import time
@@ -91,14 +92,32 @@ def run(
     vec_norm_pth = exp + "/vec_normalize_best_model.pkl"
     if ARGS.override_path is not None:
         path = ARGS.override_path
-        idx = ARGS.override_path.rindex("_", 0, len(ARGS.override_path) - 10)
-        vec_norm_pth = (
-            ARGS.override_path[:idx]
-            + "_vecnormalize"
-            + ARGS.override_path[idx:-3]
-            + "pkl"
-        )
-        # TODO: add vecnorm pickle check
+        if "best_model" in path:
+            idx = ARGS.override_path.rindex("best_model")
+            vec_norm_pth = (
+                ARGS.override_path[:idx]
+                + "vecnormalize_"
+                + ARGS.override_path[idx:-3]
+                + "pkl"
+            )
+            print(vec_norm_pth)
+            if os.path.isfile(vec_norm_pth):
+                vec_wrapped = True
+                print("VecNormalize found")
+        else:
+            # otherwise its a specific path to the log
+            idx = ARGS.override_path.rindex("_", 0, len(ARGS.override_path) - 10)
+            vec_norm_pth = (
+                ARGS.override_path[:idx]
+                + "_vecnormalize"
+                + ARGS.override_path[idx:-3]
+                + "pkl"
+            )
+            print(vec_norm_pth)
+            if os.path.isfile(vec_norm_pth):
+                vec_wrapped = True
+                print("VecNormalize found")
+            raise
     else:
         if ARGS.latest:
             logs = os.listdir(ARGS.exp + "/logs")
@@ -145,6 +164,7 @@ def run(
     OBS = ObservationType[ARGS.obs]
     ACT = ActionType[ARGS.act]
 
+    total_rewards = []
     #### Evaluate the model ####################################
     for ix in range(num_agents):
         ARGS.env_kwargs["difficulty"] = ix
@@ -318,10 +338,14 @@ def run(
         print("Total Timesteps: ", steps)
         print("Total Reward: ", total_reward)
         # logger.save_as_csv("sa")  # Optional CSV save
+        total_rewards.append(total_reward)
         if plot:
             logger.plot()
             logger.plot_rewards()
             logger.save_rewards(exp, mean_reward, std_reward)
+    print("Total Rewards: ", total_rewards)
+    for i, tr in enumerate(total_rewards):
+        print("Agent ", i, ": ", tr[0])
 
 
 if __name__ == "__main__":

@@ -95,14 +95,14 @@ def train_agents(cfg: DictConfig = None):
             diff_range = [0, 1]
 
         cfg.tag = base_tag + f"_diff_{cfg.env_kwargs.difficulty}"
-        reward, policy, gradient = train_loop(cfg)
+        reward, policy, gradient, parameters = train_loop(cfg)
         overall_rewards = [reward]
 
         for ix, difficulty_ix in enumerate(diff_range):
             cfg.env_kwargs.difficulty = difficulty_ix
             cfg.tag = cfg.tag + f"_diff_{cfg.env_kwargs.difficulty}"
             reward, new_policy, new_grad = train_loop(
-                cfg, gradient=gradient, old_policy=policy
+                cfg, gradient=gradient, old_policy=policy, parameters=parameters
             )
             overall_rewards.append(reward)
             for g, new_g in zip(gradient, new_grad):
@@ -118,7 +118,13 @@ def train_agents(cfg: DictConfig = None):
         return float("nan")
 
 
-def train_loop(cfg: DictConfig = None, gradient=None, old_policy=None):
+def train_loop(
+    cfg: DictConfig = None,
+    gradient=None,
+    old_policy=None,
+    parameters=None,
+    vec_normalize_path=None,
+):
     # cfg = OmegaConf.load(ARGS.config)
     pprint.pprint(cfg)
 
@@ -234,9 +240,12 @@ def train_loop(cfg: DictConfig = None, gradient=None, old_policy=None):
         print("[INFO] Observation space:", train_env.observation_space)
         model.set_env(train_env)
     else:
-        train_env = VecNormalize(
-            train_env, norm_obs=True, norm_reward=True, clip_obs=10.0
-        )
+        if vec_normalize_path is not None:
+            train_env = VecNormalize.load(vec_normalize_path, train_env)
+        else:
+            train_env = VecNormalize(
+                train_env, norm_obs=True, norm_reward=True, clip_obs=10.0
+            )
         if ObservationType[cfg.obs] != ObservationType.KIN:
             train_env = VecTransposeImage(train_env)
             # train_env = VecCheckNan(train_env, raise_exception=True)
@@ -293,6 +302,8 @@ def train_loop(cfg: DictConfig = None, gradient=None, old_policy=None):
                 old_policy=old_policy,
                 **p_kwargs,
             )
+            if parameters is not None:
+                model.load_parameters(parameters)
 
         #### Off-policy algorithms #################################
         offpolicy_kwargs = dict(
@@ -420,6 +431,7 @@ def train_loop(cfg: DictConfig = None, gradient=None, old_policy=None):
 
     #### Save the model ########################################
     model.save(filename + "/success_model.zip")
+    vec_normalize_path = filename + "/vec_normalize.pkl"
     model.get_vec_normalize_env().save(filename + "/vecnormalize_success_model.pkl")
     print(filename)
 
@@ -431,7 +443,13 @@ def train_loop(cfg: DictConfig = None, gradient=None, old_policy=None):
             except Exception as ex:
                 print("oops")
                 raise ValueError("Could not print training progression") from ex
-    return reward, list(model.policy.parameters()), model.grads
+    return (
+        reward,
+        list(model.policy.parameters()),
+        model.grads,
+        model.get_parameters(),
+        vec_normalize_path,
+    )
 
 
 if __name__ == "__main__":

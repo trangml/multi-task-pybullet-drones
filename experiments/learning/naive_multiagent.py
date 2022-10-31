@@ -208,9 +208,9 @@ def train_loop(cfg: DictConfig = None):
             print("[INFO] Observation space:", train_env.observation_space)
             model.set_env(train_env)
         else:
-            train_env = VecNormalize(
-                train_env, norm_obs=True, norm_reward=True, clip_obs=10.0
-            )
+            # train_env = VecNormalize(
+            #     train_env, norm_obs=True, norm_reward=True, clip_obs=10.0
+            # )
             if ObservationType[cfg.obs] != ObservationType.KIN:
                 train_env = VecTransposeImage(train_env)
                 # train_env = VecCheckNan(train_env, raise_exception=True)
