@@ -448,6 +448,9 @@ def train_loop(
                 raise ValueError("Could not print training progression") from ex
 
     vec_normalize_path = filename + "/vecnormalize_best_model.pkl"
+
+    # Load the best model that we trained during the training and use that as the model which is transferred to the next task
+    model.load(filename + "/best_model.zip")
     return (
         reward,
         list(model.policy.parameters()),
