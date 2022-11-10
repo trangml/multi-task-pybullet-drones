@@ -141,6 +141,7 @@ class DistributedPPO(OnPolicyAlgorithm):
         self.gradient_weight = gradient_weight
         self.old_policy = old_policy
         self.hessian_approx = hessian_approx
+        self.grads = self.old_grad
         # Sanity check, otherwise it will lead to noisy gradient and NaN
         # because of the advantage normalization
         if normalize_advantage:

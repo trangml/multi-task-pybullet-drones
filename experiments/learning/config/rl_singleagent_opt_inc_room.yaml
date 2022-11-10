@@ -1,5 +1,5 @@
 # general script settings
-tag: optimal_incremental_rooms_grad_weight-0.2
+tag: incremental_soa_tuned_final
 env: room
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
@@ -11,7 +11,7 @@ exp: none
 cpu: 1
 stop_after_no_improvement: 10000
 n_steps: 1e6
-seed: 0
+seed: 1
 max_reward: 10000 # Default 1000
 # PPO arguments
 ppo:
@@ -19,8 +19,8 @@ ppo:
   gamma: 0.99
   ent_coef: 0.0
   learning_rate: 2.5e-4
-  gradient_weight: 0.2 # needed for distributed PPO
-  hessian_approx: 1
+  gradient_weight: 0.002 # needed for distributed PPO
+  hessian_approx: 0.004
   second_order: True
   policy_kwargs:
     log_std_init: -1
