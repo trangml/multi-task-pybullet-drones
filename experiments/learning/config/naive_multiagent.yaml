@@ -1,5 +1,5 @@
 # general script settings
-tag: naive_test
+tag: multiagent_norm_reward
 env: cross-obstacles
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
@@ -9,11 +9,11 @@ obs: BOTH
 act: RPM
 num_agents: 6
 exp: none
-cpu: 8
+cpu: 1
 training_duration: 1000
 stop_after_no_improvement: 2000
 n_steps: 1e6
-seed: 0
+seed: 1
 # PPO arguments
 ppo:
   gae_lambda: 0.95
@@ -39,14 +39,19 @@ env_kwargs:
   # rewards
   reward_components:
     EnterAreaReward:
-      scale: 100.0
-      area: [[4, 5], [-1, 1]]
+      scale: 1.0
+      area:
+        - - 4
+          - 5
+        - - -1
+          - 1
     OrientationReward:
       scale: 0.01
     IncreaseXRewardV2:
-      scale: 0.1
+      scale: 1
+      delta: 0.05
     BoundsReward:
-      scale: 10.0
+      scale: 0.1
       bounds: ${env_kwargs.bounds}
     CollisionReward:
       scale: 0.1
