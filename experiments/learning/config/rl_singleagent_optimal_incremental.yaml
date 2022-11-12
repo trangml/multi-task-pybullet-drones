@@ -11,7 +11,7 @@ exp: none
 cpu: 8
 stop_after_no_improvement: 10000
 n_steps: 1e6
-seed: 0
+seed: 3
 max_reward: 10000 # Default 1000
 # PPO arguments
 ppo:
@@ -19,7 +19,7 @@ ppo:
   gamma: 0.99
   ent_coef: 0.0
   learning_rate: 2.5e-4
-  gradient_weight: 0.006
+  gradient_weight: 0.002
   hessian_approx: 0.002
   second_order: true
   policy_kwargs:
@@ -40,21 +40,25 @@ env_kwargs:
   collision_detection: True
 
   # rewards
-  reward_components:
+ reward_components:
     EnterAreaReward:
-      scale: 100.0
-      area: [[4, 5], [-1, 1]]
+      scale: 1.0
+      area:
+      - - 4
+        - 5
+      - - -1
+        - 1
     OrientationReward:
       scale: 0.01
     IncreaseXRewardV2:
-      scale: 0.1
+      scale: 1
+      delta: 0.05
     BoundsReward:
-      scale: 10.0
+      scale: 0.1
       bounds: ${env_kwargs.bounds}
     CollisionReward:
-      scale: 10
-      area: [[4, 5], [-1, 1]]
-      #area: ${env_kwargs.reward_components.EnterAreaReward.area}
+      scale: 0.1
+      area: ${env_kwargs.reward_components.EnterAreaReward.area}
   # terminals
   term_components:
     # EnterAreaTerm:

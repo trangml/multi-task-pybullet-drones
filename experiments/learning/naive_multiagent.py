@@ -459,6 +459,16 @@ def train_loop(cfg: DictConfig = None):
             model_path = save_path + f"/best_model.zip"
             # model_path = self._checkpoint_path(extension="zip")
             models[0].save(model_path)
+
+            with open(
+                os.path.join(save_path, "best_model_log.txt"), "a",
+            ) as file_handler:
+                file_handler.write(
+                    f"New best average reward: {best_average_reward} at step {steps}\n"
+                )
+                for ix, r in enumerate(mean_rewards):
+                    file_handler.write(f"Reward for agent {ix} : {r}\n")
+
             print(f"Saving model checkpoint to {model_path}")
 
             # vec_normalize_path = save_path + f"/vecnormalize_best_model.pkl"
