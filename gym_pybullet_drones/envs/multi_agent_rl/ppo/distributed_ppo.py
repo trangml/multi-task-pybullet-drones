@@ -309,9 +309,10 @@ class DistributedPPO(OnPolicyAlgorithm):
                         ):
                             if p.grad is not None:
                                 # Add the second order term
-                                p.grad += (
+                                # Try subtracting, probably wrong
+                                p.grad -= (
                                     old_p_grad * self.gradient_weight
-                                    + abs(p - old_p) * self.hessian_approx
+                                    + (p - old_p) * self.hessian_approx
                                 )
                 else:
                     if self.old_grad is not None:

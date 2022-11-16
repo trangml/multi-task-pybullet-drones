@@ -117,7 +117,8 @@ def run(
             if os.path.isfile(vec_norm_pth):
                 vec_wrapped = True
                 print("VecNormalize found")
-            raise
+            else:
+                print("VecNormalize not found")
     else:
         if ARGS.latest:
             logs = os.listdir(ARGS.exp + "/logs")
@@ -166,6 +167,8 @@ def run(
 
     total_rewards = []
     #### Evaluate the model ####################################
+    mean_rewards = []
+    std_rewards = []
     for ix in range(num_agents):
         ARGS.env_kwargs["difficulty"] = ix
 
@@ -186,7 +189,11 @@ def run(
         else:
             eval_env = gym.make(env_name, **env_kwargs,)
 
-        mean_reward, std_reward = evaluate_policy(model, eval_env, n_eval_episodes=1)
+        mean_reward, std_reward = evaluate_policy(
+            model, eval_env, n_eval_episodes=5, deterministic=False
+        )
+        mean_rewards.append(mean_reward)
+        std_rewards.append(std_reward)
         print("\n\n\nMean reward ", mean_reward, " +- ", std_reward, "\n\n")
 
         #### Show, record a video, and log the model's performance #
@@ -209,6 +216,7 @@ def run(
                 test_env = VecTransposeImage(test_env)
         else:
             test_env = gym.make(env_name, **env_kwargs,)
+            test_env = VecTransposeImage(test_env)
 
         total_reward = 0
         if vec_wrapped:
@@ -283,7 +291,7 @@ def run(
                 num_rewards=len(test_env.reward_dict),
                 rewards_names=list(test_env.reward_dict.keys()),
                 # done_names=list(test_env.term_dict.keys()),
-                output_folder=output_folder,
+                output_folder=test_env.CURR_OUTPUT_FOLDER,
                 save=ARGS.record,
             )
 
@@ -342,10 +350,15 @@ def run(
         if plot:
             logger.plot()
             logger.plot_rewards()
-            logger.save_rewards(exp, mean_reward, std_reward)
+            if ARGS.record:
+                logger.save_rewards(exp, mean_reward, std_reward)
     print("Total Rewards: ", total_rewards)
     for i, tr in enumerate(total_rewards):
-        print("Agent ", i, ": ", tr[0])
+        print("Agent ", i, ": ", tr)
+    print("Mean Reward: ", np.mean(total_rewards))
+    print("eval Results")
+    for ix, (mr, std) in enumerate(zip(mean_rewards, std_rewards)):
+        print(f"Agent {ix}: mean rewards: {mr}, {std=}")
 
 
 if __name__ == "__main__":

@@ -335,18 +335,18 @@ def train_loop(cfg: DictConfig = None):
         #### Create evaluation environment #########################
         if ObservationType[cfg.obs] == ObservationType.KIN:
             eval_env = gym.make(env_name, **sa_env_kwargs)
-            eval_env = VecNormalize(
-                eval_env, norm_obs=True, norm_reward=True, clip_obs=10.0, training=False
-            )
+            # eval_env = VecNormalize(
+            #     eval_env, norm_obs=True, norm_reward=True, clip_obs=10.0, training=False
+            # )
         else:
             n_envs = 1
             evalAviary = map_name_to_env(env_name)
             eval_env = make_vec_env(
                 evalAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=cfg.seed
             )
-            eval_env = VecNormalize(
-                eval_env, norm_obs=True, norm_reward=True, clip_obs=10.0, training=False
-            )
+            # eval_env = VecNormalize(
+            #     eval_env, norm_obs=True, norm_reward=True, clip_obs=10.0, training=False
+            # )
             eval_env = VecTransposeImage(eval_env)
             # eval_env = VecFrameStack(eval_env, n_stack=4)
             # eval_env = VecNormalize(eval_env)
@@ -404,7 +404,7 @@ def train_loop(cfg: DictConfig = None):
             models[ix].learn(
                 total_timesteps=int(training_duration),
                 callback=callbacks[ix],
-                log_interval=int(training_steps / 10),
+                log_interval=int(training_steps / 5),
                 reset_num_timesteps=False,
             )
             rewards.append(callbacks[ix].callbacks[1].last_mean_reward)
@@ -423,11 +423,12 @@ def train_loop(cfg: DictConfig = None):
             mean_reward, std_reward = evaluate_policy(
                 models[ix],
                 eval_envs[ix],
-                n_eval_episodes=1,
+                n_eval_episodes=5,
                 render=False,
-                deterministic=True,
+                deterministic=False,
             )
             mean_rewards.append(mean_reward)
+            models[ix].logger.record("ave_eval/reward_{ix}", mean_reward)
         average_reward = np.mean(mean_rewards)
         mean_rewards.append(average_reward)
         training_rewards.append(mean_rewards)
@@ -460,9 +461,8 @@ def train_loop(cfg: DictConfig = None):
             # model_path = self._checkpoint_path(extension="zip")
             models[0].save(model_path)
 
-            with open(
-                os.path.join(save_path, "best_model_log.txt"), "a",
-            ) as file_handler:
+            log_path = save_path + f"/best_model_log.txt"
+            with open(log_path, "a",) as file_handler:
                 file_handler.write(
                     f"New best average reward: {best_average_reward} at step {steps}\n"
                 )
@@ -493,7 +493,7 @@ def train_loop(cfg: DictConfig = None):
     for ix in range(num_agents):
         #### Print training progression ############################
         print("Log for Agent {}".format(ix))
-        with np.load(filename + f"best_{ix}/evaluations.npz") as data:
+        with np.load(filename + f"/best_{ix}/evaluations.npz") as data:
             for j in range(data["timesteps"].shape[0]):
                 try:
                     print(str(data["timesteps"][j]) + "," + str(data["results"][j][0]))

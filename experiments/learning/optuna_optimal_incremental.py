@@ -5,6 +5,8 @@ from experiments.learning.utils.load_config import load_config
 from omegaconf import OmegaConf
 from omegaconf import DictConfig
 import optuna
+import logging
+import sys
 
 
 def objective(trial):
@@ -18,7 +20,10 @@ def objective(trial):
 
 
 if __name__ == "__main__":
+
+    optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
     study = optuna.create_study()
-    study.optimize(objective, n_trials=100)
+
+    study.optimize(objective, n_trials=50)
 
     print(study.best_params)

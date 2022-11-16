@@ -37,6 +37,7 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
         reward_components: List = [],
         term_components: List = [],
         bounds: List = [[5, 5, 1], [-1, -1, 0.1]],
+        tag: str = "",
     ):
         """Initialization of a single agent RL environment.
 
@@ -97,6 +98,7 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
             record=record,
             obs=obs,
             act=act,
+            tag=tag,
         )
 
         # override base aviary episode length

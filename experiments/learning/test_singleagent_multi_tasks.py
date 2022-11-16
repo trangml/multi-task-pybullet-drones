@@ -176,6 +176,8 @@ def run(
             raise ValueError("Test not implemented for this environment")
     #### Evaluate the model ####################################
     cum_results = []
+    cum_stds = []
+    test_results = []
     for difficulty in diff_range:
         ARGS.env_kwargs.difficulty = difficulty
         env_kwargs = dict(
@@ -194,9 +196,12 @@ def run(
                 eval_env = VecTransposeImage(eval_env)
         else:
             eval_env = gym.make(env_name, **env_kwargs,)
-
-        mean_reward, std_reward = evaluate_policy(model, eval_env, n_eval_episodes=1)
+        eval_env.reset()
+        mean_reward, std_reward = evaluate_policy(
+            model, eval_env, n_eval_episodes=5, deterministic=False
+        )
         cum_results.append(mean_reward)
+        cum_stds.append(std_reward)
 
         print(
             "Evaluated model on {}-difficulty {}-env with mean reward {:.2f} +/- {:.2f}".format(
@@ -353,12 +358,17 @@ def run(
         )
         print("Total Timesteps: ", steps)
         print("Total Reward: ", total_reward)
+        test_results.append(total_reward)
         # logger.save_as_csv("sa")  # Optional CSV save
         if plot:
             logger.plot()
             logger.plot_rewards()
             logger.save_rewards(exp, mean_reward, std_reward)
+    print("Render Results")
+    print(test_results)
+    print("Eval Results, rewards then stds")
     print(cum_results)
+    print(cum_stds)
 
 
 if __name__ == "__main__":

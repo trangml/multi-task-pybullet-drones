@@ -10,8 +10,8 @@ act: RPM
 exp: none
 cpu: 1
 stop_after_no_improvement: 10000
-n_steps: 1e6
-seed: 0
+n_steps: 10000
+seed: 1
 max_reward: 10000 # Default 1000
 # PPO arguments
 ppo:

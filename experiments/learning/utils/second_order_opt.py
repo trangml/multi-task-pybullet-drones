@@ -16,9 +16,11 @@ def sample_ppo_params(trial: optuna.Trial) -> Dict[str, Any]:
     :param trial:
     :return:
     """
-    gradient_weight = trial.suggest_categorical("gradient_weight", [0.02, 0.04, 0.06, 0.08, 0.1, 0.2, 0.4, 0.6, 0.8, 1])
+    gradient_weight = trial.suggest_categorical(
+        "gradient_weight", [0.0001, 0.001, 0.01, 0.1, 1, 10]
+    )
     hessian_approx = trial.suggest_categorical(
-        "hessian_approx", [0.02, 0.04, 0.06, 0.08, 0.1, 0.2, 0.4, 0.6, 0.8, 1]
+        "hessian_approx", [0.0001, 0.001, 0.01, 0.1, 1, 10]
     )
 
     return {

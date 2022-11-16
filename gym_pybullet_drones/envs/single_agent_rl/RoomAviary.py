@@ -301,6 +301,8 @@ class RoomAviary(BaseSingleAgentAviary):
 
         MAX_XY = MAX_LIN_VEL_XY * self.EPISODE_LEN_SEC
         MAX_Z = MAX_LIN_VEL_Z * self.EPISODE_LEN_SEC
+        # MAX_XY = self.bounds[0][0]
+        # MAX_Z = self.bounds[0][2]
 
         MAX_PITCH_ROLL = np.pi  # Full range
 
