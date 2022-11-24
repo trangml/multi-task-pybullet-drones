@@ -13,6 +13,14 @@ import numpy as np
 from numpy import typing as npt
 import pandas as pd
 
+
+plt.rcParams.update({
+    "text.usetex": True,
+    #"font.family": "Helvetica"
+})
+
+
+
 """Credit to https://rob-hall.com/articles/plot-ewma/
 """
 B = TypeVar("B", bound=npt.NBitBase)
@@ -86,14 +94,15 @@ def plot_smoothed(
     return (ax, smoothed_line, line)
 
 
-CSV_FOLDER = "experiments/learning/inputs"
-XLABEL = "Step"
-YLABEL = "Value"
-NAME = "Mean Training Reward for Room-Aviary"
-LABELS = ["R2", "R0-2", "R1-0-2"]
-FILENAME = "training_reward"
+CSV_FOLDER = "experiments/learning/inputs/room_npt"
+XLABEL = "Timestep"
+YLABEL = "Average Training Reward"
+NAME = "Single Agent Training Reward over 1M Timesteps"
+LABELS = ["R0", "R1", "R2"]
+FILENAME = "single_agent_room_training_reward"
 
 paths = sorted(glob.glob(os.path.join(CSV_FOLDER, "*.csv")))
+print(paths)
 
 x = []
 y = []
@@ -127,6 +136,7 @@ for i in range(len(x)):
     plot_smoothed(x=x[i], y=y[i], ax=ax, label=LABELS[i], ewma_alpha=0.01)
 plt.title(NAME)
 plt.xlim([0, 1000000])
+# plt.ylim([0, 120])
 plt.legend()
 plt.grid()
 plt.xlabel(XLABEL)

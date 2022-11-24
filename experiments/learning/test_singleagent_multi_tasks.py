@@ -167,7 +167,7 @@ def run(
     else:
         if ARGS.env == "room":
             diff_range = range(0, 3)
-        elif ARGS.env == "cross_obstacles":
+        elif ARGS.env == "cross-obstacles":
             if diff > 10 or (ARGS.alternate_difficulty and diff > 10):
                 diff_range = [0, *range(11, diff + 1)]
             else:
@@ -259,7 +259,7 @@ def run(
                 obs, reward, done, info = test_env.step(action)
                 total_reward += reward
                 test_env.render()
-                time.sleep(0.05)
+                time.sleep(0.05)  # 1/sim_freq * aggr_phy_steps
                 if OBS == ObservationType.KIN:
                     logger.log(
                         drone=0,
@@ -317,7 +317,7 @@ def run(
                 obs, reward, done, info = test_env.step(action)
                 total_reward += reward
                 test_env.render()
-                time.sleep(0.05)
+                time.sleep(0.05)  # 1/sim_freq * aggr_phy_steps
                 if OBS == ObservationType.KIN:
                     logger.log(
                         drone=0,
