@@ -71,23 +71,26 @@ class FieldCoverageAviary(BaseSingleAgentAviary):
         self.bounds = bounds
         self.landing_zone_xyz = landing_zone_xyz
         self.landing_zone_wlh = landing_zone_wlh
+        self._r_components = reward_components
+        self._t_components = term_components
         self.field_xyz = np.asarray([0, 0, 0.0625 / 2])
-        self.field_wlh = np.asarray([10, 10, 0.0625])
+        self.field_wlh = np.asarray([5, 5, 0.0625])
         self.obstacles = []
-        self.rewardComponents = []
+        self.reward_components = []
         # TODO: consider normalizing total reward between 1 and -1
-        for ix, reward_name in enumerate(reward_components):
-            r_class = getattr(rewards, reward_name)
-            self.rewardComponents.append(r_class(**reward_components[reward_name]))
+        for reward_name in reward_components:
+            if reward_components[reward_name]["scale"] != 0:
+                r_class = getattr(rewards, reward_name)
+                self.reward_components.append(r_class(**reward_components[reward_name]))
 
-        self.termComponents = []
-        for ix, term_name in enumerate(term_components):
+        self.term_components = []
+        for term_name in term_components:
             t_class = getattr(terminations, term_name)
             args = term_components[term_name]
             if args is not None:
-                self.termComponents.append(t_class(**args))
+                self.term_components.append(t_class(**args))
             else:
-                self.termComponents.append(t_class())
+                self.term_components.append(t_class())
         super().__init__(
             drone_model=drone_model,
             initial_xyzs=initial_xyzs,
@@ -100,17 +103,27 @@ class FieldCoverageAviary(BaseSingleAgentAviary):
             obs=obs,
             act=act,
         )
-        self.EPISODE_LEN_SEC = 15
+        self.EPISODE_LEN_SEC = 30
 
+        self.obstacles.append(
+            LandingZone(self.landing_zone_xyz, self.landing_zone_wlh, self.CLIENT)
+        )
         self.obstacles.append(Field(self.field_xyz, self.field_wlh, self.CLIENT))
-        self.rewardComponents.append(FieldCoverageReward(25, self.obstacles[0]))
-        # self.rewardComponents.append(BoundsReward(self, 240, self.bounds))
-        self.reward_dict = getRewardDict(self.rewardComponents)
-        self.term_dict = getTermDict(self.termComponents)
-        self.cum_reward_dict = getRewardDict(self.rewardComponents)
+        self.reward_components.append(FieldCoverageReward(1, self.obstacles[-1]))
+
+        self.reward_dict = getRewardDict(self.reward_components)
+        self.term_dict = getTermDict(self.term_components)
+        self.cum_reward_dict = getRewardDict(self.reward_components)
 
     ################################################################################
+    def reset(self):
+        for rwd in self.reward_components:
+            rwd.reset()
+        for term in self.term_components:
+            term.reset()
+        return super().reset()
 
+    ################################################################################
     def _addObstacles(self):
         """Add obstacles to the environment.
 
@@ -134,7 +147,7 @@ class FieldCoverageAviary(BaseSingleAgentAviary):
         """
         cum_reward = 0
         state = self._getDroneStateVector(0)
-        for reward_component, r_dict in zip(self.rewardComponents, self.reward_dict):
+        for reward_component, r_dict in zip(self.reward_components, self.reward_dict):
             r = reward_component.calculateReward(state)
             self.reward_dict[r_dict] = r
             self.cum_reward_dict[r_dict] += r
@@ -155,7 +168,7 @@ class FieldCoverageAviary(BaseSingleAgentAviary):
             Whether the current episode is done.
 
         """
-        if self.obstacles[0].isAllCovered():
+        if self.obstacles[-1].isAllCovered():
             return True
         if self.completeEpisode:
             return True
@@ -164,7 +177,7 @@ class FieldCoverageAviary(BaseSingleAgentAviary):
         else:
             state = self._getDroneStateVector(0)
             done = False
-            for term_component, t_dict in zip(self.termComponents, self.term_dict):
+            for term_component, t_dict in zip(self.term_components, self.term_dict):
                 t = term_component.calculateTerm(state)
                 self.term_dict[t_dict] = t
                 done = done or t

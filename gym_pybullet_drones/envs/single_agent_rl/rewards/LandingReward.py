@@ -1,3 +1,4 @@
+import copy
 import math
 import numpy as np
 
@@ -22,7 +23,7 @@ class LandingReward(SparseReward):
         self.landing_zone_xyz = landing_zone_xyz
         self.landing_frames = 0
 
-    def _calculateReward(self, state):
+    def _calculateReward(self, state, drone_id):
         position = state[0:3]
 
         # only consider x and y
@@ -48,14 +49,19 @@ class LandingRewardV2(SparseReward):
 
     def __init__(self, scale, landing_zone_xyz):
         super().__init__(scale)
-        self.landing_zone_xyz = landing_zone_xyz
+        self.landing_zone_xyz = np.array(landing_zone_xyz)
+        self.target_position = copy.deepcopy(self.landing_zone_xyz)
         self.landing_frames = 0
         self.rp_bounds = Bounds(-1, 1)
         DRONE_MID_Z = 0.01347
         self.goal_height = landing_zone_xyz[-1] + DRONE_MID_Z
         self.is_landed = False
 
-    def _calculateReward(self, state):
+    def reset(self):
+        self.landing_frames = 0
+        self.is_landed = False
+
+    def _calculateReward(self, state, drone_id):
         position = state[0:3]
 
         # only consider x and y

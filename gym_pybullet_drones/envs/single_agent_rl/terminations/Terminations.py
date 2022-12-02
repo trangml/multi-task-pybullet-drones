@@ -1,5 +1,6 @@
 import math
 import os
+from typing import Type
 import numpy as np
 from gym_pybullet_drones.envs.single_agent_rl.rewards.utils import Bounds, within_bounds
 
@@ -13,11 +14,16 @@ class Terminations:
     def __init__(self):
         pass
 
-    def _calculateTerm(self, state):
+    def reset(self):
+        """Resets the terminal function"""
+        pass
+
+    def _calculateTerm(self, state, drone_id):
+        # if this method is not overriden, then try returning the version which only takes in a state
         return False
 
-    def calculateTerm(self, state):
-        return self._calculateTerm(state)
+    def calculateTerm(self, state, drone_id=1):
+        return self._calculateTerm(state, drone_id)
 
 
 def getTermDict(term):
@@ -38,9 +44,7 @@ class BoundsTerm(Terminations):
         self.bounds = bounds
         self.XYZ_IDX = [0, 1, 2]
 
-    def _calculateTerm(self, state):
-        position = state[0:3]
-
+    def _calculateTerm(self, state, drone_id):
         for dim_idx in self.XYZ_IDX:
             if (
                 state[dim_idx] > self.bounds[0][dim_idx]
@@ -58,7 +62,7 @@ class OrientationTerm(Terminations):
         # Defined as [[x_high, y_high, z_high], [x_low, y_low, z_low]]
         self.bounds = Bounds(min=-1, max=1)
 
-    def _calculateTerm(self, state):
+    def _calculateTerm(self, state, drone_id):
         """
         Calculates if an agent fails the orientation terminal condition
 

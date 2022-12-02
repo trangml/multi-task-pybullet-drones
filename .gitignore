@@ -1,4 +1,4 @@
-# TODOs 
+# TODOs
 TODOs.md
 examples/debug.py
 examples/test.py
@@ -9,6 +9,15 @@ examples/test.py
 # NumPy saves and videos
 files/logs/*.npy
 files/videos/*.mp4
+results/
+experiments/learning/results*
+experiments/learning/inputs*
+experiments/learning/interesting_results*
+tmp/
+
+#cleanrl stuff
+wandb
+runs
 
 # Hydra output logs
 outputs/
@@ -47,6 +56,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+.vscode/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

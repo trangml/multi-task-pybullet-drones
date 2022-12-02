@@ -21,7 +21,7 @@ class SpeedReward(SparseReward):
         super().__init__(scale)
         self.max_speed = max_speed
 
-    def _calculateReward(self, state):
+    def _calculateReward(self, state, drone_id):
         velocity = state[10:13]
         vel = np.linalg.norm(velocity)
 

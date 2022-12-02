@@ -1,3 +1,4 @@
+from typing import Dict, Tuple
 import os
 import numpy as np
 import math
@@ -23,8 +24,19 @@ class Field:
         self.CLIENT = physics
         self.color = color
         self.MASS = 100000
-        self.grid_dim = 0.5
-        self.covered_area = np.zeros((int(wlh[0]), int(wlh[1])))
+        self.grid_dim = 1
+        # grid is represented as (x, y)
+        self.covered_area = np.zeros(
+            (int(self.wlh[0] / self.grid_dim), int(self.wlh[1] / self.grid_dim))
+        )
+        self.total_covered_area = 0
+        self.total_possible_area = self.covered_area.size
+
+    def reset(self):
+        self.covered_area = np.zeros(
+            (int(self.wlh[0] / self.grid_dim), int(self.wlh[1] / self.grid_dim))
+        )
+        self.total_covered_area = 0
 
     def _addObstacles(self):
         """Add obstacles to the environment.
@@ -46,6 +58,28 @@ class Field:
         # )
         # p.changeVisualShape(self.landing_zone, linkIndex, rgbaColor=self.color)
 
+    def coordinates_to_grid(self, new_spot) -> Tuple[int, int]:
+        """
+        Convert simulation true coordinates to the field grid coordinates.
+
+        Parameters
+        ----------
+        new_spot : _type_
+            the sim true coordinates
+
+        Returns
+        -------
+        Tuple[int, int]
+            x, y locations for the 2d grid
+        """
+        x = new_spot[0]
+        y = new_spot[1]
+        x = x - self.xyz[0]
+        y = y - self.xyz[1]
+        x = int(x / self.grid_dim + (self.wlh[0] / 2) / self.grid_dim)
+        y = int(y / self.grid_dim + (self.wlh[1] / 2) / self.grid_dim)
+        return (x, y)
+
     def checkIsCovered(self, new_spot):
         """Check if the new spot is covered by the field.
 
@@ -61,16 +95,20 @@ class Field:
 
         """
         # convert to the covered area array coordinates
-        x = int(new_spot[0] + self.xyz[0])
-        y = int(new_spot[1] + self.xyz[1])
+        x, y = self.coordinates_to_grid(new_spot)
 
-        if x >= 0 and y >= 0 and x < self.covered_area.shape[0] and y < self.covered_area.shape[1]:
+        if (
+            x >= 0
+            and y >= 0
+            and x < self.covered_area.shape[0]
+            and y < self.covered_area.shape[1]
+        ):
             if self.covered_area[x, y] == 0:
-                self.updateCoveredArea(new_spot)
+                self.updateCoveredArea(x, y)
                 return True
         return False
 
-    def updateCoveredArea(self, new_spot):
+    def updateCoveredArea(self, x, y):
         """Update the covered area of the field.
 
         Parameters
@@ -79,9 +117,8 @@ class Field:
             x, y, z position
 
         """
-        x = int(new_spot[0] + self.xyz[0])
-        y = int(new_spot[1] + self.xyz[1])
         self.covered_area[x, y] = 1
+        self.total_covered_area += 1
 
     def getTotalCoveredArea(self):
         """Get the total covered area of the field.
@@ -92,7 +129,7 @@ class Field:
             Total covered area of the field.
 
         """
-        return np.sum(self.covered_area)
+        return self.total_covered_area
 
     def isAllCovered(self):
         """Check if the field is covered.
@@ -103,5 +140,4 @@ class Field:
             True if the field is covered.
 
         """
-        return np.sum(self.covered_area) == self.covered_area.size
-
+        return self.total_covered_area == self.total_possible_area

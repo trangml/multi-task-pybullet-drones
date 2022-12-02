@@ -1,0 +1,54 @@
+# general script settings
+tag: test
+env: long-cross-obs
+#choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
+algo: ppo
+#choices=["a2c", "ppo", "sac", "td3", "ddpg"],
+obs: BOTH
+# choices=["kin", "rgb", "both"],
+act: RPM
+exp: none
+cpu: 8
+n_steps: 1e7
+stop_after_no_improvement: 1000
+seed: 0
+
+# PPO arguments
+ppo:
+  gae_lambda: 0.95
+  gamma: 0.99
+  ent_coef: 0.0
+  learning_rate: 2.5e-4
+  policy_kwargs:
+    log_std_init: -1
+    ortho_init: False
+    activation_fn:
+      _partial_: true
+      _target_: torch.nn.ReLU
+    #net_arch: [512, 256, { "pi": [256, 256], "vf": [256, 256] }]
+# Env specific settings
+env_kwargs:
+  difficulty: 3
+  initial_xyzs: [[-0.5, 0, 0.5]]
+  bounds: [[12, 1, 1], [-1, -1, 0.1]]
+  collision_detection: True
+
+  # rewards
+  reward_components:
+    EnterAreaReward:
+      scale: 100.0
+      area: [[11, 12], [-1, 1]]
+    OrientationReward:
+      scale: 0.01
+    IncreaseXRewardV2:
+      scale: 1
+    BoundsReward:
+      scale: 10.0
+      bounds: ${env_kwargs.bounds}
+  # terminals
+  term_components:
+    # EnterAreaTerm:
+    #   area: [[4, 5], [-1, 1]]
+    BoundsTerm:
+      bounds: ${env_kwargs.bounds}
+    OrientationTerm:

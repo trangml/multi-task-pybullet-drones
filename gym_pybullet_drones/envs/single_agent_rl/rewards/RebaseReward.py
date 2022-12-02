@@ -22,9 +22,12 @@ class RebaseReward(DenseReward):
         self.landing_zone_xyz = landing_zone_xyz
         self.interval_secs = interval_secs
         self.step_counter = 0
-        self.SIM_FREQ = 240 #TODO: may have to change this
+        self.SIM_FREQ = 240  # TODO: may have to change this
 
-    def _calculateReward(self, state):
+    def reset(self):
+        self.step_counter = 0
+
+    def _calculateReward(self, state, drone_id):
         position = state[0:3]
         self.step_counter += 1
         # if we are at a time when we need to rebase, then reward that

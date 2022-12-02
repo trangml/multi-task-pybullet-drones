@@ -1,5 +1,5 @@
 # general script settings
-tag: field
+tag: field_from_land
 env: field
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
@@ -10,6 +10,7 @@ act: RPM
 exp: none
 cpu: 32
 n_steps: 1e7
+seed: 0
 
 # PPO arguments
 
@@ -31,7 +32,7 @@ env_kwargs:
   # terminals
   term_components:
     FieldCoverageTerm:
-      interval_sec: 7
+      interval_sec: 4
       landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
     BoundsTerm:
       bounds: ${env_kwargs.bounds}

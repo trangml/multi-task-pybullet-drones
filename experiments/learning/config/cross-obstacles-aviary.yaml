@@ -1,0 +1,28 @@
+# kwargs for crossobsaviary
+env_kwargs:
+  # obs: !ObservationType.BOTH
+  # act: !ActionType.RPM
+  initial_xyzs: [[-0.5, 0, 0.5]]
+
+  bounds: [[5, 1, 1], [-1, -1, 0.1]]
+  difficulty: 1
+
+  # rewards
+  reward_components:
+    EnterAreaReward:
+      scale: 100.0
+      area: [[4, 5], [-1, 1]]
+    OrientationReward:
+      scale: 0.01
+    IncreaseXReward:
+      scale: 0.1
+    BoundsReward:
+      scale: 10.0
+      bounds: ${env_kwargs.bounds}
+  # terminals
+  term_components:
+    # EnterAreaTerm:
+    #   area: [[4, 5], [-1, 1]]
+    BoundsTerm:
+      bounds: ${env_kwargs.bounds}
+    OrientationTerm:

@@ -25,7 +25,10 @@ class BoundsReward(SparseReward):
         self.use_time_scaling = use_time_scaling
         self.step = 0
 
-    def _calculateReward(self, state):
+    def reset(self):
+        self.step = 0
+
+    def _calculateReward(self, state, drone_id):
         self.step += 1
         position = state[0:3]
 

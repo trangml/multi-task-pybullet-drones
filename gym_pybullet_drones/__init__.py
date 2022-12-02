@@ -1,23 +1,19 @@
 from gym.envs.registration import register
 
 register(
-    id="ctrl-aviary-v0",
-    entry_point="gym_pybullet_drones.envs:CtrlAviary",
+    id="ctrl-aviary-v0", entry_point="gym_pybullet_drones.envs:CtrlAviary",
 )
 
 register(
-    id="dyn-aviary-v0",
-    entry_point="gym_pybullet_drones.envs:DynAviary",
+    id="dyn-aviary-v0", entry_point="gym_pybullet_drones.envs:DynAviary",
 )
 
 register(
-    id="velocity-aviary-v0",
-    entry_point="gym_pybullet_drones.envs:VelocityAviary",
+    id="velocity-aviary-v0", entry_point="gym_pybullet_drones.envs:VelocityAviary",
 )
 
 register(
-    id="vision-aviary-v0",
-    entry_point="gym_pybullet_drones.envs:VisionAviary",
+    id="vision-aviary-v0", entry_point="gym_pybullet_drones.envs:VisionAviary",
 )
 
 
@@ -52,6 +48,16 @@ register(
 )
 
 register(
+    id="cross-obstacles-aviary-v0",
+    entry_point="gym_pybullet_drones.envs.single_agent_rl:CrossObstaclesAviary",
+)
+
+register(
+    id="long-cross-obs-aviary-v0",
+    entry_point="gym_pybullet_drones.envs.single_agent_rl:LongCrossObstaclesAviary",
+)
+
+register(
     id="field-aviary-v0",
     entry_point="gym_pybullet_drones.envs.single_agent_rl:FieldCoverageAviary",
 )
@@ -79,4 +85,14 @@ register(
 register(
     id="meetup-aviary-v0",
     entry_point="gym_pybullet_drones.envs.multi_agent_rl:MeetupAviary",
+)
+
+register(
+    id="multicrossobs-aviary-v0",
+    entry_point="gym_pybullet_drones.envs.multi_agent_rl:MultiCrossObstaclesAviary",
+)
+
+register(
+    id="room-aviary-v0",
+    entry_point="gym_pybullet_drones.envs.single_agent_rl:RoomAviary",
 )

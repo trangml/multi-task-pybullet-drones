@@ -21,11 +21,14 @@ class FieldCoverageReward(DenseReward):
         super().__init__(scale)
         self.field = field
 
-    def _calculateReward(self, state):
+    def reset(self):
+        self.field.reset()
+
+    def _calculateReward(self, state, drone_id):
         position = state[0:3]
         if self.field.checkIsCovered((position[0], position[1])):
             return 1
         else:
-            return -0.01
+            return 0
 
     ################################################################################

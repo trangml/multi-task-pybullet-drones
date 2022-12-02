@@ -22,7 +22,7 @@ class OrientationReward(SparseReward):
         # 1 radian is about 57 degrees
         self.bounds = Bounds(min=-1, max=1)
 
-    def _calculateReward(self, state):
+    def _calculateReward(self, state, drone_id):
         rp = state[7:9]
         in_bounds = all(within_bounds(self.bounds, field) for field in rp)
         if in_bounds:

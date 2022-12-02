@@ -1,5 +1,4 @@
 import os
-import time
 from datetime import datetime
 from cycler import cycler
 import numpy as np
@@ -21,10 +20,14 @@ class Logger(object):
     def __init__(
         self,
         logging_freq_hz: int,
+        output_folder: str = "results",
         num_drones: int = 1,
         duration_sec: int = 0,
         num_rewards: int = 1,
         rewards_names: list = ["r"],
+        # done_names: list = ["d"],
+        colab: bool = False,
+        save: bool = False,
     ):
         """Logger class __init__ method.
 
@@ -41,6 +44,12 @@ class Logger(object):
             Used to preallocate the log arrays (improves performance).
 
         """
+        self.COLAB = colab
+        self.OUTPUT_FOLDER = output_folder
+        self.SAVE = save
+        if self.SAVE:
+            if not os.path.exists(self.OUTPUT_FOLDER):
+                os.makedirs(self.OUTPUT_FOLDER, exist_ok=True)
         self.LOGGING_FREQ_HZ = logging_freq_hz
         self.NUM_DRONES = num_drones
         self.PREALLOCATED_ARRAYS = False if duration_sec == 0 else True
@@ -159,12 +168,15 @@ class Logger(object):
     ################################################################################
 
     def save(self):
-        """Save the logs to file."""
+        """Save the logs to file.
+        """
+        if not os.path.exists(self.OUTPUT_FOLDER):
+            os.makedirs(self.OUTPUT_FOLDER, exist_ok=True)
         with open(
-            os.path.dirname(os.path.abspath(__file__))
-            + "/../../files/logs/save-flight-"
-            + datetime.now().strftime("%m.%d.%Y_%H.%M.%S")
-            + ".npy",
+            os.path.join(
+                self.OUTPUT_FOLDER,
+                "save-flight-" + datetime.now().strftime("%m.%d.%Y_%H.%M.%S") + ".npy",
+            ),
             "wb",
         ) as out_file:
             np.savez(
@@ -172,7 +184,6 @@ class Logger(object):
                 timestamps=self.timestamps,
                 states=self.states,
                 controls=self.controls,
-                rewards=self.rewards,
             )
 
     ################################################################################
@@ -186,18 +197,22 @@ class Logger(object):
             Added to the foldername.
 
         """
-        csv_dir = (
-            os.environ.get("HOME")
-            + "/Desktop/save-flight-"
+        if not os.path.exists(self.OUTPUT_FOLDER):
+            os.makedirs(self.OUTPUT_FOLDER, exist_ok=True)
+        csv_dir = os.path.join(
+            self.OUTPUT_FOLDER,
+            "save-flight-"
             + comment
             + "-"
-            + datetime.now().strftime("%m.%d.%Y_%H.%M.%S")
+            + datetime.now().strftime("%m.%d.%Y_%H.%M.%S"),
         )
         if not os.path.exists(csv_dir):
             os.makedirs(csv_dir + "/")
         t = np.arange(
             0, self.timestamps.shape[1] / self.LOGGING_FREQ_HZ, 1 / self.LOGGING_FREQ_HZ
         )
+        while len(t) > len(self.rewards[0, 0, :]):
+            t = t[:-1]
         for i in range(self.NUM_DRONES):
             with open(csv_dir + "/x" + str(i) + ".csv", "wb") as out_file:
                 np.savetxt(
@@ -407,6 +422,8 @@ class Logger(object):
             axs[i].grid(True)
             axs[i].legend(loc="upper right", frameon=True)
 
+        if self.SAVE:
+            plt.savefig(os.path.join(self.OUTPUT_FOLDER, "episode_rewards.png"))
         plt.show()
 
     def plot(self, pwm=False):
@@ -602,5 +619,23 @@ class Logger(object):
         fig.subplots_adjust(
             left=0.06, bottom=0.05, right=0.99, top=0.98, wspace=0.15, hspace=0.0
         )
-        # plt.interactive(True)
-        plt.show(block=False)
+        if self.COLAB:
+            plt.savefig(os.path.join("results", "output_figure.png"))
+        else:
+            plt.show(block=False)
+            if self.SAVE:
+                if not os.path.exists(self.OUTPUT_FOLDER):
+                    os.makedirs(self.OUTPUT_FOLDER, exist_ok=True)
+                plt.savefig(os.path.join(self.OUTPUT_FOLDER, "episode_states.png"))
+
+    def save_rewards(self, exp, mean_reward, std_reward):
+
+        if not os.path.exists(self.OUTPUT_FOLDER):
+            os.makedirs(self.OUTPUT_FOLDER, exist_ok=True)
+        """Save rewards to a file."""
+        with open(
+            os.path.join(self.OUTPUT_FOLDER, "rewards_" + str(mean_reward) + ".txt"),
+            "w",
+        ) as f:
+            f.write(str(mean_reward) + " " + str(std_reward) + "\n" + exp)
+

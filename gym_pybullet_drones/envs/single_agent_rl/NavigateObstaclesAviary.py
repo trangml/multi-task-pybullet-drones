@@ -37,6 +37,7 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
         reward_components: List = [],
         term_components: List = [],
         bounds: List = [[5, 5, 1], [-1, -1, 0.1]],
+        tag: str = "",
     ):
         """Initialization of a single agent RL environment.
 
@@ -71,20 +72,20 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
         self.landing_zone_xyz = np.asarray(landing_zone_xyz)
 
         self.obstacles = []
-        self.rewardComponents = []
-        # TODO: consider normalizing total reward between 1 and -1
-        for ix, reward_name in enumerate(reward_components):
-            r_class = getattr(rewards, reward_name)
-            self.rewardComponents.append(r_class(**reward_components[reward_name]))
+        self.reward_components = []
+        for reward_name in reward_components:
+            if reward_components[reward_name]["scale"] != 0:
+                r_class = getattr(rewards, reward_name)
+                self.reward_components.append(r_class(**reward_components[reward_name]))
 
-        self.termComponents = []
-        for ix, term_name in enumerate(term_components):
+        self.term_components = []
+        for term_name in term_components:
             t_class = getattr(terminations, term_name)
             args = term_components[term_name]
             if args is not None:
-                self.termComponents.append(t_class(**args))
+                self.term_components.append(t_class(**args))
             else:
-                self.termComponents.append(t_class())
+                self.term_components.append(t_class())
 
         super().__init__(
             drone_model=drone_model,
@@ -97,6 +98,7 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
             record=record,
             obs=obs,
             act=act,
+            tag=tag,
         )
 
         # override base aviary episode length
@@ -104,9 +106,17 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
         self.obstacles.append(
             LandingZone(self.landing_zone_xyz, self.landing_zone_wlh, self.CLIENT)
         )
-        self.reward_dict = getRewardDict(self.rewardComponents)
-        self.term_dict = getTermDict(self.termComponents)
-        self.cum_reward_dict = getRewardDict(self.rewardComponents)
+        self.reward_dict = getRewardDict(self.reward_components)
+        self.term_dict = getTermDict(self.term_components)
+        self.cum_reward_dict = getRewardDict(self.reward_components)
+
+    ################################################################################
+    def reset(self):
+        for rwd in self.reward_components:
+            rwd.reset()
+        for term in self.term_components:
+            term.reset()
+        return super().reset()
 
     ################################################################################
 
@@ -145,7 +155,7 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
         """
         cum_reward = 0
         state = self._getDroneStateVector(0)
-        for reward_component, r_dict in zip(self.rewardComponents, self.reward_dict):
+        for reward_component, r_dict in zip(self.reward_components, self.reward_dict):
             r = reward_component.calculateReward(state)
             self.reward_dict[r_dict] = r
             self.cum_reward_dict[r_dict] += r
@@ -173,7 +183,7 @@ class NavigateObstaclesAviary(BaseSingleAgentAviary):
         else:
             state = self._getDroneStateVector(0)
             done = False
-            for term_component, t_dict in zip(self.termComponents, self.term_dict):
+            for term_component, t_dict in zip(self.term_components, self.term_dict):
                 t = term_component.calculateTerm(state)
                 self.term_dict[t_dict] = t
                 done = done or t

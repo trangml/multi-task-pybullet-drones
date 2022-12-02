@@ -1,3 +1,4 @@
+import copy
 import math
 import numpy as np
 
@@ -21,12 +22,12 @@ class DistanceReward(DenseReward):
         super().__init__(scale)
         self.landing_zone_xyz = landing_zone_xyz
 
-    def _calculateReward(self, state):
+    def _calculateReward(self, state, drone_id):
         position = state[0:3]
         target_position = self.landing_zone_xyz
         pos_dist = np.linalg.norm(position[0:2] - target_position[0:2])
 
-        max_dist = np.linalg.norm(target_position) + 1
+        # max_dist = np.linalg.norm(target_position) + 1
         reward = min(POSITIVE_REWARD - ((pos_dist) / 5) ** 0.5, POSITIVE_REWARD)
         return reward
 
@@ -38,13 +39,35 @@ class DistanceRewardV2(DenseReward):
 
     def __init__(self, scale, landing_zone_xyz):
         super().__init__(scale)
-        self.landing_zone_xyz = landing_zone_xyz
-        self.target_position = self.landing_zone_xyz
+        self.landing_zone_xyz = np.array(landing_zone_xyz)
+        self.target_position = copy.deepcopy(self.landing_zone_xyz)
         DRONE_MID_Z = 0.01347
         self.target_position[2] = 2 * self.target_position[2] + DRONE_MID_Z
 
-    def _calculateReward(self, state):
+    def _calculateReward(self, state, drone_id):
         position = state[0:3]
         pos_dist = np.linalg.norm(position - self.target_position)
         reward = min(POSITIVE_REWARD - ((pos_dist) / 5) ** 0.5, POSITIVE_REWARD)
+        return reward
+
+
+class SafeDistanceReward(DenseReward):
+    """Calculate the dense distance reward.
+
+    Never returns a negative reward
+    """
+
+    def __init__(self, scale, landing_zone_xyz, max_dist=20):
+        super().__init__(scale)
+        self.landing_zone_xyz = np.array(landing_zone_xyz)
+        self.target_position = copy.deepcopy(self.landing_zone_xyz)
+        self.max_dist = max_dist
+
+    def _calculateReward(self, state, drone_id):
+        position = state[0:3]
+        pos_dist = np.linalg.norm(position - self.target_position)
+        reward = min(
+            POSITIVE_REWARD - ((pos_dist) / self.max_dist) ** 0.4, POSITIVE_REWARD
+        )
+        reward = max(reward, 0)
         return reward

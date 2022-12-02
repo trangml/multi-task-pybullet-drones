@@ -1,0 +1,67 @@
+# general script settings
+tag: room_multiagent_no_vecnorm_longer_train_intervals
+env: room
+#choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
+algo: ppo
+#choices=["a2c", "ppo", "sac", "td3", "ddpg"],
+obs: BOTH
+# choices=["kin", "rgb", "both"],
+act: RPM
+num_agents: 3
+exp: none
+cpu: 1
+training_duration: 2048
+stop_after_no_improvement: 2000
+max_reward: 1000 # Default 50
+n_steps: 1e6
+seed: 0
+# PPO arguments
+ppo:
+  gae_lambda: 0.95
+  gamma: 0.99
+  ent_coef: 0.0
+  learning_rate: 2.5e-4
+  policy_kwargs:
+    log_std_init: -1
+    ortho_init: False
+    activation_fn:
+      _partial_: true
+      _target_: torch.nn.ReLU
+    net_arch: [512, 256, { "pi": [256, 256], "vf": [256, 256] }]
+
+    #net_arch = [dict(pi=[64, 64], vf=[64, 64])]
+    # Agents do better with the default net_arch
+# Env specific settings
+env_kwargs:
+  initial_xyzs: [[-0.5, 0, 0.5]]
+  difficulty: 0
+
+  # need to account for hitting the ceiling
+  bounds: [[10, 10, 1.5], [-10, -10, 0.1]]
+
+  # rewards
+  reward_components:
+    OrientationReward:
+      scale: 0.01
+    BoundsReward:
+      scale: 5
+      bounds: ${env_kwargs.bounds}
+    NoCollisionReward:
+      scale: 0.001
+    SafeDistanceReward:
+      scale: 0.5
+      landing_zone_xyz: [6.5, 0, 0.75]
+    SafeDeltaDistanceReward:
+      scale: 0.1
+      landing_zone_xyz: [6.5, 0, 0.75]
+    TouchLandingZoneReward:
+      scale: 100
+  # terminals
+  term_components:
+    # EnterAreaTerm:
+    #   area: [[4, 5], [-1, 1]]
+    BoundsTerm:
+      bounds: ${env_kwargs.bounds}
+    CollisionTerm:
+    OrientationTerm:
+    TouchLandingZoneTerm:

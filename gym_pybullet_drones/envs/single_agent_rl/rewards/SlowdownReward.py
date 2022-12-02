@@ -26,7 +26,7 @@ class SlowdownReward(DenseReward):
         self.landing_zone_xyz = landing_zone_xyz
         self.slowdown_dist = slowdown_dist
 
-    def _calculateReward(self, state):
+    def _calculateReward(self, state, drone_id):
         position = state[0:3]
         # only consider the x and y coordinates, as y can still change to get us closer
         velocity = state[10:12]

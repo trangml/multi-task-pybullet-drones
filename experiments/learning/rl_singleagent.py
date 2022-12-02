@@ -21,13 +21,42 @@ To check the tensorboard results at:
 """
 import os
 import pprint
+import random
+import subprocess
 from datetime import datetime
+from sys import platform
 
 import gym
 import hydra
 import numpy as np
+import shared_constants
 import torch
-from experiments.learning.utils.load_config import load_config
+from omegaconf import DictConfig, OmegaConf
+from stable_baselines3 import A2C, DDPG, PPO, SAC, TD3
+from stable_baselines3.common.callbacks import (  # StopTrainingOnMaxEpisodes,
+    CallbackList,
+    CheckpointCallback,
+    EvalCallback,
+    StopTrainingOnNoModelImprovement,
+    StopTrainingOnRewardThreshold,
+)
+from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3.common.policies import ActorCriticCnnPolicy as a2cppoCnnPolicy
+from stable_baselines3.common.policies import ActorCriticPolicy as a2cppoMlpPolicy
+from stable_baselines3.common.policies import (
+    MultiInputActorCriticPolicy as a2cppoMultiInputPolicy,
+)
+from stable_baselines3.common.vec_env import (
+    VecCheckNan,
+    VecFrameStack,
+    VecNormalize,
+    VecTransposeImage,
+)
+from stable_baselines3.sac import CnnPolicy as sacCnnPolicy
+from stable_baselines3.sac.policies import SACPolicy as sacMlpPolicy
+from stable_baselines3.td3 import CnnPolicy as td3ddpgCnnPolicy
+from stable_baselines3.td3 import MlpPolicy as td3ddpgMlpPolicy
+
 from gym_pybullet_drones.envs.single_agent_rl import map_name_to_env
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
     ActionType,
@@ -36,39 +65,31 @@ from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import (
 from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCallback import (
     CustomCallback,
 )
-from omegaconf import DictConfig, OmegaConf
-from stable_baselines3 import A2C, DDPG, PPO, SAC, TD3
-from stable_baselines3.common.callbacks import (  # StopTrainingOnMaxEpisodes,
-    CallbackList,
-    CheckpointCallback,
-    EvalCallback,
-    StopTrainingOnRewardThreshold,
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomCheckpointCallback import (
+    CustomCheckpointCallback,
 )
-from stable_baselines3.common.env_util import (
-    make_vec_env,
-)  # Module cmd_util will be renamed to env_util https://github.com/DLR-RM/stable-baselines3/pull/197
-from stable_baselines3.common.policies import ActorCriticCnnPolicy as a2cppoCnnPolicy
-from stable_baselines3.common.policies import ActorCriticPolicy as a2cppoMlpPolicy
-from stable_baselines3.common.vec_env import VecTransposeImage
-from stable_baselines3.sac import CnnPolicy as sacCnnPolicy
-from stable_baselines3.sac.policies import SACPolicy as sacMlpPolicy
-from stable_baselines3.td3 import CnnPolicy as td3ddpgCnnPolicy
-from stable_baselines3.td3 import MlpPolicy as td3ddpgMlpPolicy
-
-import shared_constants
-
-EPISODE_REWARD_THRESHOLD = (
-    10000  # Upperbound: rewards are always negative, but non-zero
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.CustomEvalCallback import (
+    CustomEvalCallback,
 )
-"""float: Reward threshold to halt the script."""
+from gym_pybullet_drones.envs.single_agent_rl.callbacks.StopTrainingRunningAverageRewardThreshold import (
+    StopTrainingRunningAverageRewardThreshold,
+)
 
-MAX_EPISODES = 10000  # Upperbound: number of episodes
+DEFAULT_OUTPUT_FOLDER = "results"
 
 
 @hydra.main(version_base=None, config_path="config", config_name="rl_singleagent")
 def train_loop(cfg: DictConfig = None):
     # cfg = OmegaConf.load(ARGS.config)
     pprint.pprint(cfg)
+
+    # TRY NOT TO MODIFY: seeding
+    random.seed(cfg.seed)
+    np.random.seed(cfg.seed)
+    torch.manual_seed(cfg.seed)
+    os.environ["PYTHONHASHSEED"] = str(cfg.seed)
+
+    EPISODE_REWARD_THRESHOLD = getattr(cfg, "max_reward", 1000)
 
     #### Save directory ########################################
     filename = (
@@ -89,12 +110,21 @@ def train_loop(cfg: DictConfig = None):
     if not os.path.exists(filename):
         os.makedirs(filename + "/")
 
+    #### Print out current git commit hash #####################
+    if (platform == "linux" or platform == "darwin") and (
+        "GITHUB_ACTIONS" not in os.environ.keys()
+    ):
+        git_commit = subprocess.check_output(["git", "describe", "--tags"]).strip()
+        with open(filename + "/git_commit.txt", "w+") as f:
+            f.write(str(git_commit))
+
     if cfg.algo in ["sac", "td3", "ddpg"] and cfg.cpu != 1:
         print("[ERROR] The selected algorithm does not support multiple environments")
         exit()
 
     with open(filename + "/config.yaml", "w") as f:
         OmegaConf.save(cfg, f)
+
     #### Uncomment to debug slurm scripts ######################
     # exit()
 
@@ -112,42 +142,9 @@ def train_loop(cfg: DictConfig = None):
     # vectorized one
     envAviary = map_name_to_env(env_name)
     train_env = make_vec_env(
-        envAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
+        envAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=cfg.seed
     )
-    # if env_name == "hover-aviary-v0":
-    #     train_env = make_vec_env(
-    #         HoverAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
-    #     )
-    # if env_name == "maze-aviary-v0":
-    #     train_env = make_vec_env(
-    #         NavigateMazeAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
-    #     )
-    # if env_name == "obstacles-aviary-v0":
-    #     train_env = make_vec_env(
-    #         NavigateObstaclesAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
-    #     )
-    # if env_name == "land-aviary-v0":
-    #     train_env = make_vec_env(
-    #         NavigateLandAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
-    #     )
-    # if env_name == "field-aviary-v0":
-    #     train_env = make_vec_env(
-    #         FieldCoverageAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
-    #     )
-    # if env_name == "land-vision-aviary-v0":
-    #     train_env = make_vec_env(
-    #         LandVisionAviary, env_kwargs=sa_env_kwargs, n_envs=cfg.cpu, seed=0
-    #     )
-    print("[INFO] Action space:", train_env.action_space)
-    print("[INFO] Observation space:", train_env.observation_space)
     # check_env(train_env, warn=True, skip_render_check=True)
-
-    #### On-policy algorithms ##################################
-    onpolicy_kwargs = dict(
-        activation_fn=torch.nn.ReLU,
-        net_arch=[512, 512, 256, dict(vf=[256, 128], pi=[256, 128])],
-    )  # or None
-
     ### Load the saved model if specified #################
     if cfg.exp != "none":
         #### Load the model from file ##############################
@@ -155,7 +152,10 @@ def train_loop(cfg: DictConfig = None):
         # NOTE: if the model is loaded, then the number of cpus must be the same
         algo = cfg.algo
 
-        if os.path.isfile(cfg.exp + "/success_model.zip"):
+        # we always choose the best model from the previous unless we specify the success model
+        load_best = getattr(cfg, "load_best", True)
+        print("[INFO] Loaded model from " + cfg.exp)
+        if os.path.isfile(cfg.exp + "/success_model.zip") and not load_best:
             path = cfg.exp + "/success_model.zip"
             print("Loading success model")
         elif os.path.isfile(cfg.exp + "/best_model.zip"):
@@ -163,53 +163,97 @@ def train_loop(cfg: DictConfig = None):
             print("Loading the best training model")
         else:
             print("[ERROR]: no model under the specified path", cfg.exp)
+            return 1
+        if os.path.isfile(cfg.exp + "/vecnormalize_best_model.pkl"):
+            vec_norm_path = cfg.exp + "/vecnormalize_best_model.pkl"
+            print("Loading vecnormalize")
+
         if algo == "a2c":
             model = A2C.load(path, tensorboard_log=filename + "/tb_log")
         if algo == "ppo":
-            model = PPO.load(path, tensorboard_log=filename + "/tb_log")
+            p_kwargs = hydra.utils.instantiate(cfg.ppo, _convert_="partial")
+            p_kwargs["seed"] = cfg.seed
+            model = PPO.load(
+                path, tensorboard_log=filename + "/tb_log", kwargs=p_kwargs
+            )
+            model.set_random_seed(cfg.seed)
         if algo == "sac":
             model = SAC.load(path, tensorboard_log=filename + "/tb_log")
         if algo == "td3":
             model = TD3.load(path, tensorboard_log=filename + "/tb_log")
         if algo == "ddpg":
             model = DDPG.load(path, tensorboard_log=filename + "/tb_log")
+
+        if vec_norm_path is not None:
+            train_env = VecNormalize.load(vec_norm_path, train_env)
+        else:
+            train_env = VecNormalize(
+                train_env, norm_obs=True, norm_reward=False, clip_obs=10.0
+            )
+
+        if ObservationType[cfg.obs] != ObservationType.KIN:
+            train_env = VecTransposeImage(train_env)
+            # train_env = VecCheckNan(train_env, raise_exception=True)
+        print("[INFO] Action space:", train_env.action_space)
+        print("[INFO] Observation space:", train_env.observation_space)
         model.set_env(train_env)
     else:
+        train_env = VecNormalize(
+            train_env, norm_obs=True, norm_reward=False, clip_obs=10.0
+        )
+        if ObservationType[cfg.obs] != ObservationType.KIN:
+            train_env = VecTransposeImage(train_env)
+            # train_env = VecCheckNan(train_env, raise_exception=True)
+            # train_env = VecFrameStack(train_env, n_stack=4)
+            # train_env = VecNormalize(train_env)
+        print("[INFO] Action space:", train_env.action_space)
+        print("[INFO] Observation space:", train_env.observation_space)
+        #### On-policy algorithms ##################################
+        p_kwargs = {
+            "onpolicy_kwargs": dict(
+                activation_fn=torch.nn.ReLU,
+                net_arch=[512, 512, 256, dict(vf=[256, 128], pi=[256, 128])],
+            )  # or None
+        }
+        # onpolicy_kwargs = cfg.policy_kwargs if cfg.policy_kwargs else onpolicy_kwargs
         if cfg.algo == "a2c":
-            model = (
-                A2C(
-                    a2cppoMlpPolicy,
-                    train_env,
-                    policy_kwargs=onpolicy_kwargs,
-                    tensorboard_log=filename + "/tb/",
-                    verbose=1,
-                )
-                if cfg.obs == ObservationType.KIN
-                else A2C(
-                    a2cppoCnnPolicy,
-                    train_env,
-                    policy_kwargs=onpolicy_kwargs,
-                    tensorboard_log=filename + "/tb/",
-                    verbose=1,
-                )
+            if cfg.a2c != None:
+                p_kwargs = hydra.utils.instantiate(cfg.a2c, _convert_="partial")
+            if ObservationType[cfg.obs] == ObservationType.KIN:
+                policy = a2cppoMlpPolicy
+            elif ObservationType[cfg.obs] == ObservationType.RGB:
+                policy = a2cppoCnnPolicy
+            else:
+                policy = a2cppoMultiInputPolicy
+
+            model = A2C(
+                policy,
+                train_env,
+                # policy_kwargs=onpolicy_kwargs,
+                tensorboard_log=filename + "/tb/",
+                verbose=1,
+                seed=cfg.seed,
+                **p_kwargs,
             )
+
         if cfg.algo == "ppo":
-            model = (
-                PPO(
-                    a2cppoMlpPolicy,
-                    train_env,
-                    policy_kwargs=onpolicy_kwargs,
-                    tensorboard_log=filename + "/tb/",
-                    verbose=1,
-                )
-                if ObservationType[cfg.obs] == ObservationType.KIN
-                else PPO(
-                    a2cppoCnnPolicy,
-                    train_env,
-                    policy_kwargs=onpolicy_kwargs,
-                    tensorboard_log=filename + "/tb/",
-                    verbose=1,
-                )
+            if cfg.ppo != None:
+                p_kwargs = hydra.utils.instantiate(cfg.ppo, _convert_="partial")
+            if ObservationType[cfg.obs] == ObservationType.KIN:
+                policy = a2cppoMlpPolicy
+            elif ObservationType[cfg.obs] == ObservationType.RGB:
+                policy = a2cppoCnnPolicy
+            else:
+                policy = a2cppoMultiInputPolicy
+
+            model = PPO(
+                policy,
+                train_env,
+                # policy_kwargs=onpolicy_kwargs,
+                tensorboard_log=filename + "/tb/",
+                verbose=1,
+                seed=cfg.seed,
+                **p_kwargs,
             )
 
         #### Off-policy algorithms #################################
@@ -274,31 +318,57 @@ def train_loop(cfg: DictConfig = None):
     #### Create evaluation environment #########################
     if ObservationType[cfg.obs] == ObservationType.KIN:
         eval_env = gym.make(env_name, **sa_env_kwargs)
-    elif ObservationType[cfg.obs] == ObservationType.RGB:
+        eval_env = VecNormalize(
+            eval_env, norm_obs=True, norm_reward=False, clip_obs=10.0, training=False
+        )
+    else:
         n_envs = 1
         evalAviary = map_name_to_env(env_name)
-        eval_env = make_vec_env(evalAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=0)
+        eval_env = make_vec_env(
+            evalAviary, env_kwargs=sa_env_kwargs, n_envs=1, seed=cfg.seed
+        )
+        eval_env = VecNormalize(
+            eval_env, norm_obs=True, norm_reward=False, clip_obs=10.0, training=False
+        )
         eval_env = VecTransposeImage(eval_env)
+        # eval_env = VecFrameStack(eval_env, n_stack=4)
+        # eval_env = VecNormalize(eval_env)
 
     #### Train the model #######################################
-    checkpoint_callback = CheckpointCallback(
+    checkpoint_callback = CustomCheckpointCallback(
         save_freq=max(100000 // n_envs, 1),
         save_path=filename + "/logs/",
         name_prefix="rl_model",
         verbose=2,
+        save_vecnormalize=True,
     )
-    callback_on_best = StopTrainingOnRewardThreshold(
-        reward_threshold=EPISODE_REWARD_THRESHOLD, verbose=1
+    # callback_on_best = StopTrainingOnRewardThreshold(
+    #     reward_threshold=EPISODE_REWARD_THRESHOLD, verbose=1
+    # )
+    stop_callback = StopTrainingRunningAverageRewardThreshold(
+        reward_threshold=EPISODE_REWARD_THRESHOLD, eval_rollback_len=10, verbose=1
     )
-    eval_callback = EvalCallback(
+    # stop_callback = StopTrainingOnNoModelImprovement(
+    #     max_no_improvement_evals=(
+    #         cfg.stop_after_no_improvement
+    #         if cfg.stop_after_no_improvement is not None
+    #         else cfg.n_steps
+    #     ),
+    #     min_evals=100,
+    #     verbose=1,
+    # )
+    eval_callback = CustomEvalCallback(
         eval_env,
-        callback_on_new_best=callback_on_best,
+        # callback_on_new_best=callback_on_best,
+        callback_after_eval=stop_callback,
         verbose=1,
         best_model_save_path=filename + "/",
         log_path=filename + "/",
         eval_freq=int(2000 / cfg.cpu),
         deterministic=True,
         render=False,
+        save_vecnormalize=True,
+        n_eval_episodes=1,
     )
     custom_callback = CustomCallback()
     training_callback = CallbackList(
@@ -312,6 +382,7 @@ def train_loop(cfg: DictConfig = None):
 
     #### Save the model ########################################
     model.save(filename + "/success_model.zip")
+    model.get_vec_normalize_env().save(filename + "/vecnormalize_success_model.pkl")
     print(filename)
 
     #### Print training progression ############################
@@ -327,4 +398,3 @@ def train_loop(cfg: DictConfig = None):
 
 if __name__ == "__main__":
     train_loop()
-

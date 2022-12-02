@@ -1,17 +1,39 @@
 # general script settings
-tag: only_landing_from_pretrained
+tag: framestack_distance_and_slowdown
 env: land
 #choices=["maze", "hover", "obstacles", "land", "field", "land-vision"],
 algo: ppo
 #choices=["a2c", "ppo", "sac", "td3", "ddpg"],
-obs: KIN
+obs: RGB
 # choices=["kin", "rgb"],
 act: RPM
-exp: /home/mtrang/Documents/vt/research/multiagent-pybullet-drones/experiments/learning/results/save-land-ppo-KIN-RPM-equal_delta_drop-08.17.2022_13.46.56/
-cpu: 32
+exp: none
+cpu: 8
 n_steps: 1e7
+seed: 0
 
 # PPO arguments
+ppo:
+  #normalize: true
+  #choices=["true", "false"],
+  gae_lambda: 0.95
+  gamma: 0.99
+  ent_coef: 0.0
+  learning_rate: 2.5e-4
+  #clip_rate: 0.2
+  policy_kwargs:
+    log_std_init: -1
+    ortho_init: False
+    activation_fn:
+      _partial_: true
+      _target_: torch.nn.ReLU
+    #net_arch: [512, 256, { "pi": [256, 256], "vf": [256, 256] }]
+    # Agents do better with the default net_arch
+    # net_arch:
+    #   - 512
+    #   - 256
+    #   - "pi": [256, 256]
+    #     "vf": [256, 256]
 
 # Env specific settings
 env_kwargs:
@@ -26,7 +48,7 @@ env_kwargs:
       scale: 10.0
       landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
     DistanceReward:
-      scale: 0.0
+      scale: 1.0
       landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
     WaypointReward:
       scale: 0.0
@@ -43,19 +65,19 @@ env_kwargs:
     DropAltitudeReward:
       scale: 0.0
       landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
-      start_dist: 5
+      start_dist: 1
     BoundsReward:
-      scale: 0.0
+      scale: 10.0
       bounds: ${env_kwargs.bounds}
     SlowdownReward:
-      scale: 0.0
+      scale: 1.0
       landing_zone_xyz: ${env_kwargs.landing_zone_xyz}
       slowdown_dist: 1.0
     SpeedReward:
       scale: 0.0
       max_speed: 5.0
     OrientationReward:
-      scale: 0.0
+      scale: 0.1
 
   # terminals
   term_components:

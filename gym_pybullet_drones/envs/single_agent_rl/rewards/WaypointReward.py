@@ -27,7 +27,13 @@ class WaypointReward(DenseReward):
         self.max_dist_to_waypoint = 0
         self._new_point = True
 
-    def _calculateReward(self, state):
+    def reset(self):
+        self.is_landed = False
+        self.max_dist_to_waypoint = 0
+        self._new_point = True
+        self.curr_waypoint = 0
+
+    def _calculateReward(self, state, drone_id):
         position = state[0:3]
         target_position = self.waypoints[self.curr_waypoint]
         pos_dist = np.linalg.norm(position - target_position)
@@ -35,8 +41,8 @@ class WaypointReward(DenseReward):
             self.max_dist_to_waypoint = pos_dist
             self._new_point = False
 
-        if math.isclose(pos_dist, 0, abs_tol=1e-01):
-            if self.max_waypoint > self.curr_waypoint:
+        if math.isclose(pos_dist, 0, abs_tol=0.707):
+            if self.max_waypoint > self.curr_waypoint + 1:
                 self._new_point = True
                 self.curr_waypoint += 1
             return POSITIVE_REWARD
