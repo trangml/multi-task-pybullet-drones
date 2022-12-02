@@ -7,7 +7,7 @@ algo: ppo
 obs: KIN
 # choices=["kin", "rgb"],
 act: RPM
-exp: /home/mtrang/Documents/vt/research/multiagent-pybullet-drones/experiments/learning/results/save-land-ppo-KIN-RPM-bounds_orientation_terms-07.17.2022_18.37.34
+exp: none
 cpu: 32
 n_steps: 1e7
 
