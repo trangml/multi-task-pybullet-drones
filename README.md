@@ -2,6 +2,10 @@
 This repository's `master` branch is actively developed, please `git pull` frequently and feel free to open new [issues](https://github.com/utiasDSL/gym-pybullet-drones/issues) for any undesired, unexpected, or (presumably) incorrect behavior. Thanks 🙏
 
 
+This repository builds off the work done in [gym-pybullet-drones](https://github.com/utiasDSL/gym-pybullet-drones) with extensions for multiple tasks. 
+
+Key changes include a YAML configuration system for rapidly testing environment designs, rewards, and terminations. 
+
 
 
 # gym-pybullet-drones
