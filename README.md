@@ -6,8 +6,8 @@
 This repository builds off the work done in [gym-pybullet-drones](https://github.com/utiasDSL/gym-pybullet-drones) with extensions focused on exploring multi-task learning. 
 
 Key changes include a YAML configuration system for rapidly testing environment designs, rewards, and terminations. 
-New environments can be found in the [env] (https://github.com/trangml/multi-task-pybullet-drones/gym_pybullet_drones/envs) directory.
-These use configurations of the reward and terminations that can be found in [rewards] (https://github.com/trangml/multi-task-pybullet-drones/gym_pybullet_drones/envs/single_agent_rl/rewards)
+New environments can be found in the [env](https://github.com/trangml/multi-task-pybullet-drones/gym_pybullet_drones/envs) directory.
+These use configurations of the reward and terminations that can be found in [rewards](https://github.com/trangml/multi-task-pybullet-drones/gym_pybullet_drones/envs/single_agent_rl/rewards).
 
 
 [Simple](https://en.wikipedia.org/wiki/KISS_principle) OpenAI [Gym environment](https://gym.openai.com/envs/#classic_control) based on [PyBullet](https://github.com/bulletphysics/bullet3) for multi-agent reinforcement learning with quadrotors 
